@@ -51,11 +51,32 @@ describe('HandshakeStack', () => {
       ],
       BillingMode: 'PAY_PER_REQUEST',
       TimeToLiveSpecification: { AttributeName: 'ttl', Enabled: true },
+      Replicas: [
+        Match.objectLike({
+          PointInTimeRecoverySpecification: { PointInTimeRecoveryEnabled: true },
+        }),
+      ],
     });
   });
 
   it('exposes GET /health on the HTTP API', () => {
     template.hasResourceProperties('AWS::ApiGatewayV2::Route', { RouteKey: 'GET /health' });
+  });
+
+  it('throttles the API and serves it only on the custom domain', () => {
+    template.hasResourceProperties('AWS::ApiGatewayV2::Api', { DisableExecuteApiEndpoint: true });
+    template.hasResourceProperties('AWS::ApiGatewayV2::Stage', {
+      StageName: '$default',
+      DefaultRouteSettings: { ThrottlingRateLimit: 25, ThrottlingBurstLimit: 50 },
+    });
+  });
+
+  it('puts the workload permissions boundary on every role', () => {
+    template.allResourcesProperties('AWS::IAM::Role', {
+      PermissionsBoundary: {
+        'Fn::Join': ['', Match.arrayWith([':policy/HandshakeWorkloadBoundary'])],
+      },
+    });
   });
 
   it('serves the Next.js app through CloudFront from a private bucket and a Lambda URL', () => {

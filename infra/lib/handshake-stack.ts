@@ -1,4 +1,4 @@
-import { CfnOutput, Duration, Stack, type StackProps } from 'aws-cdk-lib';
+import { CfnOutput, Duration, PermissionsBoundary, Stack, type StackProps } from 'aws-cdk-lib';
 import { DomainName, HttpApi, HttpMethod } from 'aws-cdk-lib/aws-apigatewayv2';
 import { HttpLambdaIntegration } from 'aws-cdk-lib/aws-apigatewayv2-integrations';
 import { Certificate } from 'aws-cdk-lib/aws-certificatemanager';
@@ -27,6 +27,13 @@ const certificateParameters = {
 };
 const hostedZoneIdParameter = '/handshake/dns/hosted-zone-id';
 
+// Created by hand from infra/iam/workload-boundary.json. The CDK execution policy
+// only lets CloudFormation create roles that carry it, so a deploy cannot grant more.
+const workloadBoundaryPolicyName = 'HandshakeWorkloadBoundary';
+
+// Caps what public traffic can cost before per-route limits exist.
+const apiThrottle = { rateLimit: 25, burstLimit: 50 };
+
 const apiSource = (handlerFile: string) =>
   fileURLToPath(new URL(`../../services/api/src/${handlerFile}`, import.meta.url));
 
@@ -34,13 +41,17 @@ const apiSource = (handlerFile: string) =>
 // which is what the IAM policies in infra/iam/ are scoped to.
 export class HandshakeStack extends Stack {
   constructor(scope: Construct, id: string, props: HandshakeStackProps) {
-    super(scope, id, props);
+    super(scope, id, {
+      ...props,
+      permissionsBoundary: PermissionsBoundary.fromName(workloadBoundaryPolicyName),
+    });
 
     const table = new TableV2(this, 'Table', {
       partitionKey: { name: 'pk', type: AttributeType.STRING },
       sortKey: { name: 'sk', type: AttributeType.STRING },
       timeToLiveAttribute: 'ttl',
       billing: Billing.onDemand(),
+      pointInTimeRecoverySpecification: { pointInTimeRecoveryEnabled: true },
     });
 
     const healthFunction = new NodejsFunction(this, 'HealthFunction', {
@@ -64,9 +75,19 @@ export class HandshakeStack extends Stack {
       domainName: props.domains.api,
       certificate: certificateFromParameter('RegionalCertificate', certificateParameters.regional),
     });
+    // The default stage is built here because HttpApi cannot set throttling on
+    // the one it creates. The same ID keeps the deployed stage in place.
     const httpApi = new HttpApi(this, 'HttpApi', {
-      defaultDomainMapping: { domainName: apiDomain },
+      createDefaultStage: false,
+      disableExecuteApiEndpoint: true,
     });
+    httpApi
+      .addStage('DefaultStage', {
+        autoDeploy: true,
+        domainMapping: { domainName: apiDomain },
+        throttle: apiThrottle,
+      })
+      .node.addDependency(apiDomain);
     httpApi.addRoutes({
       path: '/health',
       methods: [HttpMethod.GET],

@@ -1,0 +1,131 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "WriteHandshakeLogs",
+      "Effect": "Allow",
+      "Action": [
+        "logs:CreateLogGroup",
+        "logs:CreateLogStream",
+        "logs:PutLogEvents"
+      ],
+      "Resource": [
+        "arn:aws:logs:eu-west-1:*:log-group:/aws/lambda/Handshake-*",
+        "arn:aws:logs:eu-west-1:*:log-group:Handshake-*"
+      ]
+    },
+    {
+      "Sid": "UseHandshakeTables",
+      "Effect": "Allow",
+      "Action": [
+        "dynamodb:BatchGetItem",
+        "dynamodb:BatchWriteItem",
+        "dynamodb:ConditionCheckItem",
+        "dynamodb:DeleteItem",
+        "dynamodb:DescribeTable",
+        "dynamodb:GetItem",
+        "dynamodb:GetRecords",
+        "dynamodb:GetShardIterator",
+        "dynamodb:PutItem",
+        "dynamodb:Query",
+        "dynamodb:Scan",
+        "dynamodb:UpdateItem"
+      ],
+      "Resource": [
+        "arn:aws:dynamodb:eu-west-1:*:table/Handshake-*",
+        "arn:aws:dynamodb:eu-west-1:*:table/Handshake-*/*"
+      ]
+    },
+    {
+      "Sid": "UseHandshakeBuckets",
+      "Effect": "Allow",
+      "Action": [
+        "s3:AbortMultipartUpload",
+        "s3:DeleteObject*",
+        "s3:GetBucket*",
+        "s3:GetObject*",
+        "s3:List*",
+        "s3:PutBucketPolicy",
+        "s3:PutObject*"
+      ],
+      "Resource": [
+        "arn:aws:s3:::handshake-*",
+        "arn:aws:s3:::handshake-*/*"
+      ]
+    },
+    {
+      "Sid": "ReadCdkAssets",
+      "Effect": "Allow",
+      "Action": [
+        "s3:GetObject*",
+        "s3:GetBucket*",
+        "s3:List*"
+      ],
+      "Resource": [
+        "arn:aws:s3:::cdk-handshake-assets-*-eu-west-1",
+        "arn:aws:s3:::cdk-handshake-assets-*-eu-west-1/*"
+      ]
+    },
+    {
+      "Sid": "UseHandshakeQueues",
+      "Effect": "Allow",
+      "Action": [
+        "sqs:ChangeMessageVisibility",
+        "sqs:DeleteMessage",
+        "sqs:GetQueueAttributes",
+        "sqs:GetQueueUrl",
+        "sqs:ReceiveMessage",
+        "sqs:SendMessage"
+      ],
+      "Resource": "arn:aws:sqs:eu-west-1:*:Handshake-*"
+    },
+    {
+      "Sid": "InvokeHandshakeFunctions",
+      "Effect": "Allow",
+      "Action": [
+        "lambda:GetFunction",
+        "lambda:InvokeFunction"
+      ],
+      "Resource": "arn:aws:lambda:eu-west-1:*:function:Handshake-*"
+    },
+    {
+      "Sid": "InvalidateWebCache",
+      "Effect": "Allow",
+      "Action": "cloudfront:CreateInvalidation",
+      "Resource": "arn:aws:cloudfront::*:distribution/*"
+    },
+    {
+      "Sid": "ReadHandshakeConfig",
+      "Effect": "Allow",
+      "Action": [
+        "ssm:GetParameter",
+        "ssm:GetParameters",
+        "ssm:GetParametersByPath"
+      ],
+      "Resource": "arn:aws:ssm:eu-west-1:*:parameter/handshake/*"
+    },
+    {
+      "Sid": "DecryptSecureStringConfig",
+      "Effect": "Allow",
+      "Action": "kms:Decrypt",
+      "Resource": "*",
+      "Condition": {
+        "StringEquals": {
+          "kms:ViaService": "ssm.eu-west-1.amazonaws.com"
+        }
+      }
+    },
+    {
+      "Sid": "InvokeAnthropicModels",
+      "Effect": "Allow",
+      "Action": [
+        "bedrock:InvokeModel",
+        "bedrock:InvokeModelWithResponseStream"
+      ],
+      "Resource": [
+        "arn:aws:bedrock:eu-west-1:*:inference-profile/*anthropic.*",
+        "arn:aws:bedrock:*::foundation-model/anthropic.*"
+      ]
+    }
+  ]
+}
