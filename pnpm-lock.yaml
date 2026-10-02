@@ -109,6 +109,9 @@ importers:
       '@aws-sdk/client-bedrock-runtime':
         specifier: ^3.1145.0
         version: 3.1145.0
+      '@aws-sdk/client-ssm':
+        specifier: ^3.1145.0
+        version: 3.1145.0
       '@channel3/sdk':
         specifier: ^4.1.0
         version: 4.1.0

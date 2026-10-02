@@ -2,9 +2,12 @@ import { paginateGetParametersByPath, SSMClient } from '@aws-sdk/client-ssm';
 import { configKeyNames, configKeys, type ConfigKeyName, type RawConfig } from './keys';
 import { ConfigError, parseConfig, type Config } from './parse';
 
-type Env = Record<string, string | undefined>;
+export type Env = Record<string, string | undefined>;
 
 export function ssmPathForStage(stage: string): string {
+  if (!/^[a-z][a-z0-9-]*$/.test(stage)) {
+    throw new ConfigError('HANDSHAKE_STAGE must be lowercase letters, digits, or dashes');
+  }
   return `/handshake/${stage}`;
 }
 
@@ -49,10 +52,6 @@ export async function loadConfig(env: Env = process.env): Promise<Config> {
   if (stage === undefined) {
     return parseConfig(readConfigFromEnv(env), (key: ConfigKeyName) => configKeys[key].env);
   }
-  if (!/^[a-z][a-z0-9-]*$/.test(stage)) {
-    throw new ConfigError('HANDSHAKE_STAGE must be lowercase letters, digits, or dashes');
-  }
-
   const path = ssmPathForStage(stage);
   const raw = await readConfigFromSsm(new SSMClient({}), path);
   return parseConfig(raw, (key: ConfigKeyName) => `SSM parameter ${path}/${configKeys[key].ssm}`);

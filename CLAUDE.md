@@ -78,6 +78,7 @@ pnpm test                # unit tests
 pnpm test:integration    # real PayPal sandbox and Channel3 calls
 pnpm eval                # agent evals and arena regression suite
 pnpm probe:paypal       # also probe:channel3, probe:bedrock; read .env
+pnpm ssm:put <stage>     # copy .env values to SSM; secrets as SecureString
 pnpm seed:sellers
 pnpm demo:reset
 pnpm cdk:synth

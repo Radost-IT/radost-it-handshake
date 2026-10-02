@@ -17,7 +17,8 @@
     "cdk:deploy": "pnpm --filter @handshake/web build:aws && pnpm --filter @handshake/infra exec cdk deploy",
     "probe:paypal": "tsx --env-file=.env scripts/probes/paypal-auth.ts",
     "probe:channel3": "tsx --env-file=.env scripts/probes/channel3-search.ts",
-    "probe:bedrock": "tsx --env-file=.env scripts/probes/bedrock-hello.ts"
+    "probe:bedrock": "tsx --env-file=.env scripts/probes/bedrock-hello.ts",
+    "ssm:put": "tsx --env-file=.env scripts/put-ssm-parameters.ts"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
