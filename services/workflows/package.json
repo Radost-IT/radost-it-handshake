@@ -1,0 +1,18 @@
+{
+  "name": "@handshake/workflows",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.1146.0",
+    "@aws-sdk/lib-dynamodb": "^3.1146.0",
+    "@handshake/config": "workspace:*",
+    "@handshake/core": "workspace:*",
+    "@handshake/paypal": "workspace:*",
+    "@handshake/settlement": "workspace:*",
+    "@handshake/store": "workspace:*",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "aws-sdk-client-mock": "^4.1.0"
+  }
+}

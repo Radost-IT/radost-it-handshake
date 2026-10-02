@@ -14,6 +14,7 @@ import { StringParameter } from 'aws-cdk-lib/aws-ssm';
 import { Nextjs } from 'cdk-nextjs-standalone';
 import type { Construct } from 'constructs';
 import { fileURLToPath } from 'node:url';
+import { createDealLifecycle } from './deal-lifecycle';
 
 export interface HandshakeStackProps extends StackProps {
   /** Selects the config under `/handshake/<stage>` in SSM. */
@@ -91,6 +92,33 @@ export class HandshakeStack extends Stack {
     table.grant(paypalWebhookFunction, 'dynamodb:PutItem', 'dynamodb:DeleteItem');
     eventBus.grantPutEventsTo(paypalWebhookFunction);
     this.grantConfigRead(paypalWebhookFunction, configPath);
+
+    const workflowsFunction = new NodejsFunction(this, 'WorkflowsFunction', {
+      entry: serviceSource('workflows', 'handler.ts'),
+      runtime: Runtime.NODEJS_22_X,
+      architecture: Architecture.ARM_64,
+      memorySize: 512,
+      // A delivery timer step can reauthorize and then void, two PayPal calls in a row.
+      timeout: Duration.seconds(30),
+      logGroup: new LogGroup(this, 'WorkflowsFunctionLogs', {
+        retention: RetentionDays.ONE_MONTH,
+      }),
+      bundling: { format: OutputFormat.ESM, minify: true, sourceMap: true },
+      environment: {
+        HANDSHAKE_STAGE: props.stage,
+        TABLE_NAME: table.tableName,
+        WEB_URL: `https://${props.domains.web}`,
+      },
+    });
+    table.grant(
+      workflowsFunction,
+      'dynamodb:GetItem',
+      'dynamodb:PutItem',
+      'dynamodb:DeleteItem',
+      'dynamodb:ConditionCheckItem',
+    );
+    this.grantConfigRead(workflowsFunction, configPath);
+    const dealLifecycle = createDealLifecycle(this, workflowsFunction);
 
     const certificateFromParameter = (id: string, parameterName: string) =>
       Certificate.fromCertificateArn(
@@ -172,6 +200,7 @@ export class HandshakeStack extends Stack {
     new CfnOutput(this, 'ApiUrl', { value: `https://${props.domains.api}` });
     new CfnOutput(this, 'WebUrl', { value: `https://${props.domains.web}` });
     new CfnOutput(this, 'TableName', { value: table.tableName });
+    new CfnOutput(this, 'DealLifecycleArn', { value: dealLifecycle.stateMachineArn });
     // Registered with PayPal by hand ([I-11]).
     new CfnOutput(this, 'WebhookUrl', { value: `https://${props.domains.api}/webhooks/paypal` });
   }

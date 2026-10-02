@@ -86,6 +86,35 @@ describe('HandshakeStack', () => {
     });
   });
 
+  it('runs the deal lifecycle in a state machine named after the stack', () => {
+    template.hasResourceProperties('AWS::StepFunctions::StateMachine', {
+      StateMachineName: 'Handshake-test-DealLifecycle',
+    });
+    template.hasResourceProperties('AWS::Lambda::Function', {
+      Environment: {
+        Variables: Match.objectLike({ WEB_URL: 'https://test-handshake.radostit.com' }),
+      },
+    });
+    const [stateMachine] = Object.values(
+      template.findResources('AWS::StepFunctions::StateMachine'),
+    );
+    const definition = JSON.stringify(stateMachine);
+    for (const state of [
+      'StartCheckout',
+      'AuthorizePayment',
+      'CheckDeliveryTimer',
+      'WaitForEvidence',
+      'WaitForVerdict',
+      'SettleByVerifier',
+      'WaitForHumanDecision',
+      'SettleByHuman',
+    ]) {
+      expect(definition).toContain(`\\"${state}\\"`);
+    }
+    expect(definition).toContain('waitForTaskToken');
+    expect(definition).toContain('TimeoutSecondsPath');
+  });
+
   it('throttles the API and serves it only on the custom domain', () => {
     template.hasResourceProperties('AWS::ApiGatewayV2::Api', { DisableExecuteApiEndpoint: true });
     template.hasResourceProperties('AWS::ApiGatewayV2::Stage', {
