@@ -58,7 +58,7 @@ Last checked: 2 Oct 2026. Console menus change often; if a label differs, look f
 - [ ] If new: choose the **Paid plan**. You still receive the free credits, but the Free plan closes the account when credits run out or after six months, which could take the demo offline during judging.
 - [ ] Enable **MFA** on the root user, then stop using the root user.
 - [ ] Open **IAM Identity Center**, enable it, and create a user for yourself with the **AdministratorAccess** permission set on this account.
-- [ ] Pick one region for everything. It must support Bedrock with the Anthropic models you want; check in the Bedrock console's model catalog.
+- [ ] Use **eu-west-1** (Ireland) for everything. Check in the Bedrock console's model catalog that the Anthropic models you want are listed there.
 - [ ] Open **Billing → Budgets** and create a monthly cost budget with email alerts at $10, $25, and $50.
 
 ### [I-7] Tools on your computer
@@ -67,7 +67,7 @@ Last checked: 2 Oct 2026. Console menus change often; if a label differs, look f
 - [x] AWS CLI v2: https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html
 - [] Log in to AWS from the terminal:
   ```bash
-  aws configure sso            # profile name: handshake, region: your chosen region
+  aws configure sso            # profile name: handshake, region: eu-west-1
   aws sso login --profile handshake
   aws sts get-caller-identity --profile handshake    # should print your account ID
   ```
@@ -78,7 +78,7 @@ Last checked: 2 Oct 2026. Console menus change often; if a label differs, look f
 - [ ] Open the **Playground**, select an Anthropic Claude model, and send a test prompt. If asked, fill in the one-time **use case form** (required once per account for Anthropic models).
 - [ ] Find the **inference profile IDs** for one fast model and one stronger model (newer Anthropic models are invoked through inference profiles):
   ```bash
-  aws bedrock list-inference-profiles --region <your-region> --profile handshake \
+  aws bedrock list-inference-profiles --region eu-west-1 --profile handshake \
     --query "inferenceProfileSummaries[].inferenceProfileId"
   ```
 - [ ] Note the two IDs for step [I-10].
@@ -101,7 +101,7 @@ Run these in your terminal. `read -rs` keeps secrets out of your shell history a
 ```bash
 export AWS_PROFILE=handshake
 export STAGE=dev
-export REGION=<your-region>
+export REGION=eu-west-1
 
 aws ssm put-parameter --name /handshake/$STAGE/paypal/client-id --type String --value "<client-id>" --overwrite
 read -rs SECRET && aws ssm put-parameter --name /handshake/$STAGE/paypal/client-secret --type SecureString --value "$SECRET" --overwrite; unset SECRET

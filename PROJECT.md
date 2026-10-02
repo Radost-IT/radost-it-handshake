@@ -155,7 +155,7 @@ Terminal states: `SETTLED`, `REFUSED`, `CANCELLED`, `ABANDONED`. Every transitio
 ### Phase 0 — Accounts and access (Oct 2–5)
 
 - [ ] Human completes **[I-1] to [I-9]**.
-- [ ] Decide the AWS region (must support Bedrock and the chosen Anthropic inference profiles).
+- [x] Decide the AWS region: `eu-west-1` (Ireland). Anthropic models there run through EU cross-region inference profiles (`eu.` prefix); confirm the IDs in [I-8].
 - [ ] Confirm the name "Handshake by Radost IT" and the repo slug `radost-it-handshake`.
 - [ ] Name one specific target audience and the problem it has today. It drives the README, the video opening, and the Devpost text.
 
