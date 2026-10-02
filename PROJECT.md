@@ -167,7 +167,7 @@ Terminal states: `SETTLED`, `REFUSED`, `CANCELLED`, `ABANDONED`. Every transitio
 - [ ] Human completes **[I-10]** (SSM parameters, CDK bootstrap).
 - [ ] pnpm monorepo with the layout above, TypeScript strict, ESLint, Vitest, Prettier.
 - [ ] `packages/config`: load from `.env` locally or from SSM by stage on AWS; keep `.env.example` in sync; zod validation; fail-fast errors naming missing keys only.
-- [ ] CDK app deploys an empty `dev` stack: DynamoDB table, HTTP API with a health route, S3 + CloudFront with a placeholder page.
+- [ ] CDK app deploys an empty `dev` stack: DynamoDB table, HTTP API with a health route, S3 + CloudFront with a placeholder page. Name stacks `Handshake-<stage>` and keep generated resource names under that prefix, because the policies in `infra/iam/` are scoped to it.
 - [ ] `scripts/probes/paypal-auth.ts`: get a sandbox access token and print success or failure, never the token.
 - [ ] `scripts/probes/channel3-search.ts`: one product search, printing titles and prices.
 - [ ] `scripts/probes/bedrock-hello.ts`: one Converse call per configured model.

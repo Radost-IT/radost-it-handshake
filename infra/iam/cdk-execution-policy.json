@@ -1,0 +1,146 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "ReadCdkBootstrapVersionAndHandshakeParameters",
+      "Effect": "Allow",
+      "Action": "ssm:GetParameters",
+      "Resource": [
+        "arn:aws:ssm:eu-west-1:*:parameter/cdk-bootstrap/hnb659fds/version",
+        "arn:aws:ssm:eu-west-1:*:parameter/handshake/*"
+      ]
+    },
+    {
+      "Sid": "ManageHandshakeRoles",
+      "Effect": "Allow",
+      "Action": [
+        "iam:CreateRole",
+        "iam:DeleteRole",
+        "iam:GetRole",
+        "iam:UpdateRole",
+        "iam:UpdateAssumeRolePolicy",
+        "iam:PutRolePolicy",
+        "iam:GetRolePolicy",
+        "iam:DeleteRolePolicy",
+        "iam:ListRolePolicies",
+        "iam:ListAttachedRolePolicies",
+        "iam:TagRole",
+        "iam:UntagRole"
+      ],
+      "Resource": "arn:aws:iam::*:role/Handshake-*"
+    },
+    {
+      "Sid": "AttachOnlyAwsServiceRolePolicies",
+      "Effect": "Allow",
+      "Action": [
+        "iam:AttachRolePolicy",
+        "iam:DetachRolePolicy"
+      ],
+      "Resource": "arn:aws:iam::*:role/Handshake-*",
+      "Condition": {
+        "ArnLike": { "iam:PolicyARN": "arn:aws:iam::aws:policy/service-role/*" }
+      }
+    },
+    {
+      "Sid": "PassHandshakeRolesToServices",
+      "Effect": "Allow",
+      "Action": "iam:PassRole",
+      "Resource": "arn:aws:iam::*:role/Handshake-*",
+      "Condition": {
+        "StringEquals": {
+          "iam:PassedToService": [
+            "lambda.amazonaws.com",
+            "states.amazonaws.com",
+            "events.amazonaws.com",
+            "scheduler.amazonaws.com",
+            "apigateway.amazonaws.com"
+          ]
+        }
+      }
+    },
+    {
+      "Sid": "ManageHandshakeTable",
+      "Effect": "Allow",
+      "Action": "dynamodb:*",
+      "Resource": [
+        "arn:aws:dynamodb:eu-west-1:*:table/Handshake-*",
+        "arn:aws:dynamodb:eu-west-1:*:table/Handshake-*/*"
+      ]
+    },
+    {
+      "Sid": "ManageHandshakeFunctions",
+      "Effect": "Allow",
+      "Action": "lambda:*",
+      "Resource": [
+        "arn:aws:lambda:eu-west-1:*:function:Handshake-*",
+        "arn:aws:lambda:eu-west-1:*:layer:*"
+      ]
+    },
+    {
+      "Sid": "ManageHandshakeBuckets",
+      "Effect": "Allow",
+      "Action": "s3:*",
+      "Resource": [
+        "arn:aws:s3:::handshake-*",
+        "arn:aws:s3:::handshake-*/*"
+      ]
+    },
+    {
+      "Sid": "ReadCdkAssetsForLambdaCode",
+      "Effect": "Allow",
+      "Action": "s3:GetObject",
+      "Resource": "arn:aws:s3:::cdk-hnb659fds-assets-*-eu-west-1/*"
+    },
+    {
+      "Sid": "ManageHandshakeLogGroups",
+      "Effect": "Allow",
+      "Action": "logs:*",
+      "Resource": [
+        "arn:aws:logs:eu-west-1:*:log-group:/aws/lambda/Handshake-*",
+        "arn:aws:logs:eu-west-1:*:log-group:Handshake-*"
+      ]
+    },
+    {
+      "Sid": "ManageServicesWithGeneratedNames",
+      "Effect": "Allow",
+      "Action": [
+        "apigateway:*",
+        "states:*",
+        "events:*",
+        "scheduler:*",
+        "sqs:*",
+        "sns:*",
+        "cloudwatch:PutMetricAlarm",
+        "cloudwatch:DeleteAlarms",
+        "cloudwatch:DescribeAlarms",
+        "cloudwatch:TagResource",
+        "cloudwatch:UntagResource",
+        "logs:CreateLogDelivery",
+        "logs:GetLogDelivery",
+        "logs:UpdateLogDelivery",
+        "logs:DeleteLogDelivery",
+        "logs:ListLogDeliveries",
+        "logs:PutResourcePolicy",
+        "logs:DescribeResourcePolicies",
+        "logs:DescribeLogGroups"
+      ],
+      "Resource": "*",
+      "Condition": {
+        "StringEquals": { "aws:RequestedRegion": "eu-west-1" }
+      }
+    },
+    {
+      "Sid": "ManageGlobalServices",
+      "Effect": "Allow",
+      "Action": [
+        "cloudfront:*",
+        "budgets:ViewBudget",
+        "budgets:ModifyBudget",
+        "budgets:TagResource",
+        "budgets:UntagResource",
+        "budgets:ListTagsForResource"
+      ],
+      "Resource": "*"
+    }
+  ]
+}

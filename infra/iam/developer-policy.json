@@ -1,0 +1,69 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "DeployThroughCdkBootstrapRoles",
+      "Effect": "Allow",
+      "Action": "sts:AssumeRole",
+      "Resource": "arn:aws:iam::*:role/cdk-hnb659fds-*-eu-west-1"
+    },
+    {
+      "Sid": "ManageHandshakeParameters",
+      "Effect": "Allow",
+      "Action": [
+        "ssm:PutParameter",
+        "ssm:GetParameter",
+        "ssm:GetParameters",
+        "ssm:GetParametersByPath",
+        "ssm:DeleteParameter",
+        "ssm:AddTagsToResource",
+        "ssm:ListTagsForResource"
+      ],
+      "Resource": "arn:aws:ssm:eu-west-1:*:parameter/handshake/*"
+    },
+    {
+      "Sid": "InvokeAnthropicModels",
+      "Effect": "Allow",
+      "Action": [
+        "bedrock:InvokeModel",
+        "bedrock:InvokeModelWithResponseStream"
+      ],
+      "Resource": [
+        "arn:aws:bedrock:eu-west-1:*:inference-profile/*anthropic.*",
+        "arn:aws:bedrock:*::foundation-model/anthropic.*"
+      ]
+    },
+    {
+      "Sid": "ReadHandshakeStacksAndLogs",
+      "Effect": "Allow",
+      "Action": [
+        "cloudformation:DescribeStacks",
+        "cloudformation:DescribeStackEvents",
+        "logs:FilterLogEvents",
+        "logs:GetLogEvents",
+        "logs:DescribeLogStreams",
+        "logs:StartLiveTail"
+      ],
+      "Resource": [
+        "arn:aws:cloudformation:eu-west-1:*:stack/Handshake-*/*",
+        "arn:aws:logs:eu-west-1:*:log-group:/aws/lambda/Handshake-*"
+      ]
+    },
+    {
+      "Sid": "ListActionsWithoutResourceScope",
+      "Effect": "Allow",
+      "Action": [
+        "ssm:DescribeParameters",
+        "bedrock:ListInferenceProfiles",
+        "bedrock:GetInferenceProfile",
+        "bedrock:ListFoundationModels",
+        "bedrock:GetFoundationModel",
+        "logs:DescribeLogGroups"
+      ],
+      "Resource": "*",
+      "Condition": {
+        "StringEquals": { "aws:RequestedRegion": "eu-west-1" }
+      }
+    }
+  ]
+}

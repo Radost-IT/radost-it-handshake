@@ -54,23 +54,28 @@ Last checked: 2 Oct 2026. Console menus change often; if a label differs, look f
 - [ ] If credits run low later, ask in the `#channel3` channel on the PayPal Discord for a top-up.
 
 ### [I-6] AWS account
-- [ ] Create an AWS account at https://aws.amazon.com, or use an existing one.
-- [ ] If new: choose the **Paid plan**. You still receive the free credits, but the Free plan closes the account when credits run out or after six months, which could take the demo offline during judging.
-- [ ] Enable **MFA** on the root user, then stop using the root user.
-- [ ] Open **IAM Identity Center**, enable it, and create a user for yourself with the **AdministratorAccess** permission set on this account.
-- [ ] Use **eu-west-1** (Ireland) for everything. Check in the Bedrock console's model catalog that the Anthropic models you want are listed there.
-- [ ] Open **Billing → Budgets** and create a monthly cost budget with email alerts at $10, $25, and $50.
+- [x] Create an AWS account at https://aws.amazon.com, or use an existing one.
+- [x] If new: choose the **Paid plan**. You still receive the free credits, but the Free plan closes the account when credits run out or after six months, which could take the demo offline during judging.
+- [x] Enable **MFA** on the root user, then stop using the root user.
+- [x] Open **IAM Identity Center**, enable it, and create a user for yourself with the **AdministratorAccess** permission set on this account.
+- [x] Use **eu-west-1** (Ireland) for everything. Check in the Bedrock console's model catalog that the Anthropic models you want are listed there.
+- [x] Open **Billing → Budgets** and create a monthly cost budget with email alerts at $10, $25, and $50.
 
 ### [I-7] Tools on your computer
 - [x] Node.js LTS (20 or newer): https://nodejs.org
 - [x] pnpm: `npm install -g pnpm`
 - [x] AWS CLI v2: https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html
-- [] Log in to AWS from the terminal:
+- [ ] Create a least-privilege IAM user for the terminal. Do this in the console, logged in as your Identity Center admin:
+  1. **IAM → Policies → Create policy → JSON**. Paste `infra/iam/cdk-execution-policy.json` and name it `HandshakeCdkExecution`.
+  2. Create another policy from `infra/iam/developer-policy.json` and name it `HandshakeDeveloper`.
+  3. **IAM → Users → Create user** `handshake-dev`, with no console access. Attach `HandshakeDeveloper`.
+  4. Open the user, go to **Security credentials → Create access key**, and choose **Command Line Interface**.
+- [ ] Add the key to a local profile and check it:
   ```bash
-  aws configure sso            # profile name: handshake, region: eu-west-1
-  aws sso login --profile handshake
-  aws sts get-caller-identity --profile handshake    # should print your account ID
+  aws configure --profile handshake    # paste the key and secret, region eu-west-1, output json
+  aws sts get-caller-identity --profile handshake    # should print your account ID and the handshake-dev user
   ```
+- [ ] Delete the access key after judging ends.
 - [x] Docker is **not** required.
 
 ### [I-8] Bedrock access to Anthropic models
@@ -84,12 +89,12 @@ Last checked: 2 Oct 2026. Console menus change often; if a label differs, look f
 - [ ] Note the two IDs for step [I-10].
 
 ### [I-9] GitHub, Claude Code, and APIMatic
-- [ ] Create a GitHub repo named `radost-it-handshake`. Keeping it private until submission is fine; it must be public by the deadline.
-- [ ] Add an **MIT** license when creating the repo (GitHub shows it in the About section).
-- [ ] Clone the repo and copy `CLAUDE.md`, `PROJECT.md`, and `INSTRUCTIONS.md` into its root. Commit them.
-- [ ] Install Claude Code: https://docs.claude.com/en/docs/claude-code/overview
+- [x] Create a GitHub repo named `radost-it-handshake`. Keeping it private until submission is fine; it must be public by the deadline.
+- [x] Add an **MIT** license when creating the repo (GitHub shows it in the About section).
+- [x] Clone the repo and copy `CLAUDE.md`, `PROJECT.md`, and `INSTRUCTIONS.md` into its root. Commit them.
+- [x] Install Claude Code: https://docs.claude.com/en/docs/claude-code/overview
 - [ ] Install the **APIMatic Context Plugin for PayPal** in Claude Code by following APIMatic's resource page, linked from https://paypalaihackathon.devpost.com/details/apimatic. No extra APIMatic credentials are needed for PayPal.
-- [ ] Start Claude Code in the repo and ask it to begin **Phase 1** of `PROJECT.md`.
+- [x] Start Claude Code in the repo and ask it to begin **Phase 1** of `PROJECT.md`.
 
 ---
 
@@ -112,9 +117,14 @@ aws ssm put-parameter --name /handshake/$STAGE/bedrock/model-fast --type String 
 aws ssm put-parameter --name /handshake/$STAGE/bedrock/model-smart --type String --value "<smart-inference-profile-id>" --overwrite
 aws ssm put-parameter --name /handshake/$STAGE/limits/daily-token-budget --type String --value "2000000" --overwrite
 aws ssm put-parameter --name /handshake/$STAGE/limits/negotiation-max-turns --type String --value "8" --overwrite
-
-npx aws-cdk@latest bootstrap aws://$(aws sts get-caller-identity --query Account --output text)/$REGION
 ```
+
+- [ ] Bootstrap CDK once from **AWS CloudShell** in eu-west-1, logged in as your Identity Center admin. Bootstrap creates IAM roles, which `handshake-dev` is not allowed to do. Deployments then run through those roles, and CloudFormation is limited to `HandshakeCdkExecution`:
+  ```bash
+  ACCOUNT=$(aws sts get-caller-identity --query Account --output text)
+  npx aws-cdk@latest bootstrap aws://$ACCOUNT/eu-west-1 \
+    --cloudformation-execution-policies arn:aws:iam::$ACCOUNT:policy/HandshakeCdkExecution
+  ```
 
 - [ ] Repeat the `put-parameter` commands with `STAGE=demo` before the first demo deploy (Phase 5).
 - [ ] The webhook ID parameter is added in [I-11].
