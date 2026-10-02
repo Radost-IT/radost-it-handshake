@@ -26,6 +26,7 @@ export {
   type EscrowHold,
 } from './deal';
 export { dealSchema } from './deal-schema';
+export { checkEvidence, deliveryEvidenceSchema, type DeliveryEvidence } from './evidence';
 export { EscrowExpiredError, planDeliveryTimer, type DeliveryTimerStep } from './delivery-timer';
 export { mandateSchema, type Mandate } from './mandate';
 export {
