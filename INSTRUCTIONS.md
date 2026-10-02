@@ -162,9 +162,9 @@ aws ssm put-parameter --name /handshake/$STAGE/limits/negotiation-max-turns --ty
   - When a later phase uses a new AWS service from a Lambda (Step Functions, EventBridge, WebSocket API), Claude Code updates `workload-boundary.json` and this step comes back: paste the new JSON into `HandshakeWorkloadBoundary` before deploying.
 - [ ] The first boundary did not let the web deploy write to the CDK assets bucket, so the 2 Oct prod deploy failed and its rollback stopped in `UPDATE_ROLLBACK_FAILED`. The rollback tried to remove the boundary from each role, which the execution policy rightly forbids. To recover:
   1. Open **IAM → Policies → HandshakeWorkloadBoundary → Edit → JSON** and replace it with the current `infra/iam/workload-boundary.json`.
-  2. Finish the rollback and leave the boundary on the roles. The next deploy keeps it there anyway.
+  2. Finish the rollback and leave the boundary on the roles. The next deploy keeps it there anyway. Run this in **AWS CloudShell** in eu-west-1, logged in as your Identity Center admin; `handshake-dev` may not continue a rollback.
      ```bash
-     AWS_PROFILE=handshake aws cloudformation continue-update-rollback --region eu-west-1 \
+     aws cloudformation continue-update-rollback --region eu-west-1 \
        --stack-name Handshake-prod --resources-to-skip \
        AWS679f53fac002430cb0da5b7982bd2287ServiceRoleC1EA0FF2 \
        CustomS3AutoDeleteObjectsCustomResourceProviderRole3B1BD092 \
@@ -175,7 +175,7 @@ aws ssm put-parameter --name /handshake/$STAGE/limits/negotiation-max-turns --ty
        WebRevalidationQueueFnServiceRoleFA4E4393 \
        WebServerBucketDeploymentFnServiceRoleA87AD52C \
        WebStaticAssetsBucketDeploymentFnServiceRole097FD807
-     AWS_PROFILE=handshake aws cloudformation wait stack-rollback-complete --region eu-west-1 --stack-name Handshake-prod
+     aws cloudformation wait stack-rollback-complete --region eu-west-1 --stack-name Handshake-prod
      ```
   3. Deploy again: `AWS_PROFILE=handshake pnpm cdk:deploy`.
 - [ ] The webhook ID parameter is added in [I-11].
