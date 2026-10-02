@@ -39,14 +39,7 @@ export class ConfigError extends Error {
 
 export function parseConfig(raw: RawConfig, source: (key: ConfigKeyName) => string): Config {
   const result = rawConfigSchema.safeParse(raw);
-  if (!result.success) {
-    const problems = result.error.issues.map((issue) => {
-      const key = issue.path[0] as ConfigKeyName;
-      const reason = raw[key] === undefined ? 'missing' : 'invalid';
-      return `${source(key)} is ${reason}`;
-    });
-    throw new ConfigError(`Invalid configuration: ${[...new Set(problems)].join('; ')}`);
-  }
+  if (!result.success) throw configErrorFromIssues(result.error, raw, source);
 
   const values = result.data;
   return {
@@ -67,4 +60,30 @@ export function parseConfig(raw: RawConfig, source: (key: ConfigKeyName) => stri
       negotiationMaxTurns: values.negotiationMaxTurns,
     },
   };
+}
+
+/**
+ * Checks the values that are present and ignores missing keys, so a partial
+ * config (for example while a third-party account is pending) can still be
+ * stored. Throws `ConfigError` naming each invalid key, never its value.
+ */
+export function validatePresentConfigValues(
+  raw: RawConfig,
+  source: (key: ConfigKeyName) => string,
+): void {
+  const result = rawConfigSchema.partial().safeParse(raw);
+  if (!result.success) throw configErrorFromIssues(result.error, raw, source);
+}
+
+function configErrorFromIssues(
+  error: z.ZodError,
+  raw: RawConfig,
+  source: (key: ConfigKeyName) => string,
+): ConfigError {
+  const problems = error.issues.map((issue) => {
+    const key = issue.path[0] as ConfigKeyName;
+    const reason = raw[key] === undefined ? 'missing' : 'invalid';
+    return `${source(key)} is ${reason}`;
+  });
+  return new ConfigError(`Invalid configuration: ${[...new Set(problems)].join('; ')}`);
 }

@@ -90,6 +90,15 @@ describe('ssmParametersFromEnv', () => {
     );
   });
 
+  it('skips a missing required key and stores the others', () => {
+    const parameters = ssmParametersFromEnv({ ...validEnv, CHANNEL3_API_KEY: '' }, 'prod');
+
+    expect(parameters).toHaveLength(8);
+    expect(parameters.map((parameter) => parameter.name)).not.toContain(
+      '/handshake/prod/channel3/api-key',
+    );
+  });
+
   it('refuses to build parameters from an invalid config', () => {
     const env = { ...validEnv, PAYPAL_BASE_URL: 'https://api-m.paypal.com' };
 

@@ -1,7 +1,7 @@
 import type { ParameterType } from '@aws-sdk/client-ssm';
 import { configKeyNames, configKeys } from './keys';
 import { readConfigFromEnv, ssmPathForStage, type Env } from './load';
-import { ConfigError, parseConfig } from './parse';
+import { ConfigError, validatePresentConfigValues } from './parse';
 
 export interface SsmParameter {
   name: string;
@@ -40,8 +40,8 @@ export function ssmParameterTypeForEnvName(envName: string): ParameterType {
 
 /**
  * Builds the SSM parameters for a stage from environment variables. Validates
- * the whole config first and throws `ConfigError` like `loadConfig`. Keys with
- * an empty or missing value are left out. Deploy-time values (certificate
+ * every value that is set and throws `ConfigError` like `loadConfig`. Keys with
+ * an empty or missing value are left out, so `loadConfig` reports them later. Deploy-time values (certificate
  * ARNs, hosted zone ID) go to their shared paths, not under the stage.
  */
 export function ssmParametersFromEnv(env: Env, stage: string): SsmParameter[] {
@@ -51,7 +51,7 @@ export function ssmParametersFromEnv(env: Env, stage: string): SsmParameter[] {
 function stageParametersFromEnv(env: Env, stage: string): SsmParameter[] {
   const path = ssmPathForStage(stage);
   const raw = readConfigFromEnv(env);
-  parseConfig(raw, (key) => configKeys[key].env);
+  validatePresentConfigValues(raw, (key) => configKeys[key].env);
 
   return configKeyNames.flatMap((key) => {
     const value = raw[key];
