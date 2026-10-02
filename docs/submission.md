@@ -62,6 +62,7 @@ Near-duplicates of known attacks get a lower novelty, so copying a known trick e
 - **Agents.** Buyer, seller, verifier, and arena judge agents run on Amazon Bedrock (Anthropic Claude models) through the Converse API with tool use and JSON output. All third-party text (Channel3 data, seller messages, evidence) is wrapped and labeled as untrusted data in prompts. The verifier runs deterministic checks first (price, currency, product ID, deadline) and asks the model only about the criteria that need judgment. Low confidence escalates to a human.
 - **Products.** Channel3 supplies real product data. Results are cached in DynamoDB with a TTL to save credits.
 - **Infrastructure.** AWS serverless, defined in AWS CDK: API Gateway (HTTP and WebSocket), Lambda on Node 20, Step Functions for the deal lifecycle (with `waitForTaskToken` for human approval and evidence), EventBridge for PayPal webhook events and timers, DynamoDB single-table design, SSM Parameter Store for configuration and secrets, and S3 with CloudFront for the React app.
+- **Frontend.** React, Vite, and Tailwind. AG Grid Community shows the audit log, active escrow holds, arena attack history, and leaderboard. AG Charts Community shows the defense win rate over time and attacks by category. Both are themed to match the app in dark and light mode.
 - **Integration help.** We wrote the PayPal client with the APIMatic Context Plugin in Claude Code, so endpoint and model shapes came from PayPal's spec instead of guesses.
 - **Tests.** Unit tests for the pure domain code, integration tests against the real PayPal sandbox, and an eval suite of scripted deals plus every arena regression case.
 
@@ -99,7 +100,7 @@ Near-duplicates of known attacks get a lower novelty, so copying a known trick e
 
 Up to 25 tags:
 
-`typescript`, `node.js`, `react`, `vite`, `tailwindcss`, `paypal-orders-api`, `paypal-payments-api`, `paypal-payouts`, `paypal-webhooks`, `paypal-sandbox`, `amazon-bedrock`, `anthropic-claude`, `channel3`, `apimatic`, `claude-code`, `aws-lambda`, `aws-step-functions`, `amazon-api-gateway`, `amazon-dynamodb`, `amazon-eventbridge`, `aws-cdk`, `amazon-cloudfront`, `aws-ssm`, `zod`, `vitest`
+`typescript`, `node.js`, `react`, `vite`, `tailwindcss`, `paypal-orders-api`, `paypal-payments-api`, `paypal-payouts`, `paypal-webhooks`, `paypal-sandbox`, `amazon-bedrock`, `anthropic-claude`, `channel3`, `apimatic`, `claude-code`, `aws-lambda`, `aws-step-functions`, `amazon-api-gateway`, `amazon-dynamodb`, `amazon-eventbridge`, `aws-cdk`, `amazon-cloudfront`, `ag-grid`, `ag-charts`
 
 ---
 
@@ -127,8 +128,8 @@ Up to 25 tags:
 | 8 | Arena attack builder with a prompt-injection listing | Play the scam seller and try to fool the agents. |
 | 9 | Blocked attack, with the blocked action and the reason on screen | Attack blocked, and the reason is shown in plain words. |
 | 10 | Successful exploit: bounty paid through PayPal Payouts, new regression case created | A working exploit earns a sandbox bounty and becomes a test. |
-| 11 | Leaderboard with scores and the defense win rate | Top attackers, and how often the defenses held. |
-| 12 | Audit log of deal events with PayPal IDs | Every state change is recorded and can be traced to a PayPal call. |
+| 11 | Leaderboard in AG Grid next to the AG Charts defense win rate chart | Top attackers, and how often the defenses held. |
+| 12 | Audit log of deal events with PayPal IDs, in AG Grid with a filter applied | Every state change is recorded and can be traced to a PayPal call. |
 | 13 | Architecture diagram (text and shapes only, no vendor logos) | Agents propose, policy checks, settlement moves money. |
 
 ---
@@ -162,10 +163,11 @@ Up to 25 tags:
 
 ## Additional sponsor tools
 
-Select: **APIMatic**, **Channel3**
+Select: **AG Grid**, **APIMatic**, **Channel3**
 
 - **Channel3:** product search and product details for the buyer agent, and the source data for seeding seller agents. Cached in DynamoDB.
 - **APIMatic:** the Context Plugin for PayPal, used throughout the PayPal integration.
+- **AG Grid:** AG Grid Community for the audit log, escrow holds, arena attack history, and leaderboard; AG Charts Community for defense statistics.
 
 ---
 
@@ -173,7 +175,7 @@ Select: **APIMatic**, **Channel3**
 
 https://github.com/Radost-IT/radost-it-handshake
 
-The README covers setup, the MIT license, how PayPal and AI are used (with an API mapping table), and the Channel3 and APIMatic integrations.
+The README covers setup, the MIT license, how PayPal and AI are used (with an API mapping table), and the Channel3, APIMatic, and AG Grid integrations.
 
 ---
 
@@ -219,4 +221,11 @@ Why: **Draft note:** write at the end from real experience. Points to note as we
 
 ## AG Grid experience
 
-Not used.
+We used AG Grid Community and AG Charts Community. The Community editions are free and do not expire, so the demo stays open for judges until the end of judging.
+
+**Draft note:** write the final text from real experience in Phase 5. Track:
+
+- Theming the grid and charts to match our dark and light themes.
+- Keyboard navigation and accessibility out of the box.
+- Bundle size after importing only the modules we use.
+- Anything we wanted that is Enterprise-only, and how we worked around it.

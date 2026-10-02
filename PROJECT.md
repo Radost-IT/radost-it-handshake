@@ -16,7 +16,8 @@ Tick boxes as steps are completed. Manual (human) steps are in `INSTRUCTIONS.md`
 ## Prize targets
 
 - Best Use of Agentic Commerce, or a Grand Prize
-- Sponsor prizes: Channel3 (one award) and APIMatic (three awards; we use its Context Plugin). Select both on Devpost.
+- Sponsor prizes: Channel3 (one award), APIMatic (three awards; we use its Context Plugin), and AG Grid (five awards; we use AG Grid Community and AG Charts Community). Select all three on Devpost.
+- AG Grid judges look at visual polish (theming, layout) and technical use. Their page favors AG Studio, but it is only a 45-day trial and would expire before judging ends, so we use the free Community editions only.
 - A project can win at most one Grand or Honorable Mention prize plus one Sponsor prize.
 
 ## Judging criteria
@@ -70,7 +71,7 @@ Prompt injection in a listing, fake urgency, price bait-and-switch after agreeme
 
 | Concern | Choice |
 |---|---|
-| Frontend | React + Vite + Tailwind, S3 + CloudFront |
+| Frontend | React + Vite + Tailwind, AG Grid Community (tables), AG Charts Community (charts), S3 + CloudFront |
 | REST API | API Gateway HTTP API + Lambda (Node 20+, TypeScript) |
 | Live updates | API Gateway WebSocket API |
 | Deal lifecycle | Step Functions Standard, `waitForTaskToken` for human approval and evidence |
@@ -204,7 +205,8 @@ Done when an AI-driven deal completes end to end in the deployed app and evals p
 - [ ] Arena judge agent and scoring (severity × novelty, near-duplicates score less).
 - [ ] Sandbox Payouts for successful exploits, to sandbox personal accounts only; human verifies **[I-12]**.
 - [ ] Regression generator: a successful attack becomes a JSON case in `evals/regressions/` and in DynamoDB.
-- [ ] Leaderboard and defense win rate.
+- [ ] Leaderboard (AG Grid) and defense win rate over time and attacks by category (AG Charts).
+- [ ] Arena attack history in AG Grid: result, blocked action and reason, link to the regression case.
 - [ ] Run every catalog attack ourselves, fix what breaks, keep at least one realistic success for the demo story.
 
 Done when a successful attack produces a payout and a regression case, and the patched system then blocks it.
@@ -212,6 +214,8 @@ Done when a successful attack produces a payout and a regression case, and the p
 ### Phase 5 — Product polish (Nov 3–8)
 
 - [ ] Screens: landing, deal room, escrow timeline, evidence and verification, arena, leaderboard, audit log.
+- [ ] Audit log and active escrow holds (amount, time to expiry, reauthorization status) in AG Grid, with sorting, filtering, and quick search.
+- [ ] AG Grid and AG Charts themed to match the app in dark and light mode, keyboard navigable, loaded only on the screens that use them. Community modules only, imported one by one.
 - [ ] Clear states for loading, errors, budget exhausted, and escalation.
 - [ ] Dark and light themes; keyboard navigation; color is never the only signal.
 - [ ] Cost guards in place and tested: throttling, reserved concurrency, token budgets, Budgets alarms.
@@ -222,7 +226,7 @@ Done when a successful attack produces a payout and a regression case, and the p
 
 ### Phase 6 — Submission (Nov 9–12)
 
-- [ ] README: problem, audience, try-it-in-2-minutes (hosted URL, sandbox logins, judge access code), local run, architecture diagram, PayPal API mapping table, Channel3 usage, APIMatic usage, Bedrock usage, limitations.
+- [ ] README: problem, audience, try-it-in-2-minutes (hosted URL, sandbox logins, judge access code), local run, architecture diagram, PayPal API mapping table, Channel3 usage, APIMatic usage, AG Grid and AG Charts usage, Bedrock usage, limitations.
 - [ ] README states that the hosted URL is the supported test path, and that a local run needs your own Channel3 key, PayPal sandbox app, and AWS account. No real keys in the repo.
 - [ ] MIT `LICENSE` at the repo root; repository public.
 - [ ] `docs/demo-script.md` finalized; human records the video **[I-14]**.

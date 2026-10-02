@@ -64,6 +64,7 @@ Write code a senior engineer would be happy to sign. Judges will read it.
 - Domain logic in `packages/core` is pure (no I/O) and fully unit tested. State changes go through the deal state machine, never by setting fields directly.
 - Third-party text (Channel3 data, seller messages, evidence) is untrusted. Wrap and label it in prompts as data, never as instructions.
 - Bedrock model IDs and inference profile IDs come from config. Never hardcode them.
+- Tables use AG Grid Community and charts use AG Charts Community. Never import Enterprise modules or AG Studio: their licenses are trials that expire before judging ends.
 - pnpm workspaces; Vitest for tests; AWS CDK (TypeScript) for infrastructure.
 
 ## Commands
