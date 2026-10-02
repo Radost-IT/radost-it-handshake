@@ -284,7 +284,7 @@ Done when the three probes pass against real services and `pnpm cdk:deploy` crea
 ### Phase 2 — Escrow core (Oct 10–18)
 
 - [x] `packages/core`: money helpers, deal contract schema, deal state machine, policy engine; full unit tests.
-- [ ] `packages/paypal`: create order (`intent=AUTHORIZE`), authorize, capture, void, reauthorize, get order; idempotency keys; typed errors with `debug_id`. Use the APIMatic Context Plugin for every SDK call.
+- [x] `packages/paypal`: create order (`intent=AUTHORIZE`), authorize, capture, void, reauthorize, get order; idempotency keys; typed errors with `debug_id`. Use the APIMatic Context Plugin for every SDK call.
 - [ ] Probe and document real sandbox authorization limits (honor period, reauthorization window, void and capture behavior). Put the values in SSM, not code.
 - [ ] `packages/settlement`: executes approved proposals only.
 - [ ] Step Functions `DealLifecycle` covering authorize → wait for evidence → capture or void, plus the reauthorization timer.

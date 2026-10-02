@@ -39,3 +39,11 @@ The Next.js construct adds a DynamoDB table with auto scaling and an SQS queue w
 *2 Oct 2026 · Configuration*
 
 The script that copies `.env` to SSM first decided which keys were secrets by name endings such as `_SECRET` or `_KEY`. A new secret with a different name would have been stored as a plain `String` parameter. Each key in `packages/config` is now marked `secret` explicitly, and only those keys become `SecureString`.
+
+## One failed PayPal token request could break a warm Lambda
+
+*2 Oct 2026 · PayPal SDK*
+
+We expected the PayPal Server SDK to fetch a new OAuth token after a failed one. Reading its auth adapter showed that it stores the token request as a shared promise. If that promise rejects once, every later call on the same client re-throws the same error. Our client lives outside the Lambda handler, so one PayPal blip would break every request until the container is recycled.
+
+We now pass our own `oAuthTokenProvider`. On failure it keeps the error and returns an expired token. That call fails with the SDK's `OAuth token is expired. A valid token is needed to make API calls.`, which we replace with the original token error. The next call fetches a fresh token. A unit test covers the failure and the recovery.

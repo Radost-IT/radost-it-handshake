@@ -1,0 +1,14 @@
+{
+  "name": "@handshake/paypal",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@handshake/config": "workspace:*",
+    "@handshake/core": "workspace:*",
+    "@paypal/paypal-server-sdk": "2.5.0",
+    "zod": "^4.6.5"
+  }
+}
