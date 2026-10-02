@@ -13,6 +13,6 @@ if (typeof stage !== 'string' || !stages.includes(stage)) {
 
 new HandshakeStack(app, `Handshake-${stage}`, {
   stage,
-  webDistPath: fileURLToPath(new URL('../../apps/web/dist', import.meta.url)),
+  webAppPath: fileURLToPath(new URL('../../apps/web', import.meta.url)),
   env: { account: process.env.CDK_DEFAULT_ACCOUNT, region },
 });

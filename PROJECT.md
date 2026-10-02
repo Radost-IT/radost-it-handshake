@@ -71,7 +71,7 @@ Prompt injection in a listing, fake urgency, price bait-and-switch after agreeme
 
 | Concern | Choice |
 |---|---|
-| Frontend | React + Vite + Tailwind, AG Grid Community (tables), AG Charts Community (charts), S3 + CloudFront |
+| Frontend | Next.js App Router + Tailwind, AG Grid Community (tables), AG Charts Community (charts). Built with OpenNext and deployed by the `cdk-nextjs-standalone` construct: CloudFront, S3 for static assets, Lambda for server rendering |
 | REST API | API Gateway HTTP API + Lambda (Node 20+, TypeScript) |
 | Live updates | API Gateway WebSocket API |
 | Deal lifecycle | Step Functions Standard, `waitForTaskToken` for human approval and evidence |
@@ -88,7 +88,7 @@ Cost guards: API Gateway throttling, Lambda reserved concurrency on public endpo
 ### Repository layout
 
 ```
-apps/web                 React SPA
+apps/web                 Next.js app (App Router)
 services/api             REST Lambda handlers
 services/ws              WebSocket Lambda handlers
 services/workflows       Step Functions task handlers
@@ -171,8 +171,8 @@ Deploys are manual for now: the human runs `pnpm cdk:deploy`. Claude Code writes
 - [ ] Human completes **[I-10]** (SSM parameters, CDK bootstrap).
 - [x] pnpm monorepo with the layout above, TypeScript strict, ESLint, Vitest, Prettier.
 - [x] `packages/config`: load from `.env` locally or from SSM by stage on AWS; keep `.env.example` in sync; zod validation; fail-fast errors naming missing keys only.
-- [x] CDK app defines an empty `dev` stack (`pnpm cdk:synth` passes): DynamoDB table, HTTP API with a health route, S3 + CloudFront with a placeholder page. Name stacks `Handshake-<stage>` and keep generated resource names under that prefix, because the policies in `infra/iam/` are scoped to it. In `cdk.json`, set `"toolkitStackName": "Handshake-CDKToolkit"` and the context key `"@aws-cdk/core:bootstrapQualifier": "handshake"` to match the bootstrap in [I-10].
-- [ ] Human deploys the `dev` stack manually with `pnpm cdk:deploy -- --context stage=dev`.
+- [x] CDK app defines an empty `dev` stack (`pnpm cdk:synth` passes): DynamoDB table, HTTP API with a health route, Next.js placeholder page on CloudFront. Name stacks `Handshake-<stage>` and keep generated resource names under that prefix, because the policies in `infra/iam/` are scoped to it. In `cdk.json`, set `"toolkitStackName": "Handshake-CDKToolkit"` and the context key `"@aws-cdk/core:bootstrapQualifier": "handshake"` to match the bootstrap in [I-10].
+- [ ] Human deploys the `dev` stack manually with `pnpm cdk:deploy --context stage=dev`.
 - [ ] `scripts/probes/paypal-auth.ts`: get a sandbox access token and print success or failure, never the token.
 - [ ] `scripts/probes/channel3-search.ts`: one product search, printing titles and prices.
 - [ ] `scripts/probes/bedrock-hello.ts`: one Converse call per configured model.

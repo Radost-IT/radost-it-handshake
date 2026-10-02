@@ -1,20 +1,18 @@
 import { CfnOutput, Duration, Stack, type StackProps } from 'aws-cdk-lib';
 import { HttpApi, HttpMethod } from 'aws-cdk-lib/aws-apigatewayv2';
 import { HttpLambdaIntegration } from 'aws-cdk-lib/aws-apigatewayv2-integrations';
-import { Distribution, ViewerProtocolPolicy } from 'aws-cdk-lib/aws-cloudfront';
-import { S3BucketOrigin } from 'aws-cdk-lib/aws-cloudfront-origins';
 import { AttributeType, Billing, TableV2 } from 'aws-cdk-lib/aws-dynamodb';
 import { Architecture, Runtime } from 'aws-cdk-lib/aws-lambda';
 import { NodejsFunction, OutputFormat } from 'aws-cdk-lib/aws-lambda-nodejs';
 import { LogGroup, RetentionDays } from 'aws-cdk-lib/aws-logs';
-import { BlockPublicAccess, Bucket, BucketEncryption } from 'aws-cdk-lib/aws-s3';
-import { BucketDeployment, Source } from 'aws-cdk-lib/aws-s3-deployment';
+import { Nextjs } from 'cdk-nextjs-standalone';
 import type { Construct } from 'constructs';
 import { fileURLToPath } from 'node:url';
 
 export interface HandshakeStackProps extends StackProps {
   stage: string;
-  webDistPath: string;
+  /** A Next.js app already built with `open-next build`. */
+  webAppPath: string;
 }
 
 const apiSource = (handlerFile: string) =>
@@ -50,29 +48,12 @@ export class HandshakeStack extends Stack {
       integration: new HttpLambdaIntegration('HealthIntegration', healthFunction),
     });
 
-    const siteBucket = new Bucket(this, 'SiteBucket', {
-      blockPublicAccess: BlockPublicAccess.BLOCK_ALL,
-      encryption: BucketEncryption.S3_MANAGED,
-      enforceSSL: true,
-    });
-
-    const distribution = new Distribution(this, 'Distribution', {
-      comment: `Handshake ${props.stage} web app`,
-      defaultRootObject: 'index.html',
-      defaultBehavior: {
-        origin: S3BucketOrigin.withOriginAccessControl(siteBucket),
-        viewerProtocolPolicy: ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
-      },
-    });
-
-    new BucketDeployment(this, 'SiteDeployment', {
-      sources: [Source.asset(props.webDistPath)],
-      destinationBucket: siteBucket,
-      distribution,
-    });
+    // Building here would run a full Next.js build on every synth and in every
+    // test, so the root scripts run `open-next build` first instead.
+    const web = new Nextjs(this, 'Web', { nextjsPath: props.webAppPath, skipBuild: true });
 
     new CfnOutput(this, 'ApiUrl', { value: httpApi.apiEndpoint });
-    new CfnOutput(this, 'WebUrl', { value: `https://${distribution.distributionDomainName}` });
+    new CfnOutput(this, 'WebUrl', { value: web.url });
     new CfnOutput(this, 'TableName', { value: table.tableName });
   }
 }

@@ -73,7 +73,8 @@
       "Action": "lambda:*",
       "Resource": [
         "arn:aws:lambda:eu-west-1:*:function:Handshake-*",
-        "arn:aws:lambda:eu-west-1:*:layer:*"
+        "arn:aws:lambda:eu-west-1:*:layer:*",
+        "arn:aws:lambda:eu-west-1:*:event-source-mapping:*"
       ]
     },
     {

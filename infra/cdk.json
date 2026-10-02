@@ -2,6 +2,7 @@
   "app": "npx tsx bin/app.ts",
   "toolkitStackName": "Handshake-CDKToolkit",
   "context": {
-    "@aws-cdk/core:bootstrapQualifier": "handshake"
+    "@aws-cdk/core:bootstrapQualifier": "handshake",
+    "@aws-cdk/customresources:installLatestAwsSdkDefault": false
   }
 }
