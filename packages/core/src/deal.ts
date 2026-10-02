@@ -55,6 +55,8 @@ export interface EscrowHold {
   orderId: string;
   authorizationId: string;
   amount: Money;
+  /** When PayPal created this authorization. Its honor period counts from here. */
+  authorizedAt: string;
   expiresAt: string;
 }
 
@@ -216,7 +218,7 @@ export function transitionDeal(
  */
 export function renewAuthorization(
   deal: Deal,
-  renewed: Pick<EscrowHold, 'authorizationId' | 'amount' | 'expiresAt'>,
+  renewed: Omit<EscrowHold, 'orderId'>,
   at: string,
 ): DealChange {
   if (!deal.escrow || !statesHoldingFunds.includes(deal.state)) {

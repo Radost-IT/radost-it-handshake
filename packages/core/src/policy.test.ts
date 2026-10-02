@@ -166,16 +166,25 @@ describe('evaluateProposal: void and escalate', () => {
     );
   });
 
-  it('approves escalation from VERIFYING only', () => {
+  it('approves escalation by the verifier or the system from VERIFYING only', () => {
     const escalate: SettlementProposal = { action: 'ESCALATE', reason: 'Photo is unclear' };
 
     expect(evaluateProposal(verifyingDeal(), escalate, 'verifier', now)).toEqual({
       approved: true,
       instruction: { action: 'ESCALATE' },
     });
+    expect(evaluateProposal(verifyingDeal(), escalate, 'system', now).approved).toBe(true);
     const waiting: Deal = { ...verifyingDeal(), state: 'AWAITING_DELIVERY' };
     expect(violationCodes(evaluateProposal(waiting, escalate, 'verifier', now))).toEqual([
       'WRONG_STATE',
+    ]);
+  });
+
+  it('never lets a person escalate', () => {
+    const escalated: Deal = { ...verifyingDeal(), state: 'ESCALATED' };
+    const escalate: SettlementProposal = { action: 'ESCALATE', reason: 'Not sure' };
+    expect(violationCodes(evaluateProposal(escalated, escalate, 'human', now))).toEqual([
+      'NOT_ALLOWED_FOR_PROPOSER',
     ]);
   });
 });

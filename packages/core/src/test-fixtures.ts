@@ -40,6 +40,7 @@ export function buildEscrow(overrides: Partial<EscrowHold> = {}): EscrowHold {
     orderId: 'order-1',
     authorizationId: 'auth-1',
     amount: money('42.50', 'USD'),
+    authorizedAt: '2026-10-02T12:00:00Z',
     expiresAt: '2026-10-31T00:00:00Z',
     ...overrides,
   };

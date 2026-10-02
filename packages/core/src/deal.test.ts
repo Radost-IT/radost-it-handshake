@@ -123,6 +123,7 @@ describe('renewAuthorization', () => {
   const renewed = {
     authorizationId: 'auth-2',
     amount: money('42.50', 'USD'),
+    authorizedAt: '2026-10-06T12:00:00Z',
     expiresAt: '2026-11-30T00:00:00Z',
   };
 

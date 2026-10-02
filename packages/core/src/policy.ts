@@ -122,7 +122,8 @@ const allowedStates: Record<
     human: ['VERIFYING', 'ESCALATED'],
     system: ['AWAITING_DELIVERY'],
   },
-  ESCALATE: { verifier: ['VERIFYING'], human: [], system: [] },
+  // The system escalates when policy rejects a verifier's proposal, so a person decides.
+  ESCALATE: { verifier: ['VERIFYING'], human: [], system: ['VERIFYING'] },
 };
 
 function checkProposerAndState(
