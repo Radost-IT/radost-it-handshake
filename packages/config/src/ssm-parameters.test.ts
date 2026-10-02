@@ -15,6 +15,9 @@ const validEnv = {
   NEGOTIATION_MAX_TURNS: '8',
 };
 
+const usEast1CertificateArn =
+  'arn:aws:acm:us-east-1:123456789012:certificate/0f1e2d3c-4b5a-6978-8a9b-0c1d2e3f4a5b';
+
 describe('ssmParameterTypeForEnvName', () => {
   it.each(['PAYPAL_CLIENT_SECRET', 'CHANNEL3_API_KEY', 'GITHUB_TOKEN', 'DB_PASSWORD'])(
     'stores %s as SecureString',
@@ -49,6 +52,24 @@ describe('ssmParametersFromEnv', () => {
       type: 'String',
       value: '2000000',
     });
+  });
+
+  it('stores certificate ARNs at their shared paths outside the stage', () => {
+    const env = { ...validEnv, CERTIFICATE_ARN_US_EAST_1: usEast1CertificateArn };
+
+    expect(ssmParametersFromEnv(env, 'prod')).toContainEqual({
+      name: '/handshake/certificates/us-east-1',
+      type: 'String',
+      value: usEast1CertificateArn,
+    });
+  });
+
+  it('rejects a certificate ARN from the wrong region', () => {
+    const env = { ...validEnv, CERTIFICATE_ARN_EU_WEST_1: usEast1CertificateArn };
+
+    expect(() => ssmParametersFromEnv(env, 'prod')).toThrow(
+      'CERTIFICATE_ARN_EU_WEST_1 must be an ACM certificate ARN in eu-west-1',
+    );
   });
 
   it('refuses to build parameters from an invalid config', () => {
