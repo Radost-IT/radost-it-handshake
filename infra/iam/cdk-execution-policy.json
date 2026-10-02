@@ -131,6 +131,15 @@
       }
     },
     {
+      "Sid": "UseCertificatesForCustomDomains",
+      "Effect": "Allow",
+      "Action": [
+        "acm:DescribeCertificate",
+        "acm:ListCertificates"
+      ],
+      "Resource": "*"
+    },
+    {
       "Sid": "ManageGlobalServices",
       "Effect": "Allow",
       "Action": [

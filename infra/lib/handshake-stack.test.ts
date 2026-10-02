@@ -34,6 +34,7 @@ describe('HandshakeStack', () => {
     const stack = new HandshakeStack(app, 'Handshake-test', {
       stage: 'test',
       webAppPath: createBuiltWebApp(),
+      domains: { web: 'test-handshake.radostit.com', api: 'api-test-handshake.radostit.com' },
       env: { region: 'eu-west-1' },
     });
     template = Template.fromStack(stack);
@@ -65,6 +66,21 @@ describe('HandshakeStack', () => {
       },
     });
     template.hasResourceProperties('AWS::Lambda::Url', { AuthType: 'NONE' });
+  });
+
+  it('serves the web app and the API on their own hostnames with certificates from SSM', () => {
+    template.hasResourceProperties('AWS::CloudFront::Distribution', {
+      DistributionConfig: Match.objectLike({
+        Aliases: ['test-handshake.radostit.com'],
+        ViewerCertificate: Match.objectLike({ AcmCertificateArn: Match.anyValue() }),
+      }),
+    });
+    template.hasResourceProperties('AWS::ApiGatewayV2::DomainName', {
+      DomainName: 'api-test-handshake.radostit.com',
+    });
+    template.resourceCountIs('AWS::ApiGatewayV2::ApiMapping', 1);
+    template.hasParameter('*', { Default: '/handshake/certificates/us-east-1' });
+    template.hasParameter('*', { Default: '/handshake/certificates/eu-west-1' });
   });
 
   it('runs Lambdas on Node 22 with a managed log group', () => {

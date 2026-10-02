@@ -27,6 +27,13 @@ The AWS CDK app in `infra/` deploys one stack per stage (`Handshake-dev`, `Hands
 
 The web app is a Next.js app. `cdk:synth` and `cdk:deploy` build it with OpenNext first, then the `cdk-nextjs-standalone` construct deploys it behind CloudFront.
 
+| Stage | Web app | HTTP API |
+| --- | --- | --- |
+| demo | https://handshake.radostit.com | https://api-handshake.radostit.com |
+| dev | https://dev-handshake.radostit.com | https://api-dev-handshake.radostit.com |
+
+The stack reads the `*.radostit.com` certificate ARNs from SSM. DNS records are added by hand; see `INSTRUCTIONS.md` [I-10].
+
 ```bash
 pnpm cdk:synth --context stage=dev
 pnpm cdk:deploy --context stage=dev
