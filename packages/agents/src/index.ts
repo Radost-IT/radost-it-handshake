@@ -12,3 +12,4 @@ export type {
   ModelTier,
   TokenUsage,
 } from './llm';
+export { untrustedDataRule, wrapUntrustedData } from './untrusted-data';
