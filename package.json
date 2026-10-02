@@ -14,7 +14,10 @@
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "dev": "pnpm --filter @handshake/web dev",
     "cdk:synth": "pnpm --filter @handshake/web build && pnpm --filter @handshake/infra exec cdk synth",
-    "cdk:deploy": "pnpm --filter @handshake/web build && pnpm --filter @handshake/infra exec cdk deploy"
+    "cdk:deploy": "pnpm --filter @handshake/web build && pnpm --filter @handshake/infra exec cdk deploy",
+    "probe:paypal": "tsx --env-file=.env scripts/probes/paypal-auth.ts",
+    "probe:channel3": "tsx --env-file=.env scripts/probes/channel3-search.ts",
+    "probe:bedrock": "tsx --env-file=.env scripts/probes/bedrock-hello.ts"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

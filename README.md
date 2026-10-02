@@ -16,6 +16,9 @@ pnpm lint
 pnpm test                # unit tests, no credentials needed
 pnpm test:integration    # real PayPal sandbox and Channel3 calls
 pnpm dev                 # web app on localhost
+pnpm probe:paypal        # get a PayPal sandbox token (never printed)
+pnpm probe:channel3      # one Channel3 product search
+pnpm probe:bedrock       # one Converse call per configured model
 ```
 
 ## Deploy
