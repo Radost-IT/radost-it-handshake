@@ -7,9 +7,9 @@ Lines starting with **Draft note** are for us only. Remove them before pasting.
 
 ## Elevator pitch
 
-> AI agents negotiate real-product deals and settle them through PayPal escrow. Try to trick them in the Arena: exploits pay sandbox bounties and become regression tests.
+> Let your shopping agent pay safely. Agents negotiate real products and settle through PayPal escrow. In the Arena, exploits pay sandbox bounties and become tests.
 
-(170 characters, limit 200.)
+(162 characters, limit 200.)
 
 ---
 
@@ -21,7 +21,7 @@ Shopping agents can already find products and talk to sellers. What stops people
 
 Escrow solved this problem for people long ago: hold the money, check the goods, then release or refund. We wanted the same thing for agents, with one hard rule: **the language model never moves money.** It can only propose. Plain, tested code decides.
 
-**Draft note:** name the target audience here once Phase 0 picks it (for example, teams building shopping agents, or small merchants who want to accept agent buyers).
+Handshake is for **teams building AI shopping agents**. Their agents can search and bargain, but their users will not let them pay. Handshake gives the agent a way to pay that its users can trust: the money is held by PayPal, and it moves only when the deal checks out.
 
 ### What it does
 
@@ -89,10 +89,10 @@ Near-duplicates of known attacks get a lower novelty, so copying a known trick e
 
 ### What's next for Handshake by Radost IT
 
-- Real merchants as sellers, with their own policies in place of simulated personas.
+- An SDK so any shopping agent can use the same escrow and policy layer.
+- Real merchants as sellers: the same contract and escrow let merchants accept agent buyers safely.
 - Partial captures for split shipments, and refunds after capture.
 - A public attack dataset built from arena regressions, for others to test their agents.
-- An SDK so other shopping agents can use the same escrow and policy layer.
 
 ---
 

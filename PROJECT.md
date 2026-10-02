@@ -157,7 +157,10 @@ Terminal states: `SETTLED`, `REFUSED`, `CANCELLED`, `ABANDONED`. Every transitio
 - [ ] Human completes **[I-1] to [I-9]**.
 - [x] Decide the AWS region: `eu-west-1` (Ireland). Anthropic models there run through EU cross-region inference profiles (`eu.` prefix); confirm the IDs in [I-8].
 - [ ] Confirm the name "Handshake by Radost IT" and the repo slug `radost-it-handshake`.
-- [ ] Name one specific target audience and the problem it has today. It drives the README, the video opening, and the Devpost text.
+- [x] Name one specific target audience and the problem it has today. It drives the README, the video opening, and the Devpost text.
+  - **Audience:** teams building AI shopping agents.
+  - **Problem:** their users will not let the agent pay, because one fake listing or injected message could cost them money. Today the options are a card with no limits or a human in every step.
+  - **Our answer:** escrow plus a policy check, so the agent can pay and the money moves only when the deal checks out. Their end users are the people protected.
 
 ### Phase 1 — Skeleton (Oct 3–9)
 
@@ -247,7 +250,7 @@ Use unbranded or generic products in recorded deals, draw the architecture slide
 
 | Time | Content |
 |---|---|
-| 0:00–0:20 | Problem and audience: who loses money when agents buy, and why nobody can trust them yet |
+| 0:00–0:20 | Problem and audience: "You built a shopping agent. Your users won't let it pay." Show why: one injected listing is enough |
 | 0:20–1:15 | Deal mode: Channel3 search, live negotiation, contract, PayPal authorization, evidence, capture |
 | 1:15–1:45 | Arena: injection attack blocked, with the policy reason on screen |
 | 1:45–2:20 | Arena: an exploit succeeds, the bounty is paid, it becomes a regression test, and the rerun is blocked |
