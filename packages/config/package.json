@@ -1,0 +1,12 @@
+{
+  "name": "@handshake/config",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@aws-sdk/client-ssm": "^3.1145.0",
+    "zod": "^4.6.5"
+  }
+}
