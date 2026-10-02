@@ -3,7 +3,8 @@ import { DomainName, HttpApi, HttpMethod } from 'aws-cdk-lib/aws-apigatewayv2';
 import { HttpLambdaIntegration } from 'aws-cdk-lib/aws-apigatewayv2-integrations';
 import { Certificate } from 'aws-cdk-lib/aws-certificatemanager';
 import { AttributeType, Billing, TableV2 } from 'aws-cdk-lib/aws-dynamodb';
-import { EventBus } from 'aws-cdk-lib/aws-events';
+import { EventBus, Rule } from 'aws-cdk-lib/aws-events';
+import { LambdaFunction } from 'aws-cdk-lib/aws-events-targets';
 import { PolicyStatement } from 'aws-cdk-lib/aws-iam';
 import { Architecture, Runtime } from 'aws-cdk-lib/aws-lambda';
 import { NodejsFunction, OutputFormat } from 'aws-cdk-lib/aws-lambda-nodejs';
@@ -119,6 +120,26 @@ export class HandshakeStack extends Stack {
     );
     this.grantConfigRead(workflowsFunction, configPath);
     const dealLifecycle = createDealLifecycle(this, workflowsFunction);
+
+    const paypalEventsFunction = new NodejsFunction(this, 'PayPalEventsFunction', {
+      entry: serviceSource('workflows', 'paypal-events-handler.ts'),
+      runtime: Runtime.NODEJS_22_X,
+      architecture: Architecture.ARM_64,
+      memorySize: 256,
+      timeout: Duration.seconds(10),
+      logGroup: new LogGroup(this, 'PayPalEventsFunctionLogs', {
+        retention: RetentionDays.ONE_MONTH,
+      }),
+      bundling: { format: OutputFormat.ESM, minify: true, sourceMap: true },
+      environment: { TABLE_NAME: table.tableName },
+    });
+    table.grant(paypalEventsFunction, 'dynamodb:PutItem', 'dynamodb:DeleteItem');
+    dealLifecycle.grantTaskResponse(paypalEventsFunction);
+    new Rule(this, 'PayPalEventsRule', {
+      eventBus,
+      eventPattern: { source: ['handshake.paypal'], detailType: ['CHECKOUT.ORDER.APPROVED'] },
+      targets: [new LambdaFunction(paypalEventsFunction)],
+    });
 
     const certificateFromParameter = (id: string, parameterName: string) =>
       Certificate.fromCertificateArn(

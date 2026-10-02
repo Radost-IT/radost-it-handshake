@@ -115,6 +115,25 @@ describe('HandshakeStack', () => {
     expect(definition).toContain('TimeoutSecondsPath');
   });
 
+  it('resumes the lifecycle when PayPal reports an approved checkout', () => {
+    template.hasResourceProperties('AWS::Events::Rule', {
+      EventPattern: { source: ['handshake.paypal'], 'detail-type': ['CHECKOUT.ORDER.APPROVED'] },
+    });
+    template.hasResourceProperties('AWS::IAM::Policy', {
+      PolicyDocument: {
+        Statement: Match.arrayWith([
+          Match.objectLike({
+            Action: [
+              'states:SendTaskSuccess',
+              'states:SendTaskFailure',
+              'states:SendTaskHeartbeat',
+            ],
+          }),
+        ]),
+      },
+    });
+  });
+
   it('throttles the API and serves it only on the custom domain', () => {
     template.hasResourceProperties('AWS::ApiGatewayV2::Api', { DisableExecuteApiEndpoint: true });
     template.hasResourceProperties('AWS::ApiGatewayV2::Stage', {

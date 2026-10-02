@@ -98,6 +98,16 @@
       "Resource": "arn:aws:lambda:eu-west-1:*:function:Handshake-*"
     },
     {
+      "Sid": "ResumeHandshakeWorkflows",
+      "Effect": "Allow",
+      "Action": [
+        "states:SendTaskFailure",
+        "states:SendTaskHeartbeat",
+        "states:SendTaskSuccess"
+      ],
+      "Resource": "arn:aws:states:eu-west-1:*:stateMachine:Handshake-*"
+    },
+    {
       "Sid": "InvalidateWebCache",
       "Effect": "Allow",
       "Action": "cloudfront:CreateInvalidation",
