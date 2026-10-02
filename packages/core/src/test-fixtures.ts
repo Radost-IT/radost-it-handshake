@@ -48,12 +48,17 @@ export function buildEscrow(overrides: Partial<EscrowHold> = {}): EscrowHold {
 
 const at = '2026-10-02T12:00:00Z';
 
-/** A deal walked through the real state machine up to VERIFYING. */
-export function verifyingDeal(terms: DealTerms = buildTerms()): Deal {
+/** A deal walked through the real state machine up to AUTHORIZING. */
+export function authorizingDeal(terms: DealTerms = buildTerms()): Deal {
   let { deal } = createDeal(terms.dealId, mandate, at);
   deal = transitionDeal(deal, { to: 'NEGOTIATING' }, at, 'start').deal;
   deal = transitionDeal(deal, { to: 'AGREED', contract: signBoth(terms) }, at, 'agreed').deal;
-  deal = transitionDeal(deal, { to: 'AUTHORIZING' }, at, 'below threshold').deal;
+  return transitionDeal(deal, { to: 'AUTHORIZING' }, at, 'below threshold').deal;
+}
+
+/** A deal walked through the real state machine up to VERIFYING. */
+export function verifyingDeal(terms: DealTerms = buildTerms()): Deal {
+  let deal = authorizingDeal(terms);
   deal = transitionDeal(
     deal,
     { to: 'IN_ESCROW', escrow: buildEscrow({ amount: terms.price }) },

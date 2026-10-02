@@ -115,6 +115,11 @@ export class InvalidTransitionError extends Error {
   override name = 'InvalidTransitionError';
 }
 
+/** True while an authorization holds the buyer's money for this deal. */
+export function holdsFunds(deal: Deal): deal is Deal & { escrow: EscrowHold } {
+  return deal.escrow !== null && statesHoldingFunds.includes(deal.state);
+}
+
 export function isTerminalState(state: DealState): boolean {
   return allowedTransitions[state].length === 0;
 }
@@ -221,7 +226,7 @@ export function renewAuthorization(
   renewed: Omit<EscrowHold, 'orderId'>,
   at: string,
 ): DealChange {
-  if (!deal.escrow || !statesHoldingFunds.includes(deal.state)) {
+  if (!holdsFunds(deal)) {
     throw new InvalidTransitionError(`Deal ${deal.id} holds no funds in state ${deal.state}`);
   }
   assertAmountMatchesContract(deal, renewed.amount, 'Reauthorization');

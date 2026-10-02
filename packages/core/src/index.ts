@@ -12,6 +12,7 @@ export {
 export {
   createDeal,
   dealStates,
+  holdsFunds,
   InvalidTransitionError,
   isTerminalState,
   renewAuthorization,
@@ -42,6 +43,7 @@ export {
   evaluateProposal,
   MIN_CRITERION_CONFIDENCE,
   reviewAgreement,
+  reviewAuthorization,
   settlementProposalSchema,
   type AgreementReview,
   type PolicyDecision,

@@ -71,6 +71,26 @@ export function reviewAgreement(terms: DealTerms, mandate: Mandate): AgreementRe
   return { violations, requiresHumanApproval };
 }
 
+const contractNotSigned: PolicyViolation = {
+  code: 'CONTRACT_NOT_SIGNED',
+  message: 'The contract is missing or was changed after signing',
+};
+
+/**
+ * Checks a deal right before its payment is authorized. The terms are checked
+ * again because the mandate, not the agreement step, is the last word.
+ */
+export function reviewAuthorization(deal: Deal): PolicyViolation[] {
+  if (deal.state !== 'AUTHORIZING') {
+    return [
+      { code: 'WRONG_STATE', message: `Authorization is not allowed in state ${deal.state}` },
+    ];
+  }
+  const contract = deal.contract;
+  if (!contract || !isSignedByBothParties(contract)) return [contractNotSigned];
+  return checkTermsAgainstMandate(contract.terms, deal.mandate);
+}
+
 const criterionResultSchema = z.object({
   criterionId: z.string().min(1).max(128),
   met: z.boolean(),
@@ -185,14 +205,7 @@ function checkCapture(
   now: string,
 ): PolicyViolation[] {
   const contract = deal.contract;
-  if (!contract || !isSignedByBothParties(contract)) {
-    return [
-      {
-        code: 'CONTRACT_NOT_SIGNED',
-        message: 'The contract is missing or was changed after signing',
-      },
-    ];
-  }
+  if (!contract || !isSignedByBothParties(contract)) return [contractNotSigned];
   const { terms } = contract;
   const violations = [
     ...checkTermsAgainstMandate(terms, deal.mandate),

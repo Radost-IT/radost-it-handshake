@@ -4,11 +4,19 @@ import { money } from './money';
 import {
   evaluateProposal,
   reviewAgreement,
+  reviewAuthorization,
   settlementProposalSchema,
   type PolicyDecision,
   type SettlementProposal,
 } from './policy';
-import { buildEscrow, buildTerms, mandate, signBoth, verifyingDeal } from './test-fixtures';
+import {
+  authorizingDeal,
+  buildEscrow,
+  buildTerms,
+  mandate,
+  signBoth,
+  verifyingDeal,
+} from './test-fixtures';
 
 const now = '2026-10-05T12:00:00Z';
 
@@ -54,6 +62,37 @@ describe('reviewAgreement', () => {
   it('flags currency confusion instead of comparing across currencies', () => {
     const review = reviewAgreement(buildTerms({ price: money('40', 'EUR') }), mandate);
     expect(review.violations.map((violation) => violation.code)).toEqual(['CURRENCY_MISMATCH']);
+  });
+});
+
+describe('reviewAuthorization', () => {
+  it('approves a signed contract within the mandate', () => {
+    expect(reviewAuthorization(authorizingDeal())).toEqual([]);
+  });
+
+  it('rejects a price above the mandate even though both parties signed', () => {
+    const deal = authorizingDeal(buildTerms({ price: money('100.01', 'USD') }));
+    expect(reviewAuthorization(deal).map((violation) => violation.code)).toEqual([
+      'PRICE_ABOVE_MANDATE',
+    ]);
+  });
+
+  it('rejects a contract changed after signing', () => {
+    const deal = authorizingDeal();
+    const contract = signBoth(buildTerms());
+    const tampered: Deal = {
+      ...deal,
+      contract: { ...contract, terms: { ...contract.terms, price: money('1', 'USD') } },
+    };
+    expect(reviewAuthorization(tampered).map((violation) => violation.code)).toEqual([
+      'CONTRACT_NOT_SIGNED',
+    ]);
+  });
+
+  it('rejects a deal outside AUTHORIZING', () => {
+    expect(reviewAuthorization(verifyingDeal()).map((violation) => violation.code)).toEqual([
+      'WRONG_STATE',
+    ]);
   });
 });
 

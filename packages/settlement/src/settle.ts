@@ -1,10 +1,8 @@
 import {
   evaluateProposal,
-  transitionDeal,
   type ConfirmedCapture,
   type Deal,
   type DealEvent,
-  type DealTransition,
   type PolicyViolation,
   type Proposer,
   type SettlementInstruction,
@@ -16,6 +14,7 @@ import {
   voidAuthorization,
   type PayPalClient,
 } from '@handshake/paypal';
+import { advance, type Progress } from './progress';
 
 export interface SettlementContext {
   paypal: PayPalClient;
@@ -29,21 +28,6 @@ export type SettlementResult =
 /** PayPal confirmed the void call but did not report the authorization as voided. */
 export class VoidNotConfirmedError extends Error {
   override name = 'VoidNotConfirmedError';
-}
-
-interface Progress {
-  deal: Deal;
-  events: DealEvent[];
-}
-
-function advance(
-  progress: Progress,
-  transition: DealTransition,
-  at: string,
-  reason: string,
-): Progress {
-  const change = transitionDeal(progress.deal, transition, at, reason);
-  return { deal: change.deal, events: [...progress.events, change.event] };
 }
 
 /**
