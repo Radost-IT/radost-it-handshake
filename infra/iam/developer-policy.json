@@ -5,7 +5,7 @@
       "Sid": "DeployThroughCdkBootstrapRoles",
       "Effect": "Allow",
       "Action": "sts:AssumeRole",
-      "Resource": "arn:aws:iam::*:role/cdk-hnb659fds-*-eu-west-1"
+      "Resource": "arn:aws:iam::*:role/cdk-handshake-*-eu-west-1"
     },
     {
       "Sid": "ManageHandshakeParameters",

@@ -123,8 +123,11 @@ aws ssm put-parameter --name /handshake/$STAGE/limits/negotiation-max-turns --ty
   ```bash
   ACCOUNT=$(aws sts get-caller-identity --query Account --output text)
   npx aws-cdk@latest bootstrap aws://$ACCOUNT/eu-west-1 \
+    --toolkit-stack-name Handshake-CDKToolkit \
+    --qualifier handshake \
     --cloudformation-execution-policies arn:aws:iam::$ACCOUNT:policy/HandshakeCdkExecution
   ```
+  The custom stack name and qualifier keep the bootstrap stack, roles and asset bucket apart from any other CDK app in the account. The policies in `infra/iam/` expect the qualifier `handshake`.
 
 - [ ] Repeat the `put-parameter` commands with `STAGE=demo` before the first demo deploy (Phase 5).
 - [ ] The webhook ID parameter is added in [I-11].

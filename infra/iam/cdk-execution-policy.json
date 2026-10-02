@@ -6,7 +6,7 @@
       "Effect": "Allow",
       "Action": "ssm:GetParameters",
       "Resource": [
-        "arn:aws:ssm:eu-west-1:*:parameter/cdk-bootstrap/hnb659fds/version",
+        "arn:aws:ssm:eu-west-1:*:parameter/cdk-bootstrap/handshake/version",
         "arn:aws:ssm:eu-west-1:*:parameter/handshake/*"
       ]
     },
@@ -89,7 +89,7 @@
       "Sid": "ReadCdkAssetsForLambdaCode",
       "Effect": "Allow",
       "Action": "s3:GetObject",
-      "Resource": "arn:aws:s3:::cdk-hnb659fds-assets-*-eu-west-1/*"
+      "Resource": "arn:aws:s3:::cdk-handshake-assets-*-eu-west-1/*"
     },
     {
       "Sid": "ManageHandshakeLogGroups",
