@@ -6,6 +6,8 @@ import { AttributeType, Billing, TableV2 } from 'aws-cdk-lib/aws-dynamodb';
 import { Architecture, Runtime } from 'aws-cdk-lib/aws-lambda';
 import { NodejsFunction, OutputFormat } from 'aws-cdk-lib/aws-lambda-nodejs';
 import { LogGroup, RetentionDays } from 'aws-cdk-lib/aws-logs';
+import { AaaaRecord, ARecord, HostedZone, RecordTarget } from 'aws-cdk-lib/aws-route53';
+import { ApiGatewayv2DomainProperties, CloudFrontTarget } from 'aws-cdk-lib/aws-route53-targets';
 import { StringParameter } from 'aws-cdk-lib/aws-ssm';
 import { Nextjs } from 'cdk-nextjs-standalone';
 import type { Construct } from 'constructs';
@@ -14,15 +16,16 @@ import { fileURLToPath } from 'node:url';
 export interface HandshakeStackProps extends StackProps {
   /** A Next.js app already built with `open-next build`. */
   webAppPath: string;
-  /** Hostnames covered by the *.radostit.com certificates. DNS records are managed outside AWS. */
-  domains: { web: string; api: string };
+  /** The Route 53 zone and the hostnames in it covered by its wildcard certificates. */
+  domains: { zone: string; web: string; api: string };
 }
 
-// The ARNs live in SSM rather than in the repo, and CloudFormation reads them at deploy time.
+// The IDs live in SSM rather than in the repo, and CloudFormation reads them at deploy time.
 const certificateParameters = {
   cloudFront: '/handshake/certificates/us-east-1',
   regional: '/handshake/certificates/eu-west-1',
 };
+const hostedZoneIdParameter = '/handshake/dns/hosted-zone-id';
 
 const apiSource = (handlerFile: string) =>
   fileURLToPath(new URL(`../../services/api/src/${handlerFile}`, import.meta.url));
@@ -72,7 +75,8 @@ export class HandshakeStack extends Stack {
 
     // Building here would run a full Next.js build on every synth and in every
     // test, so the root scripts run `open-next build` first instead.
-    // NextjsDomain needs a Route 53 hosted zone, so the domain goes on the distribution directly.
+    // NextjsDomain looks the hosted zone up at synth time, so the domain and
+    // its records are set here to keep synth free of AWS calls.
     const web = new Nextjs(this, 'Web', {
       nextjsPath: props.webAppPath,
       skipBuild: true,
@@ -89,10 +93,30 @@ export class HandshakeStack extends Stack {
       },
     });
 
+    const zone = HostedZone.fromHostedZoneAttributes(this, 'Zone', {
+      zoneName: props.domains.zone,
+      hostedZoneId: StringParameter.valueForStringParameter(this, hostedZoneIdParameter),
+    });
+    const webTarget = RecordTarget.fromAlias(new CloudFrontTarget(web.distribution.distribution));
+    new ARecord(this, 'WebRecord', { zone, recordName: props.domains.web, target: webTarget });
+    new AaaaRecord(this, 'WebRecordIpv6', {
+      zone,
+      recordName: props.domains.web,
+      target: webTarget,
+    });
+    new ARecord(this, 'ApiRecord', {
+      zone,
+      recordName: props.domains.api,
+      target: RecordTarget.fromAlias(
+        new ApiGatewayv2DomainProperties(
+          apiDomain.regionalDomainName,
+          apiDomain.regionalHostedZoneId,
+        ),
+      ),
+    });
+
     new CfnOutput(this, 'ApiUrl', { value: `https://${props.domains.api}` });
-    new CfnOutput(this, 'ApiDnsTarget', { value: apiDomain.regionalDomainName });
     new CfnOutput(this, 'WebUrl', { value: `https://${props.domains.web}` });
-    new CfnOutput(this, 'WebDnsTarget', { value: web.distribution.distributionDomain });
     new CfnOutput(this, 'TableName', { value: table.tableName });
   }
 }

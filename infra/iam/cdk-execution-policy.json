@@ -140,6 +140,33 @@
       "Resource": "*"
     },
     {
+      "Sid": "ManageHandshakeDnsRecords",
+      "Effect": "Allow",
+      "Action": "route53:ChangeResourceRecordSets",
+      "Resource": "arn:aws:route53:::hostedzone/*",
+      "Condition": {
+        "ForAllValues:StringEquals": {
+          "route53:ChangeResourceRecordSetsNormalizedRecordNames": [
+            "handshake.radostit.com",
+            "api-handshake.radostit.com"
+          ]
+        }
+      }
+    },
+    {
+      "Sid": "ReadDnsZonesAndChanges",
+      "Effect": "Allow",
+      "Action": [
+        "route53:GetHostedZone",
+        "route53:ListResourceRecordSets",
+        "route53:GetChange"
+      ],
+      "Resource": [
+        "arn:aws:route53:::hostedzone/*",
+        "arn:aws:route53:::change/*"
+      ]
+    },
+    {
       "Sid": "ManageGlobalServices",
       "Effect": "Allow",
       "Action": [

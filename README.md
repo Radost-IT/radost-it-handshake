@@ -30,7 +30,7 @@ The web app is a Next.js app. `cdk:synth` and `cdk:deploy` build it with OpenNex
 
 The web app runs on https://handshake.radostit.com and the HTTP API on https://api-handshake.radostit.com.
 
-The stack reads the `*.radostit.com` certificate ARNs from SSM. DNS records are added by hand; see `INSTRUCTIONS.md` [I-10].
+The stack reads the `*.radostit.com` certificate ARNs and the Route 53 hosted zone ID from SSM and creates the DNS records; see `INSTRUCTIONS.md` [I-10].
 
 ```bash
 pnpm cdk:synth

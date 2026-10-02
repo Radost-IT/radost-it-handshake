@@ -33,7 +33,11 @@ describe('HandshakeStack', () => {
     const app = new App({ context: { '@aws-cdk/core:bootstrapQualifier': 'handshake' } });
     const stack = new HandshakeStack(app, 'Handshake-test', {
       webAppPath: createBuiltWebApp(),
-      domains: { web: 'test-handshake.radostit.com', api: 'api-test-handshake.radostit.com' },
+      domains: {
+        zone: 'radostit.com',
+        web: 'test-handshake.radostit.com',
+        api: 'api-test-handshake.radostit.com',
+      },
       env: { region: 'eu-west-1' },
     });
     template = Template.fromStack(stack);
@@ -80,6 +84,25 @@ describe('HandshakeStack', () => {
     template.resourceCountIs('AWS::ApiGatewayV2::ApiMapping', 1);
     template.hasParameter('*', { Default: '/handshake/certificates/us-east-1' });
     template.hasParameter('*', { Default: '/handshake/certificates/eu-west-1' });
+  });
+
+  it('points the web and API hostnames at CloudFront and API Gateway in the Route 53 zone', () => {
+    template.hasParameter('*', { Default: '/handshake/dns/hosted-zone-id' });
+    template.resourcePropertiesCountIs('AWS::Route53::RecordSet', { Type: 'A' }, 2);
+    template.hasResourceProperties('AWS::Route53::RecordSet', {
+      Name: 'test-handshake.radostit.com.',
+      Type: 'AAAA',
+      AliasTarget: Match.objectLike({
+        DNSName: { 'Fn::GetAtt': [Match.stringLikeRegexp('^WebDistribution'), 'DomainName'] },
+      }),
+    });
+    template.hasResourceProperties('AWS::Route53::RecordSet', {
+      Name: 'api-test-handshake.radostit.com.',
+      Type: 'A',
+      AliasTarget: Match.objectLike({
+        DNSName: { 'Fn::GetAtt': [Match.stringLikeRegexp('^ApiDomain'), 'RegionalDomainName'] },
+      }),
+    });
   });
 
   it('runs Lambdas on Node 22 with a managed log group', () => {

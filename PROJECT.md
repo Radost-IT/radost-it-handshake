@@ -172,7 +172,7 @@ Deploys are manual for now: the human runs `pnpm cdk:deploy`. Claude Code writes
 - [x] pnpm monorepo with the layout above, TypeScript strict, ESLint, Vitest, Prettier.
 - [x] `packages/config`: load from `.env` locally or from SSM by stage on AWS; keep `.env.example` in sync; zod validation; fail-fast errors naming missing keys only.
 - [x] CDK app defines an empty `Handshake-prod` stack (`pnpm cdk:synth` passes): DynamoDB table, HTTP API with a health route, Next.js placeholder page on CloudFront. Keep generated resource names under the `Handshake-` prefix, because the policies in `infra/iam/` are scoped to it. In `cdk.json`, set `"toolkitStackName": "Handshake-CDKToolkit"` and the context key `"@aws-cdk/core:bootstrapQualifier": "handshake"` to match the bootstrap in [I-10].
-- [x] Custom domains: the web app on `handshake.radostit.com` and the HTTP API on `api-handshake.radostit.com`. Names stay one level below `radostit.com` so the `*.radostit.com` certificates cover them. Certificate ARNs come from SSM; DNS records are manual ([I-10]).
+- [x] Custom domains: the web app on `handshake.radostit.com` and the HTTP API on `api-handshake.radostit.com`. Names stay one level below `radostit.com` so the `*.radostit.com` certificates cover them. Certificate ARNs and the hosted zone ID come from SSM; CDK creates the Route 53 alias records ([I-10]).
 - [ ] Human deploys the stack manually with `pnpm cdk:deploy`.
 - [ ] `scripts/probes/paypal-auth.ts`: get a sandbox access token and print success or failure, never the token.
 - [ ] `scripts/probes/channel3-search.ts`: one product search, printing titles and prices.

@@ -64,6 +64,24 @@ describe('ssmParametersFromEnv', () => {
     });
   });
 
+  it('stores the hosted zone ID at its shared path', () => {
+    const env = { ...validEnv, HOSTED_ZONE_ID: 'Z0123456789ABCDEFGHIJ' };
+
+    expect(ssmParametersFromEnv(env, 'prod')).toContainEqual({
+      name: '/handshake/dns/hosted-zone-id',
+      type: 'String',
+      value: 'Z0123456789ABCDEFGHIJ',
+    });
+  });
+
+  it('rejects a hosted zone ID in the wrong format', () => {
+    const env = { ...validEnv, HOSTED_ZONE_ID: '/hostedzone/Z0123456789ABCDEFGHIJ' };
+
+    expect(() => ssmParametersFromEnv(env, 'prod')).toThrow(
+      'HOSTED_ZONE_ID must be a Route 53 hosted zone ID',
+    );
+  });
+
   it('rejects a certificate ARN from the wrong region', () => {
     const env = { ...validEnv, CERTIFICATE_ARN_EU_WEST_1: usEast1CertificateArn };
 
