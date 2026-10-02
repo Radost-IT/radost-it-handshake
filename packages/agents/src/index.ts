@@ -23,3 +23,4 @@ export {
 } from './negotiator';
 export { runNegotiation, type NegotiationAgent, type NegotiationResult } from './run-negotiation';
 export { verifyDelivery, type Verification } from './verifier';
+export { draftDealTerms, type DraftedTerms } from './contract-drafter';

@@ -17,6 +17,8 @@ export interface Listing {
   productId: string;
   title: string;
   description: string;
+  // Category slugs from the root down, as the deal terms store them.
+  categoryPath: string[];
   listPrice: Money;
 }
 
