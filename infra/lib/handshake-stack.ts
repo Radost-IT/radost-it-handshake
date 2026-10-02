@@ -1,5 +1,5 @@
 import { CfnOutput, Duration, PermissionsBoundary, Stack, type StackProps } from 'aws-cdk-lib';
-import { DomainName, HttpApi, HttpMethod } from 'aws-cdk-lib/aws-apigatewayv2';
+import { CorsHttpMethod, DomainName, HttpApi, HttpMethod } from 'aws-cdk-lib/aws-apigatewayv2';
 import { HttpLambdaIntegration } from 'aws-cdk-lib/aws-apigatewayv2-integrations';
 import { Certificate } from 'aws-cdk-lib/aws-certificatemanager';
 import { AttributeType, Billing, TableV2 } from 'aws-cdk-lib/aws-dynamodb';
@@ -71,6 +71,18 @@ export class HandshakeStack extends Stack {
       logGroup: new LogGroup(this, 'HealthFunctionLogs', { retention: RetentionDays.ONE_MONTH }),
       bundling: { format: OutputFormat.ESM, minify: true, sourceMap: true },
     });
+
+    const arenaApiFunction = new NodejsFunction(this, 'ArenaApiFunction', {
+      entry: serviceSource('api', 'arena-handler.ts'),
+      runtime: Runtime.NODEJS_22_X,
+      architecture: Architecture.ARM_64,
+      memorySize: 256,
+      timeout: Duration.seconds(10),
+      logGroup: new LogGroup(this, 'ArenaApiFunctionLogs', { retention: RetentionDays.ONE_MONTH }),
+      bundling: { format: OutputFormat.ESM, minify: true, sourceMap: true },
+      environment: { TABLE_NAME: table.tableName },
+    });
+    table.grant(arenaApiFunction, 'dynamodb:GetItem', 'dynamodb:PutItem');
 
     const configPath = `/handshake/${props.stage}`;
     const paypalWebhookFunction = new NodejsFunction(this, 'PayPalWebhookFunction', {
@@ -164,6 +176,14 @@ export class HandshakeStack extends Stack {
     const httpApi = new HttpApi(this, 'HttpApi', {
       createDefaultStage: false,
       disableExecuteApiEndpoint: true,
+      // The browser calls the API from the web hostname and sends the session cookie.
+      corsPreflight: {
+        allowOrigins: [`https://${props.domains.web}`],
+        allowMethods: [CorsHttpMethod.GET, CorsHttpMethod.POST],
+        allowHeaders: ['content-type'],
+        allowCredentials: true,
+        maxAge: Duration.hours(1),
+      },
     });
     httpApi
       .addStage('DefaultStage', {
@@ -181,6 +201,17 @@ export class HandshakeStack extends Stack {
       path: '/webhooks/paypal',
       methods: [HttpMethod.POST],
       integration: new HttpLambdaIntegration('PayPalWebhookIntegration', paypalWebhookFunction),
+    });
+    const arenaApiIntegration = new HttpLambdaIntegration('ArenaApiIntegration', arenaApiFunction);
+    httpApi.addRoutes({
+      path: '/arena/challengers',
+      methods: [HttpMethod.POST],
+      integration: arenaApiIntegration,
+    });
+    httpApi.addRoutes({
+      path: '/arena/challengers/me',
+      methods: [HttpMethod.GET],
+      integration: arenaApiIntegration,
     });
 
     // Building here would run a full Next.js build on every synth and in every

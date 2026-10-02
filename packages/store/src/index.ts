@@ -10,5 +10,11 @@ export { getChallenger, type Challenger } from './challengers';
 export { saveCheckout, type Checkout } from './checkout';
 export { ConcurrentDealUpdateError, getDeal, saveDeal } from './deals';
 export { getLeaderboard, type LeaderboardEntry, type LeaderboardScope } from './leaderboard';
+export {
+  createChallenger,
+  findSessionChallengerId,
+  HandleTakenError,
+  type NewChallenger,
+} from './sessions';
 export type { StoreTable } from './table';
 export { saveWait, takeWait, type WaitSignal } from './waits';

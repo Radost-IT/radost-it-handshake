@@ -323,7 +323,7 @@ Done when an AI-driven deal completes end to end in the deployed app and evals p
 - [x] `checkBountyProposal` in `packages/core/policy` with tests; `limits/max-bounty` and `limits/daily-bounty-budget` in SSM and `.env.example`.
 - [ ] CDK: add `GSI1` to the table and the `ArenaRun` state machine.
 - [x] `packages/store`: challenger, leaderboard and arena stats repositories; `recordArenaResult` as one transaction, with a test that a concurrent update retries on a version conflict.
-- [ ] Handles and sessions: `POST /arena/challengers`, `GET /arena/challengers/me`, hashed session tokens, handle reservation.
+- [x] Handles and sessions: `POST /arena/challengers`, `GET /arena/challengers/me`, hashed session tokens, handle reservation.
 - [ ] WebSocket events `arena.result`, `challenger.progress`, `arena.stats`.
 - [ ] Arena UI: challenger card with rank progress, badge grid (locked badges show how to earn them), open bounties per category, daily challenge, defense counter, rank-up and badge toasts.
 - [ ] Hall of fame: regression case pages credit the challenger and show attempt, fix, and the rerun that holds.

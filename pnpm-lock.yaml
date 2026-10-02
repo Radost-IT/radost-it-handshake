@@ -196,10 +196,29 @@ importers:
         version: 4.6.5
 
   services/api:
+    dependencies:
+      '@aws-sdk/client-dynamodb':
+        specifier: ^3.1146.0
+        version: 3.1146.0
+      '@aws-sdk/lib-dynamodb':
+        specifier: ^3.1146.0
+        version: 3.1146.0(@aws-sdk/client-dynamodb@3.1146.0)
+      '@handshake/arena':
+        specifier: workspace:*
+        version: link:../../packages/arena
+      '@handshake/store':
+        specifier: workspace:*
+        version: link:../../packages/store
+      zod:
+        specifier: ^4.6.5
+        version: 4.6.5
     devDependencies:
       '@types/aws-lambda':
         specifier: ^8.10.164
         version: 8.10.164
+      aws-sdk-client-mock:
+        specifier: ^4.1.0
+        version: 4.1.0
 
   services/webhooks:
     dependencies:

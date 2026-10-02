@@ -143,6 +143,18 @@ describe('HandshakeStack', () => {
     });
   });
 
+  it('lets the web app create a challenger and read it back with the session cookie', () => {
+    for (const routeKey of ['POST /arena/challengers', 'GET /arena/challengers/me']) {
+      template.hasResourceProperties('AWS::ApiGatewayV2::Route', { RouteKey: routeKey });
+    }
+    template.hasResourceProperties('AWS::ApiGatewayV2::Api', {
+      CorsConfiguration: Match.objectLike({
+        AllowOrigins: ['https://test-handshake.radostit.com'],
+        AllowCredentials: true,
+      }),
+    });
+  });
+
   it('throttles the API and serves it only on the custom domain', () => {
     template.hasResourceProperties('AWS::ApiGatewayV2::Api', { DisableExecuteApiEndpoint: true });
     template.hasResourceProperties('AWS::ApiGatewayV2::Stage', {

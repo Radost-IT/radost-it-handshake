@@ -15,7 +15,7 @@ export const challengerProgressSchema = z.object({
   stats: z.object({
     loopholes: count,
     firstLoopholeCategories: count,
-    categoriesTried: z.array(z.enum(attackCategories)),
+    categoriesTried: z.array(z.enum(attackCategories)).readonly(),
     textLoopholes: count,
     evidenceLoopholes: count,
     longestHeldStreak: count,
