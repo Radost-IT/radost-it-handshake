@@ -25,6 +25,17 @@ export const configKeys = {
     ssm: 'limits/negotiation-max-turns',
     secret: false,
   },
+  maxBounty: { env: 'MAX_BOUNTY', ssm: 'limits/max-bounty', secret: false },
+  dailyBountyBudget: {
+    env: 'DAILY_BOUNTY_BUDGET',
+    ssm: 'limits/daily-bounty-budget',
+    secret: false,
+  },
+  arenaRecipientEmail: {
+    env: 'ARENA_RECIPIENT_EMAIL',
+    ssm: 'arena/recipient-email',
+    secret: false,
+  },
 } as const satisfies Record<string, ConfigKey>;
 
 export type ConfigKeyName = keyof typeof configKeys;

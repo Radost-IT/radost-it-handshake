@@ -3,6 +3,7 @@ import { isSignedByBothParties, type DealTerms } from './contract';
 import type { Deal, DealState, EscrowHold } from './deal';
 import type { Mandate } from './mandate';
 import {
+  addMoney,
   compareMoney,
   formatMoney,
   hasSameCurrency,
@@ -28,7 +29,11 @@ export type PolicyViolationCode =
   | 'DELIVERED_AFTER_DEADLINE'
   | 'DELIVERY_DATE_IN_FUTURE'
   | 'CRITERION_NOT_MET'
-  | 'DEADLINE_NOT_PASSED';
+  | 'DEADLINE_NOT_PASSED'
+  | 'BOUNTY_NOT_POSITIVE'
+  | 'BOUNTY_ABOVE_CAP'
+  | 'DAILY_BOUNTY_BUDGET_EXCEEDED'
+  | 'RECIPIENT_NOT_ALLOWED';
 
 export interface PolicyViolation {
   code: PolicyViolationCode;
@@ -282,4 +287,68 @@ export function evaluateProposal(
       ? { action: 'VOID', authorizationId }
       : { action: 'CAPTURE', authorizationId, amount };
   return { approved: true, instruction };
+}
+
+/** A payout for a loophole. Code builds it from the deterministic score, never a model. */
+export const bountyProposalSchema = z.object({
+  attemptId: z.string().min(1).max(128),
+  amount: moneySchema,
+  recipientEmail: z.email().max(254),
+  reason: reasonSchema,
+});
+
+export type BountyProposal = z.infer<typeof bountyProposalSchema>;
+
+export interface BountyLimits {
+  maxBounty: Money;
+  dailyBudget: Money;
+  /** The arena recipient sandbox account, the only account bounties may reach. */
+  recipientEmail: string;
+}
+
+/**
+ * The gate before any bounty payout. `paidToday` is the total of bounties
+ * already paid today, so the daily budget holds across separate payouts.
+ */
+export function checkBountyProposal(
+  proposal: BountyProposal,
+  limits: BountyLimits,
+  paidToday: Money,
+): PolicyViolation[] {
+  const violations: PolicyViolation[] = [];
+  if (proposal.recipientEmail.toLowerCase() !== limits.recipientEmail.toLowerCase()) {
+    violations.push({
+      code: 'RECIPIENT_NOT_ALLOWED',
+      message: 'Bounties go only to the arena recipient sandbox account',
+    });
+  }
+
+  const { amount } = proposal;
+  const mismatched = [limits.maxBounty, limits.dailyBudget, paidToday].find(
+    (other) => !hasSameCurrency(amount, other),
+  );
+  if (mismatched) {
+    violations.push({
+      code: 'CURRENCY_MISMATCH',
+      message: `Bounty is in ${amount.currency}, the limits are in ${mismatched.currency}`,
+    });
+    return violations;
+  }
+
+  if (compareMoney(amount, { currency: amount.currency, value: '0' }) <= 0) {
+    violations.push({ code: 'BOUNTY_NOT_POSITIVE', message: 'Bounty must be above zero' });
+  }
+  if (compareMoney(amount, limits.maxBounty) > 0) {
+    violations.push({
+      code: 'BOUNTY_ABOVE_CAP',
+      message: `Bounty ${formatMoney(amount)} is above the cap ${formatMoney(limits.maxBounty)}`,
+    });
+  }
+  if (compareMoney(addMoney(paidToday, amount), limits.dailyBudget) > 0) {
+    violations.push({
+      code: 'DAILY_BOUNTY_BUDGET_EXCEEDED',
+      message: `Bounty ${formatMoney(amount)} would pass the daily budget ${formatMoney(limits.dailyBudget)}, ${formatMoney(paidToday)} is already paid`,
+    });
+  }
+  return violations;
 }

@@ -47,6 +47,7 @@ Last checked: 2 Oct 2026. Console menus change often; if a label differs, look f
 - [x] For each account, open **View/Edit account** and note the email and password in your password manager.
 - [x] The default Business account is the merchant behind your app. Check that it has a sandbox balance, because Payouts are paid from it.
 - [x] Later, the demo buyer login goes into the README for judges. These are sandbox-only credentials, so sharing them is fine.
+- [ ] Add the arena recipient account's email to `.env` as `ARENA_RECIPIENT_EMAIL`, copy `MAX_BOUNTY` and `DAILY_BOUNTY_BUDGET` from `.env.example`, then run `pnpm ssm:put prod`. Bounty policy refuses any other recipient.
 
 ### [I-5] Channel3 API key
 - [x] Sign up at https://trychannel3.com/developers (no credit card).

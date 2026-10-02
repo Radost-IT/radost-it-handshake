@@ -251,6 +251,7 @@ The table gains one global secondary index, `GSI1` (`gsi1pk`, `gsi1sk`), for a c
 /handshake/<stage>/limits/negotiation-max-turns
 /handshake/<stage>/limits/max-bounty              decimal string, e.g. 5.00
 /handshake/<stage>/limits/daily-bounty-budget     decimal string
+/handshake/<stage>/arena/recipient-email          arena recipient sandbox account
 ```
 
 ## Phase plan
@@ -319,7 +320,7 @@ Done when an AI-driven deal completes end to end in the deployed app and evals p
 - [ ] Leaderboard (AG Grid) and defense win rate over time and attacks by category (AG Charts).
 - [ ] Arena attack history in AG Grid: result, blocked action and reason, link to the regression case.
 - [x] `packages/arena`: `progression.ts`, `badges.ts`, `daily-challenge.ts`, `handle.ts`, with unit tests for every rank and badge boundary.
-- [ ] `checkBountyProposal` in `packages/core/policy` with tests; `limits/max-bounty` and `limits/daily-bounty-budget` in SSM and `.env.example`.
+- [x] `checkBountyProposal` in `packages/core/policy` with tests; `limits/max-bounty` and `limits/daily-bounty-budget` in SSM and `.env.example`.
 - [ ] CDK: add `GSI1` to the table and the `ArenaRun` state machine.
 - [ ] `packages/store`: challenger, leaderboard and arena stats repositories; `recordArenaResult` as one transaction, with a test that a concurrent update retries on a version conflict.
 - [ ] Handles and sessions: `POST /arena/challengers`, `GET /arena/challengers/me`, hashed session tokens, handle reservation.

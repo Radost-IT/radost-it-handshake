@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  addMoney,
   compareMoney,
   CurrencyMismatchError,
   formatMoney,
@@ -39,6 +40,12 @@ describe('money', () => {
       1,
     );
     expect(compareMoney(money('9.99', 'USD'), money('10', 'USD'))).toBe(-1);
+  });
+
+  it('adds amounts exactly', () => {
+    expect(addMoney(money('0.10', 'USD'), money('0.20', 'USD'))).toEqual(money('0.30', 'USD'));
+    expect(addMoney(money('999', 'JPY'), money('1', 'JPY'))).toEqual(money('1000', 'JPY'));
+    expect(() => addMoney(money('1', 'USD'), money('1', 'EUR'))).toThrow(CurrencyMismatchError);
   });
 
   it('refuses to compare different currencies', () => {

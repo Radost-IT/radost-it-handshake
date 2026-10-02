@@ -15,6 +15,9 @@ const validEnv = {
   BEDROCK_MODEL_SMART: 'eu.smart-model',
   DAILY_TOKEN_BUDGET: '2000000',
   NEGOTIATION_MAX_TURNS: '8',
+  MAX_BOUNTY: '5.00',
+  DAILY_BOUNTY_BUDGET: '50.00',
+  ARENA_RECIPIENT_EMAIL: 'arena@personal.example.com',
 };
 
 const usEast1CertificateArn =
@@ -24,7 +27,7 @@ describe('ssmParametersFromEnv', () => {
   it('maps every set key to its stage path and skips empty values', () => {
     const parameters = ssmParametersFromEnv(validEnv, 'prod');
 
-    expect(parameters).toHaveLength(10);
+    expect(parameters).toHaveLength(13);
     expect(parameters.map((parameter) => parameter.name)).not.toContain(
       '/handshake/prod/paypal/webhook-id',
     );
@@ -91,7 +94,7 @@ describe('ssmParametersFromEnv', () => {
   it('skips a missing required key and stores the others', () => {
     const parameters = ssmParametersFromEnv({ ...validEnv, CHANNEL3_API_KEY: '' }, 'prod');
 
-    expect(parameters).toHaveLength(9);
+    expect(parameters).toHaveLength(12);
     expect(parameters.map((parameter) => parameter.name)).not.toContain(
       '/handshake/prod/channel3/api-key',
     );

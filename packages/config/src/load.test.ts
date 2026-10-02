@@ -14,6 +14,9 @@ const validEnv = {
   BEDROCK_MODEL_SMART: 'eu.smart-model',
   DAILY_TOKEN_BUDGET: '2000000',
   NEGOTIATION_MAX_TURNS: '8',
+  MAX_BOUNTY: '5.00',
+  DAILY_BOUNTY_BUDGET: '50.00',
+  ARENA_RECIPIENT_EMAIL: 'arena@personal.example.com',
 };
 
 describe('loadConfig from environment variables', () => {
@@ -22,7 +25,13 @@ describe('loadConfig from environment variables', () => {
 
     expect(config.paypal.baseUrl).toBe('https://api-m.sandbox.paypal.com');
     expect(config.paypal.webhookId).toBe('WH-1');
-    expect(config.limits).toEqual({ dailyTokenBudget: 2_000_000, negotiationMaxTurns: 8 });
+    expect(config.limits).toEqual({
+      dailyTokenBudget: 2_000_000,
+      negotiationMaxTurns: 8,
+      maxBounty: '5.00',
+      dailyBountyBudget: '50.00',
+    });
+    expect(config.arena.recipientEmail).toBe('arena@personal.example.com');
   });
 
   it('allows the webhook ID to be absent before the webhook is registered', async () => {
@@ -43,6 +52,12 @@ describe('loadConfig from environment variables', () => {
     const env = { ...validEnv, PAYPAL_BASE_URL: 'https://api-m.paypal.com' };
 
     await expect(loadConfig(env)).rejects.toThrow('PAYPAL_BASE_URL is invalid');
+  });
+
+  it.each(['0', '0.00', '5.001', '-1', '5 USD'])('rejects a bounty cap of "%s"', async (value) => {
+    await expect(loadConfig({ ...validEnv, MAX_BOUNTY: value })).rejects.toThrow(
+      'MAX_BOUNTY is invalid',
+    );
   });
 
   it('never includes values in the error message', async () => {

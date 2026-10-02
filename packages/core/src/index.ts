@@ -31,6 +31,7 @@ export { checkEvidence, deliveryEvidenceSchema, type DeliveryEvidence } from './
 export { EscrowExpiredError, planDeliveryTimer, type DeliveryTimerStep } from './delivery-timer';
 export { mandateSchema, type Mandate } from './mandate';
 export {
+  addMoney,
   compareMoney,
   CurrencyMismatchError,
   formatMoney,
@@ -55,12 +56,16 @@ export {
   type NegotiationTurn,
 } from './negotiation';
 export {
+  bountyProposalSchema,
+  checkBountyProposal,
   evaluateProposal,
   MIN_CRITERION_CONFIDENCE,
   reviewAgreement,
   reviewAuthorization,
   settlementProposalSchema,
   type AgreementReview,
+  type BountyLimits,
+  type BountyProposal,
   type PolicyDecision,
   type PolicyViolation,
   type PolicyViolationCode,

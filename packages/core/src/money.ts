@@ -83,6 +83,14 @@ export function compareMoney(a: Money, b: Money): -1 | 0 | 1 {
   return difference < 0n ? -1 : 1;
 }
 
+/** Throws `CurrencyMismatchError` when currencies differ. */
+export function addMoney(a: Money, b: Money): Money {
+  if (!hasSameCurrency(a, b)) {
+    throw new CurrencyMismatchError(`Cannot add ${a.currency} to ${b.currency}`);
+  }
+  return fromMinorUnits(toMinorUnits(a) + toMinorUnits(b), a.currency);
+}
+
 export function moneyEquals(a: Money, b: Money): boolean {
   return hasSameCurrency(a, b) && compareMoney(a, b) === 0;
 }

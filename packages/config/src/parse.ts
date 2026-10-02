@@ -5,6 +5,12 @@ export const PAYPAL_SANDBOX_BASE_URL = 'https://api-m.sandbox.paypal.com';
 
 const nonEmpty = z.string().trim().min(1);
 const positiveInteger = z.coerce.number().int().positive();
+// Bounties are paid in USD, so amounts have at most two decimals.
+const positiveUsdAmount = z
+  .string()
+  .trim()
+  .regex(/^\d+(\.\d{1,2})?$/)
+  .refine((value) => Number(value) > 0);
 
 const rawConfigSchema = z.object({
   paypalClientId: nonEmpty,
@@ -20,6 +26,9 @@ const rawConfigSchema = z.object({
   bedrockModelSmart: nonEmpty,
   dailyTokenBudget: positiveInteger,
   negotiationMaxTurns: positiveInteger,
+  maxBounty: positiveUsdAmount,
+  dailyBountyBudget: positiveUsdAmount,
+  arenaRecipientEmail: z.email(),
 } satisfies Record<ConfigKeyName, z.ZodType>);
 
 export interface Config {
@@ -33,7 +42,14 @@ export interface Config {
   };
   channel3: { apiKey: string };
   bedrock: { region: string; modelFast: string; modelSmart: string };
-  limits: { dailyTokenBudget: number; negotiationMaxTurns: number };
+  limits: {
+    dailyTokenBudget: number;
+    negotiationMaxTurns: number;
+    /** USD decimal strings. */
+    maxBounty: string;
+    dailyBountyBudget: string;
+  };
+  arena: { recipientEmail: string };
 }
 
 export class ConfigError extends Error {
@@ -62,7 +78,10 @@ export function parseConfig(raw: RawConfig, source: (key: ConfigKeyName) => stri
     limits: {
       dailyTokenBudget: values.dailyTokenBudget,
       negotiationMaxTurns: values.negotiationMaxTurns,
+      maxBounty: values.maxBounty,
+      dailyBountyBudget: values.dailyBountyBudget,
     },
+    arena: { recipientEmail: values.arenaRecipientEmail },
   };
 }
 

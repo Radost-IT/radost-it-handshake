@@ -2,10 +2,13 @@ import { describe, expect, it } from 'vitest';
 import type { Deal } from './deal';
 import { money } from './money';
 import {
+  checkBountyProposal,
   evaluateProposal,
   reviewAgreement,
   reviewAuthorization,
   settlementProposalSchema,
+  type BountyLimits,
+  type BountyProposal,
   type PolicyDecision,
   type SettlementProposal,
 } from './policy';
@@ -237,5 +240,49 @@ describe('settlementProposalSchema', () => {
     expect(settlementProposalSchema.safeParse({ action: 'REFUND', reason: 'x' }).success).toBe(
       false,
     );
+  });
+});
+
+describe('checkBountyProposal', () => {
+  const limits: BountyLimits = {
+    maxBounty: money('5.00', 'USD'),
+    dailyBudget: money('20.00', 'USD'),
+    recipientEmail: 'arena-recipient@personal.example.com',
+  };
+  const bounty: BountyProposal = {
+    attemptId: 'attempt-1',
+    amount: money('5.00', 'USD'),
+    recipientEmail: 'Arena-Recipient@personal.example.com',
+    reason: 'Loophole found in bait-and-switch',
+  };
+  const codes = (paidToday: string, proposal: BountyProposal = bounty) =>
+    checkBountyProposal(proposal, limits, money(paidToday, 'USD')).map(
+      (violation) => violation.code,
+    );
+
+  it('approves a bounty at the cap that fills the daily budget exactly', () => {
+    expect(codes('15.00')).toEqual([]);
+  });
+
+  it('refuses a bounty one cent above the cap', () => {
+    expect(codes('0', { ...bounty, amount: money('5.01', 'USD') })).toEqual(['BOUNTY_ABOVE_CAP']);
+  });
+
+  it('refuses a bounty that would pass the daily budget by one cent', () => {
+    expect(codes('15.01')).toEqual(['DAILY_BOUNTY_BUDGET_EXCEEDED']);
+  });
+
+  it('refuses a zero bounty', () => {
+    expect(codes('0', { ...bounty, amount: money('0', 'USD') })).toEqual(['BOUNTY_NOT_POSITIVE']);
+  });
+
+  it('refuses any recipient but the arena sandbox account', () => {
+    expect(codes('0', { ...bounty, recipientEmail: 'someone@example.com' })).toEqual([
+      'RECIPIENT_NOT_ALLOWED',
+    ]);
+  });
+
+  it('refuses a bounty in another currency without comparing amounts', () => {
+    expect(codes('0', { ...bounty, amount: money('1.00', 'EUR') })).toEqual(['CURRENCY_MISMATCH']);
   });
 });
