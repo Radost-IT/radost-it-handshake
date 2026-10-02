@@ -12,7 +12,6 @@ import type { Construct } from 'constructs';
 import { fileURLToPath } from 'node:url';
 
 export interface HandshakeStackProps extends StackProps {
-  stage: string;
   /** A Next.js app already built with `open-next build`. */
   webAppPath: string;
   /** Hostnames covered by the *.radostit.com certificates. DNS records are managed outside AWS. */
@@ -28,7 +27,7 @@ const certificateParameters = {
 const apiSource = (handlerFile: string) =>
   fileURLToPath(new URL(`../../services/api/src/${handlerFile}`, import.meta.url));
 
-// Generated resource names start with the stack name (`Handshake-<stage>`),
+// Generated resource names start with the stack name (`Handshake-demo`),
 // which is what the IAM policies in infra/iam/ are scoped to.
 export class HandshakeStack extends Stack {
   constructor(scope: Construct, id: string, props: HandshakeStackProps) {

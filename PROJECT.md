@@ -137,7 +137,7 @@ Terminal states: `SETTLED`, `REFUSED`, `CANCELLED`, `ABANDONED`. Every transitio
 | Idempotency | `IDEMP#<key>` | `META` (TTL) |
 | Token budget | `BUDGET#<yyyy-mm-dd>` | `TOKENS` |
 
-### SSM parameters (stage = `dev` or `demo`)
+### SSM parameters (stage = `demo`)
 
 ```
 /handshake/<stage>/paypal/client-id
@@ -171,14 +171,14 @@ Deploys are manual for now: the human runs `pnpm cdk:deploy`. Claude Code writes
 - [ ] Human completes **[I-10]** (SSM parameters, CDK bootstrap).
 - [x] pnpm monorepo with the layout above, TypeScript strict, ESLint, Vitest, Prettier.
 - [x] `packages/config`: load from `.env` locally or from SSM by stage on AWS; keep `.env.example` in sync; zod validation; fail-fast errors naming missing keys only.
-- [x] CDK app defines an empty `dev` stack (`pnpm cdk:synth` passes): DynamoDB table, HTTP API with a health route, Next.js placeholder page on CloudFront. Name stacks `Handshake-<stage>` and keep generated resource names under that prefix, because the policies in `infra/iam/` are scoped to it. In `cdk.json`, set `"toolkitStackName": "Handshake-CDKToolkit"` and the context key `"@aws-cdk/core:bootstrapQualifier": "handshake"` to match the bootstrap in [I-10].
-- [x] Custom domains: the web app on `handshake.radostit.com` (`dev-handshake.radostit.com` for dev) and the HTTP API on `api-handshake.radostit.com` (`api-dev-handshake.radostit.com`). Names stay one level below `radostit.com` so the `*.radostit.com` certificates cover them. Certificate ARNs come from SSM; DNS records are manual ([I-10]).
-- [ ] Human deploys the `dev` stack manually with `pnpm cdk:deploy --context stage=dev`.
+- [x] CDK app defines an empty `Handshake-demo` stack (`pnpm cdk:synth` passes): DynamoDB table, HTTP API with a health route, Next.js placeholder page on CloudFront. Keep generated resource names under the `Handshake-` prefix, because the policies in `infra/iam/` are scoped to it. In `cdk.json`, set `"toolkitStackName": "Handshake-CDKToolkit"` and the context key `"@aws-cdk/core:bootstrapQualifier": "handshake"` to match the bootstrap in [I-10].
+- [x] Custom domains: the web app on `handshake.radostit.com` and the HTTP API on `api-handshake.radostit.com`. Names stay one level below `radostit.com` so the `*.radostit.com` certificates cover them. Certificate ARNs come from SSM; DNS records are manual ([I-10]).
+- [ ] Human deploys the stack manually with `pnpm cdk:deploy`.
 - [ ] `scripts/probes/paypal-auth.ts`: get a sandbox access token and print success or failure, never the token.
 - [ ] `scripts/probes/channel3-search.ts`: one product search, printing titles and prices.
 - [ ] `scripts/probes/bedrock-hello.ts`: one Converse call per configured model.
 
-Done when the three probes pass against real services and `pnpm cdk:deploy` creates the dev stack.
+Done when the three probes pass against real services and `pnpm cdk:deploy` creates the stack.
 
 ### Phase 2 — Escrow core (Oct 10–18)
 
@@ -229,7 +229,7 @@ Done when a successful attack produces a payout and a regression case, and the p
 - [ ] Cost guards in place and tested: throttling, reserved concurrency, token budgets, Budgets alarms.
 - [ ] Cost guards never block judges: daily token budget sized for judging traffic, an alarm at 80% of it, and a separate judge allowance unlocked by an access code printed in the README. Per-IP limits must allow several judges behind one IP.
 - [ ] `pnpm demo:reset` restores a known-good demo state.
-- [ ] Human deploys the `demo` stage manually and completes **[I-13]**.
+- [ ] Human deploys the final build manually and completes **[I-13]**.
 - [ ] **Feature freeze Nov 8.** Only bug fixes after this.
 
 ### Phase 6 — Submission (Nov 9–12)
@@ -246,7 +246,7 @@ Done when a successful attack produces a payout and a regression case, and the p
 
 - [ ] Daily health check (scheduled Lambda pinging the main flows, alerting via SNS email), running at least until Dec 15, 8:00 am PT.
 - [ ] No pushes to `main` after the deadline; the repo is part of the frozen submission.
-- [ ] No deploys to `demo` unless it is down, and only if PayPal confirmed on Discord that restoring the hosted demo is allowed ([I-2]). Fixes go to `dev` first, on a branch.
+- [ ] No deploys unless the demo is down, and only if PayPal confirmed on Discord that restoring the hosted demo is allowed ([I-2]). Fixes are tested locally first, on a branch.
 - [ ] Human follows **[I-18]**.
 
 ### Optional — Continuous integration

@@ -32,7 +32,6 @@ describe('HandshakeStack', () => {
   beforeAll(() => {
     const app = new App({ context: { '@aws-cdk/core:bootstrapQualifier': 'handshake' } });
     const stack = new HandshakeStack(app, 'Handshake-test', {
-      stage: 'test',
       webAppPath: createBuiltWebApp(),
       domains: { web: 'test-handshake.radostit.com', api: 'api-test-handshake.radostit.com' },
       env: { region: 'eu-west-1' },

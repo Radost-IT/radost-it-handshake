@@ -80,8 +80,8 @@ pnpm eval                # agent evals and arena regression suite
 pnpm probe:paypal       # also probe:channel3, probe:bedrock; read .env
 pnpm seed:sellers
 pnpm demo:reset
-pnpm cdk:synth --context stage=dev
-pnpm cdk:deploy --context stage=demo
+pnpm cdk:synth
+pnpm cdk:deploy
 ```
 
 If you add or change a command, update this list and the README in the same commit.

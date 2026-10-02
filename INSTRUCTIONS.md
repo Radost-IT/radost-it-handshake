@@ -105,7 +105,7 @@ Run these in your terminal. `read -rs` keeps secrets out of your shell history a
 
 ```bash
 export AWS_PROFILE=handshake
-export STAGE=dev
+export STAGE=demo
 export REGION=eu-west-1
 
 aws ssm put-parameter --name /handshake/$STAGE/paypal/client-id --type String --value "<client-id>" --overwrite
@@ -129,20 +129,17 @@ aws ssm put-parameter --name /handshake/$STAGE/limits/negotiation-max-turns --ty
   ```
   The custom stack name and qualifier keep the bootstrap stack, roles and asset bucket apart from any other CDK app in the account. The policies in `infra/iam/` expect the qualifier `handshake`.
 
-- [ ] Repeat the `put-parameter` commands with `STAGE=demo` before the first demo deploy (Phase 5).
-- [ ] Store the ARNs of the two `*.radostit.com` ACM certificates. Both must be **Issued**. CloudFront only accepts a certificate from us-east-1; the API custom domain needs one from eu-west-1. Both parameters live in eu-west-1 because the stack reads them there. They are shared by all stages:
+- [ ] Store the ARNs of the two `*.radostit.com` ACM certificates. Both must be **Issued**. CloudFront only accepts a certificate from us-east-1; the API custom domain needs one from eu-west-1. Both parameters live in eu-west-1 because the stack reads them there:
   ```bash
   aws ssm put-parameter --region eu-west-1 --name /handshake/certificates/us-east-1 --type String --value "<us-east-1 certificate ARN>" --overwrite
   aws ssm put-parameter --region eu-west-1 --name /handshake/certificates/eu-west-1 --type String --value "<eu-west-1 certificate ARN>" --overwrite
   ```
-- [ ] After each stage's first deploy, add two CNAME records where `radostit.com` DNS is managed. The deploy prints the targets as `WebDnsTarget` and `ApiDnsTarget`:
+- [ ] After the first deploy, add two CNAME records where `radostit.com` DNS is managed. The deploy prints the targets as `WebDnsTarget` and `ApiDnsTarget`:
 
-  | Stage | Name | CNAME target |
-  | --- | --- | --- |
-  | dev | `dev-handshake.radostit.com` | `WebDnsTarget` (a `*.cloudfront.net` name) |
-  | dev | `api-dev-handshake.radostit.com` | `ApiDnsTarget` (a `d-*.execute-api.eu-west-1.amazonaws.com` name) |
-  | demo | `handshake.radostit.com` | `WebDnsTarget` |
-  | demo | `api-handshake.radostit.com` | `ApiDnsTarget` |
+  | Name | CNAME target |
+  | --- | --- |
+  | `handshake.radostit.com` | `WebDnsTarget` (a `*.cloudfront.net` name) |
+  | `api-handshake.radostit.com` | `ApiDnsTarget` (a `d-*.execute-api.eu-west-1.amazonaws.com` name) |
 - [ ] The webhook ID parameter is added in [I-11].
 
 ---
@@ -158,7 +155,6 @@ After Claude Code's first deploy, the CDK output prints a `WebhookUrl`.
   ```bash
   aws ssm put-parameter --name /handshake/$STAGE/paypal/webhook-id --type String --value "<webhook-id>" --overwrite
   ```
-- [ ] Repeat for the `demo` stage URL in Phase 5. Each stage has its own webhook.
 
 ---
 
@@ -173,8 +169,7 @@ After Claude Code's first deploy, the CDK output prints a `WebhookUrl`.
 ## During Phase 5
 
 ### [I-13] Demo stage and judge accounts
-- [ ] Store all SSM parameters for `STAGE=demo` (see [I-10]) and register the demo webhook (see [I-11]).
-- [ ] After the demo deploy, open https://handshake.radostit.com in a private browser window and complete one deal and one arena attack using only the demo buyer sandbox login.
+- [ ] After the final deploy, open https://handshake.radostit.com in a private browser window and complete one deal and one arena attack using only the demo buyer sandbox login.
 - [ ] Confirm the AWS Budgets alerts reach your email.
 
 ---
@@ -214,6 +209,6 @@ After Claude Code's first deploy, the CDK output prints a `WebhookUrl`.
 - [ ] Do not push to `main` or edit the Devpost submission; the rules freeze both after the deadline.
 - [ ] Do not change PayPal app credentials, delete sandbox accounts, or rotate the Channel3 key.
 - [ ] The demo must stay free and unrestricted for judges until at least Dec 15, 8:00 am PT.
-- [ ] Watch the health-check and budget alert emails; if something breaks, fix it on `dev` first.
+- [ ] Watch the health-check and budget alert emails; if something breaks, reproduce and fix it locally first.
 - [ ] Check Channel3 credit usage weekly and ask for a top-up if needed.
 - [ ] Keep AWS resources running until winners are announced (around Dec 21). Delete the stacks afterwards if you no longer need them.
