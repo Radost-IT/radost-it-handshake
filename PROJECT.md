@@ -152,6 +152,8 @@ Terminal states: `SETTLED`, `REFUSED`, `CANCELLED`, `ABANDONED`. Every transitio
 
 ## Phase plan
 
+Deploys are manual for now: the human runs `pnpm cdk:deploy`. Claude Code writes and synthesizes the stacks but does not deploy them.
+
 ### Phase 0 — Accounts and access (Oct 2–5)
 
 - [ ] Human completes **[I-1] to [I-9]**.
@@ -165,13 +167,13 @@ Terminal states: `SETTLED`, `REFUSED`, `CANCELLED`, `ABANDONED`. Every transitio
 ### Phase 1 — Skeleton (Oct 3–9)
 
 - [ ] Human completes **[I-10]** (SSM parameters, CDK bootstrap).
-- [ ] pnpm monorepo with the layout above, TypeScript strict, ESLint, Vitest, Prettier.
-- [ ] `packages/config`: load from `.env` locally or from SSM by stage on AWS; keep `.env.example` in sync; zod validation; fail-fast errors naming missing keys only.
-- [ ] CDK app deploys an empty `dev` stack: DynamoDB table, HTTP API with a health route, S3 + CloudFront with a placeholder page. Name stacks `Handshake-<stage>` and keep generated resource names under that prefix, because the policies in `infra/iam/` are scoped to it. In `cdk.json`, set `"toolkitStackName": "Handshake-CDKToolkit"` and the context key `"@aws-cdk/core:bootstrapQualifier": "handshake"` to match the bootstrap in [I-10].
+- [x] pnpm monorepo with the layout above, TypeScript strict, ESLint, Vitest, Prettier.
+- [x] `packages/config`: load from `.env` locally or from SSM by stage on AWS; keep `.env.example` in sync; zod validation; fail-fast errors naming missing keys only.
+- [x] CDK app defines an empty `dev` stack (`pnpm cdk:synth` passes): DynamoDB table, HTTP API with a health route, S3 + CloudFront with a placeholder page. Name stacks `Handshake-<stage>` and keep generated resource names under that prefix, because the policies in `infra/iam/` are scoped to it. In `cdk.json`, set `"toolkitStackName": "Handshake-CDKToolkit"` and the context key `"@aws-cdk/core:bootstrapQualifier": "handshake"` to match the bootstrap in [I-10].
+- [ ] Human deploys the `dev` stack manually with `pnpm cdk:deploy -- --context stage=dev`.
 - [ ] `scripts/probes/paypal-auth.ts`: get a sandbox access token and print success or failure, never the token.
 - [ ] `scripts/probes/channel3-search.ts`: one product search, printing titles and prices.
 - [ ] `scripts/probes/bedrock-hello.ts`: one Converse call per configured model.
-- [ ] GitHub Actions: typecheck, lint, unit tests on every push.
 
 Done when the three probes pass against real services and `pnpm cdk:deploy` creates the dev stack.
 
@@ -224,7 +226,7 @@ Done when a successful attack produces a payout and a regression case, and the p
 - [ ] Cost guards in place and tested: throttling, reserved concurrency, token budgets, Budgets alarms.
 - [ ] Cost guards never block judges: daily token budget sized for judging traffic, an alarm at 80% of it, and a separate judge allowance unlocked by an access code printed in the README. Per-IP limits must allow several judges behind one IP.
 - [ ] `pnpm demo:reset` restores a known-good demo state.
-- [ ] Deploy the `demo` stage; human completes **[I-13]**.
+- [ ] Human deploys the `demo` stage manually and completes **[I-13]**.
 - [ ] **Feature freeze Nov 8.** Only bug fixes after this.
 
 ### Phase 6 — Submission (Nov 9–12)
@@ -243,6 +245,10 @@ Done when a successful attack produces a payout and a regression case, and the p
 - [ ] No pushes to `main` after the deadline; the repo is part of the frozen submission.
 - [ ] No deploys to `demo` unless it is down, and only if PayPal confirmed on Discord that restoring the hosted demo is allowed ([I-2]). Fixes go to `dev` first, on a branch.
 - [ ] Human follows **[I-18]**.
+
+### Optional — Continuous integration
+
+- [ ] GitHub Actions: typecheck, lint, unit tests on every push. Only if time allows after Phase 6; not needed for the submission.
 
 ## Demo video outline (under 3 minutes)
 
