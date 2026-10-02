@@ -55,7 +55,7 @@ Last checked: 2 Oct 2026. Console menus change often; if a label differs, look f
 
 ### [I-6] AWS account
 - [x] Create an AWS account at https://aws.amazon.com, or use an existing one.
-- [x] If new: choose the **Paid plan**. You still receive the free credits, but the Free plan closes the account when credits run out or after six months, which could take the demo offline during judging.
+- [x] If new: choose the **Paid plan**. You still receive the free credits, but the Free plan closes the account when credits run out or after six months, which could take the app offline during judging.
 - [x] Enable **MFA** on the root user, then stop using the root user.
 - [x] Open **IAM Identity Center**, enable it, and create a user for yourself with the **AdministratorAccess** permission set on this account.
 - [x] Use **eu-west-1** (Ireland) for everything. Check in the Bedrock console's model catalog that the Anthropic models you want are listed there.
@@ -105,7 +105,7 @@ Run these in your terminal. `read -rs` keeps secrets out of your shell history a
 
 ```bash
 export AWS_PROFILE=handshake
-export STAGE=demo
+export STAGE=prod
 export REGION=eu-west-1
 
 aws ssm put-parameter --name /handshake/$STAGE/paypal/client-id --type String --value "<client-id>" --overwrite
@@ -168,7 +168,7 @@ After Claude Code's first deploy, the CDK output prints a `WebhookUrl`.
 
 ## During Phase 5
 
-### [I-13] Demo stage and judge accounts
+### [I-13] Production check and judge accounts
 - [ ] After the final deploy, open https://handshake.radostit.com in a private browser window and complete one deal and one arena attack using only the demo buyer sandbox login.
 - [ ] Confirm the AWS Budgets alerts reach your email.
 
@@ -192,7 +192,7 @@ After Claude Code's first deploy, the CDK output prints a `WebhookUrl`.
 
 ### [I-16] Submit on Devpost
 - [ ] Paste the text from `docs/submission.md`.
-- [ ] Add the YouTube link, GitHub link, hosted demo URL, and list of tools used.
+- [ ] Add the YouTube link, GitHub link, hosted app URL, and list of tools used.
 - [ ] Select the **AG Grid**, **Channel3**, and **APIMatic** sponsor prizes.
 - [ ] Submit at least 24 hours before **Nov 12, 2:00 pm PT**. Drafts can be edited until the deadline; after it, nothing in the submission can change.
 - [ ] Confirm Claude Code has pushed the `submission` tag on the submitted commit.
@@ -205,10 +205,10 @@ After Claude Code's first deploy, the CDK output prints a `WebhookUrl`.
 
 ## After submission (Nov 13 – Dec 21)
 
-### [I-18] Keep the demo alive
+### [I-18] Keep the app online
 - [ ] Do not push to `main` or edit the Devpost submission; the rules freeze both after the deadline.
 - [ ] Do not change PayPal app credentials, delete sandbox accounts, or rotate the Channel3 key.
-- [ ] The demo must stay free and unrestricted for judges until at least Dec 15, 8:00 am PT.
+- [ ] The app must stay free and unrestricted for judges until at least Dec 15, 8:00 am PT.
 - [ ] Watch the health-check and budget alert emails; if something breaks, reproduce and fix it locally first.
 - [ ] Check Channel3 credit usage weekly and ask for a top-up if needed.
 - [ ] Keep AWS resources running until winners are announced (around Dec 21). Delete the stacks afterwards if you no longer need them.

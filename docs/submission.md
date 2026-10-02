@@ -72,7 +72,7 @@ Near-duplicates of known attacks get a lower novelty, so copying a known trick e
 
 - Authorization timing in the sandbox: the honor period, the reauthorization window, and how void and capture behave near the edges. We probed these with scripts instead of assuming.
 - Prompt injection that hides inside "data", such as product descriptions and evidence text, rather than in chat.
-- Keeping the hosted demo free and open for judges while protecting it from cost abuse (token budgets, rate limits, and a judge allowance).
+- Keeping the hosted app free and open for judges while protecting it from cost abuse (token budgets, rate limits, and a judge allowance).
 - Making webhooks and API responses agree when they arrive out of order or twice.
 
 ### Accomplishments that we're proud of
@@ -106,7 +106,7 @@ Up to 25 tags:
 
 ## "Try it out" links
 
-- Hosted demo: **TBD** (CloudFront URL of the `demo` stage)
+- Hosted app: https://handshake.radostit.com
 - Source code: https://github.com/Radost-IT/radost-it-handshake
 - Demo video: **TBD** (YouTube, public)
 
@@ -181,7 +181,7 @@ The README covers setup, the MIT license, how PayPal and AI are used (with an AP
 
 ## Working demo URL
 
-**TBD** (CloudFront URL of the `demo` stage)
+https://handshake.radostit.com
 
 ---
 
@@ -189,7 +189,7 @@ The README covers setup, the MIT license, how PayPal and AI are used (with an AP
 
 **Draft note:** fill in the real values after [I-13].
 
-1. Open the hosted demo: **TBD**.
+1. Open https://handshake.radostit.com.
 2. Enter the judge access code **TBD** on the landing page. It gives you a separate usage allowance, so shared limits never lock you out.
 3. **Deal mode:** enter a goal such as "a stainless steel water bottle under $40", start the deal, and watch the negotiation. When asked, approve the contract, then log in to the PayPal sandbox checkout with:
    - Email: **TBD** (sandbox personal account)
@@ -221,7 +221,7 @@ Why: **Draft note:** write at the end from real experience. Points to note as we
 
 ## AG Grid experience
 
-We used AG Grid Community and AG Charts Community. The Community editions are free and do not expire, so the demo stays open for judges until the end of judging.
+We used AG Grid Community and AG Charts Community. The Community editions are free and do not expire, so the app stays open for judges until the end of judging.
 
 **Draft note:** write the final text from real experience in Phase 5. Track:
 

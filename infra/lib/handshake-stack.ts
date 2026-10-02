@@ -27,7 +27,7 @@ const certificateParameters = {
 const apiSource = (handlerFile: string) =>
   fileURLToPath(new URL(`../../services/api/src/${handlerFile}`, import.meta.url));
 
-// Generated resource names start with the stack name (`Handshake-demo`),
+// Generated resource names start with the stack name (`Handshake-prod`),
 // which is what the IAM policies in infra/iam/ are scoped to.
 export class HandshakeStack extends Stack {
   constructor(scope: Construct, id: string, props: HandshakeStackProps) {

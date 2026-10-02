@@ -23,7 +23,7 @@ pnpm probe:bedrock       # one Converse call per configured model
 
 ## Deploy
 
-The AWS CDK app in `infra/` deploys one stack, `Handshake-demo`, to eu-west-1. Bootstrap and SSM setup are described in `INSTRUCTIONS.md` [I-10].
+The AWS CDK app in `infra/` deploys one production stack, `Handshake-prod`, to eu-west-1. Bootstrap and SSM setup are described in `INSTRUCTIONS.md` [I-10].
 
 The web app is a Next.js app. `cdk:synth` and `cdk:deploy` build it with OpenNext first, then the `cdk-nextjs-standalone` construct deploys it behind CloudFront.
 
@@ -36,7 +36,7 @@ pnpm cdk:synth
 pnpm cdk:deploy
 ```
 
-Configuration is validated at startup. Locally it comes from `.env`; on AWS it comes from SSM Parameter Store under `/handshake/demo/`.
+Configuration is validated at startup. Locally it comes from `.env`; on AWS it comes from SSM Parameter Store under `/handshake/prod/`.
 
 ## License
 

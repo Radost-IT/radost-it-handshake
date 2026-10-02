@@ -1,6 +1,6 @@
 # PROJECT.md — Handshake by Radost IT
 
-Plan for the PayPal AI Hackathon entry, from empty repo to submitted project and kept-alive demo.
+Plan for the PayPal AI Hackathon entry, from empty repo to submitted project and a production app kept online through judging.
 Tick boxes as steps are completed. Manual (human) steps are in `INSTRUCTIONS.md` and referenced here as **[I-x]**.
 
 ## Key dates (2026)
@@ -10,8 +10,8 @@ Tick boxes as steps are completed. Manual (human) steps are in `INSTRUCTIONS.md`
 | Oct 1 | Submissions open |
 | Nov 8 | Our feature freeze |
 | Nov 12, 2:00 pm PT | Submission deadline; the submission (including the repo) is frozen after this |
-| Nov 13 – Dec 15, 8:00 am PT | Judging; the demo must stay free and unrestricted for judges |
-| ~Dec 21 | Winners announced; keep the demo alive until then |
+| Nov 13 – Dec 15, 8:00 am PT | Judging; the app must stay free and unrestricted for judges |
+| ~Dec 21 | Winners announced; keep the app online until then |
 
 ## Prize targets
 
@@ -137,7 +137,7 @@ Terminal states: `SETTLED`, `REFUSED`, `CANCELLED`, `ABANDONED`. Every transitio
 | Idempotency | `IDEMP#<key>` | `META` (TTL) |
 | Token budget | `BUDGET#<yyyy-mm-dd>` | `TOKENS` |
 
-### SSM parameters (stage = `demo`)
+### SSM parameters (stage = `prod`)
 
 ```
 /handshake/<stage>/paypal/client-id
@@ -171,7 +171,7 @@ Deploys are manual for now: the human runs `pnpm cdk:deploy`. Claude Code writes
 - [ ] Human completes **[I-10]** (SSM parameters, CDK bootstrap).
 - [x] pnpm monorepo with the layout above, TypeScript strict, ESLint, Vitest, Prettier.
 - [x] `packages/config`: load from `.env` locally or from SSM by stage on AWS; keep `.env.example` in sync; zod validation; fail-fast errors naming missing keys only.
-- [x] CDK app defines an empty `Handshake-demo` stack (`pnpm cdk:synth` passes): DynamoDB table, HTTP API with a health route, Next.js placeholder page on CloudFront. Keep generated resource names under the `Handshake-` prefix, because the policies in `infra/iam/` are scoped to it. In `cdk.json`, set `"toolkitStackName": "Handshake-CDKToolkit"` and the context key `"@aws-cdk/core:bootstrapQualifier": "handshake"` to match the bootstrap in [I-10].
+- [x] CDK app defines an empty `Handshake-prod` stack (`pnpm cdk:synth` passes): DynamoDB table, HTTP API with a health route, Next.js placeholder page on CloudFront. Keep generated resource names under the `Handshake-` prefix, because the policies in `infra/iam/` are scoped to it. In `cdk.json`, set `"toolkitStackName": "Handshake-CDKToolkit"` and the context key `"@aws-cdk/core:bootstrapQualifier": "handshake"` to match the bootstrap in [I-10].
 - [x] Custom domains: the web app on `handshake.radostit.com` and the HTTP API on `api-handshake.radostit.com`. Names stay one level below `radostit.com` so the `*.radostit.com` certificates cover them. Certificate ARNs come from SSM; DNS records are manual ([I-10]).
 - [ ] Human deploys the stack manually with `pnpm cdk:deploy`.
 - [ ] `scripts/probes/paypal-auth.ts`: get a sandbox access token and print success or failure, never the token.
@@ -246,7 +246,7 @@ Done when a successful attack produces a payout and a regression case, and the p
 
 - [ ] Daily health check (scheduled Lambda pinging the main flows, alerting via SNS email), running at least until Dec 15, 8:00 am PT.
 - [ ] No pushes to `main` after the deadline; the repo is part of the frozen submission.
-- [ ] No deploys unless the demo is down, and only if PayPal confirmed on Discord that restoring the hosted demo is allowed ([I-2]). Fixes are tested locally first, on a branch.
+- [ ] No deploys unless the app is down, and only if PayPal confirmed on Discord that restoring the hosted app is allowed ([I-2]). Fixes are tested locally first, on a branch.
 - [ ] Human follows **[I-18]**.
 
 ### Optional — Continuous integration
