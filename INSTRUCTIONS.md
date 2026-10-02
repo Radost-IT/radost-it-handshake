@@ -16,20 +16,23 @@ Last checked: 2 Oct 2026. Console menus change often; if a label differs, look f
 ## Today (before any code)
 
 ### [I-1] Register for the hackathon
-- [ ] Open https://paypalaihackathon.devpost.com and click **Join hackathon**.
-- [ ] If you work with teammates, create the team on Devpost and agree who is the Representative (the person who submits).
-- [ ] Confirm every team member is eligible: of legal age, not a resident of or affiliated with an excluded country or region (the rules list Brazil, Quebec, Russia, Crimea, Cuba, Iran, North Korea), and not an employee or family member of PayPal, Devpost, a sponsor, or a judge. The project must not receive financial or preferential support from PayPal or Devpost.
+- [x] Open https://paypalaihackathon.devpost.com and click **Join hackathon**.
 
 ### [I-2] Join the community and webinars
-- [ ] Join the PayPal Discord: https://discord.gg/sJ2G6DyvSK (the PayPal, Channel3, and APIMatic teams answer there).
+- [ ] Join the PayPal Discord: https://discord.gg/sJ2G6DyvSK (the PayPal, Channel3, APIMatic, and AG Grid teams answer there).
 - [ ] Register for the webinars: Oct 6 (Start building with PayPal), Oct 7 (APIMatic Context Plugins), Oct 13 (Start building with PayPal, repeat).
 - [ ] Questions to ask PayPal on Discord or in the webinar:
   1. Exact sandbox behavior for authorization honor period, reauthorization, and void.
+  Check online
   2. Whether Payouts works in sandbox for new apps without extra enablement.
+  Check online
   3. Whether we may redeploy the hosted demo during judging to fix an outage, given that the submission is frozen after the deadline.
+  Not possible
   4. Whether the video may show the PayPal and Channel3 names and logos, since the rules ban third-party trademarks without permission.
+  Yes, doable.
   5. Whether a hosted demo plus sandbox logins satisfies the README test-access rule, without publishing our own API keys.
-- [ ] Write the answers into this file under the question, with the date and who answered.
+  Yes
+- [x] Write the answers into this file under the question.
 
 ### [I-3] PayPal developer app (sandbox)
 - [ ] Log in at https://developer.paypal.com with your PayPal account (create one if needed).
@@ -59,16 +62,16 @@ Last checked: 2 Oct 2026. Console menus change often; if a label differs, look f
 - [ ] Open **Billing → Budgets** and create a monthly cost budget with email alerts at $10, $25, and $50.
 
 ### [I-7] Tools on your computer
-- [ ] Node.js LTS (20 or newer): https://nodejs.org
-- [ ] pnpm: `npm install -g pnpm`
-- [ ] AWS CLI v2: https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html
-- [ ] Log in to AWS from the terminal:
+- [x] Node.js LTS (20 or newer): https://nodejs.org
+- [x] pnpm: `npm install -g pnpm`
+- [x] AWS CLI v2: https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html
+- [] Log in to AWS from the terminal:
   ```bash
   aws configure sso            # profile name: handshake, region: your chosen region
   aws sso login --profile handshake
   aws sts get-caller-identity --profile handshake    # should print your account ID
   ```
-- [ ] Docker is **not** required.
+- [x] Docker is **not** required.
 
 ### [I-8] Bedrock access to Anthropic models
 - [ ] In the AWS console, open **Amazon Bedrock** in your region. The old Model access page is retired; models are enabled on first use.
@@ -169,12 +172,13 @@ After Claude Code's first deploy, the CDK output prints a `WebhookUrl`.
 ### [I-16] Submit on Devpost
 - [ ] Paste the text from `docs/submission.md`.
 - [ ] Add the YouTube link, GitHub link, hosted demo URL, and list of tools used.
-- [ ] Select the **Channel3** and **APIMatic** sponsor prizes.
+- [ ] Select the **AG Grid**, **Channel3**, and **APIMatic** sponsor prizes.
 - [ ] Submit at least 24 hours before **Nov 12, 2:00 pm PT**. Drafts can be edited until the deadline; after it, nothing in the submission can change.
 - [ ] Confirm Claude Code has pushed the `submission` tag on the submitted commit.
 
 ### [I-17] Sponsor forms
 - [ ] Claim the APIMatic free subscription using the form linked on https://paypalaihackathon.devpost.com/details/apimatic (you used the Context Plugin).
+- [ ] Open https://paypalaihackathon.devpost.com/details/aggrid and check for any AG Grid form or extra step. Do not activate the 45-day AG Studio or Enterprise trial; we use the free Community editions so nothing expires before judging ends.
 
 ---
 
