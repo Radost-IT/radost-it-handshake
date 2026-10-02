@@ -9,9 +9,8 @@ export interface SsmParameter {
   value: string;
 }
 
-const SECRET_ENV_NAME = /_(SECRET|KEY|TOKEN|PASSWORD)$/;
-
 // Read by CDK at deploy time, not by the app, so they sit outside the stage path.
+// None of them is secret: CloudFormation resolves them as plain String parameters.
 // CloudFront only accepts a us-east-1 certificate; the API domain needs one in its own region.
 const deployKeys = [
   {
@@ -34,10 +33,6 @@ const deployKeys = [
   },
 ] as const;
 
-export function ssmParameterTypeForEnvName(envName: string): ParameterType {
-  return SECRET_ENV_NAME.test(envName) ? 'SecureString' : 'String';
-}
-
 /**
  * Builds the SSM parameters for a stage from environment variables. Validates
  * every value that is set and throws `ConfigError` like `loadConfig`. Keys with
@@ -56,8 +51,8 @@ function stageParametersFromEnv(env: Env, stage: string): SsmParameter[] {
   return configKeyNames.flatMap((key) => {
     const value = raw[key];
     if (value === undefined) return [];
-    const { env: envName, ssm } = configKeys[key];
-    return [{ name: `${path}/${ssm}`, type: ssmParameterTypeForEnvName(envName), value }];
+    const { ssm, secret } = configKeys[key];
+    return [{ name: `${path}/${ssm}`, type: secret ? 'SecureString' : 'String', value }];
   });
 }
 
@@ -68,6 +63,6 @@ function deployParametersFromEnv(env: Env): SsmParameter[] {
     if (!format.test(value)) {
       throw new ConfigError(`Invalid configuration: ${envName} must be ${expected}`);
     }
-    return [{ name, type: ssmParameterTypeForEnvName(envName), value }];
+    return [{ name, type: 'String', value }];
   });
 }

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { ConfigError } from './parse';
-import { ssmParametersFromEnv, ssmParameterTypeForEnvName } from './ssm-parameters';
+import { configKeys } from './keys';
+import { ssmParametersFromEnv } from './ssm-parameters';
 
 const validEnv = {
   PAYPAL_CLIENT_ID: 'client-id',
@@ -17,22 +18,6 @@ const validEnv = {
 
 const usEast1CertificateArn =
   'arn:aws:acm:us-east-1:123456789012:certificate/0f1e2d3c-4b5a-6978-8a9b-0c1d2e3f4a5b';
-
-describe('ssmParameterTypeForEnvName', () => {
-  it.each(['PAYPAL_CLIENT_SECRET', 'CHANNEL3_API_KEY', 'GITHUB_TOKEN', 'DB_PASSWORD'])(
-    'stores %s as SecureString',
-    (envName) => {
-      expect(ssmParameterTypeForEnvName(envName)).toBe('SecureString');
-    },
-  );
-
-  it.each(['PAYPAL_CLIENT_ID', 'DAILY_TOKEN_BUDGET', 'BEDROCK_MODEL_FAST'])(
-    'stores %s as String',
-    (envName) => {
-      expect(ssmParameterTypeForEnvName(envName)).toBe('String');
-    },
-  );
-});
 
 describe('ssmParametersFromEnv', () => {
   it('maps every set key to its stage path and skips empty values', () => {
@@ -52,6 +37,18 @@ describe('ssmParametersFromEnv', () => {
       type: 'String',
       value: '2000000',
     });
+  });
+
+  it('stores exactly the PayPal secret and the Channel3 key as SecureString', () => {
+    const secureNames = ssmParametersFromEnv(validEnv, 'prod')
+      .filter((parameter) => parameter.type === 'SecureString')
+      .map((parameter) => parameter.name);
+
+    expect(secureNames.sort()).toEqual([
+      '/handshake/prod/channel3/api-key',
+      '/handshake/prod/paypal/client-secret',
+    ]);
+    expect(configKeys.paypalClientId.secret).toBe(false);
   });
 
   it('stores certificate ARNs at their shared paths outside the stage', () => {
