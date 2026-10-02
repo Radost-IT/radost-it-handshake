@@ -39,6 +39,7 @@ Last checked: 2 Oct 2026. Console menus change often; if a label differs, look f
 - [x] Go to **Apps & Credentials → Create App**, type **Merchant**, name it `radost-it-handshake`.
 - [x] Keep the page open: you will need the **Client ID** and **Secret** in step [I-10]. Do not save them in a text file.
 - [x] In the app settings, make sure these features are enabled if listed: **Accept payments**, **Payouts**, **Transaction search**.
+- [ ] In the app settings, enable card payments (**Advanced Credit and Debit Card Payments**). Probes and integration tests authorize with a sandbox test card, so they need no browser login. Without it, PayPal answers `PAYEE_NOT_ENABLED_FOR_CARD_PROCESSING`. Then run `pnpm probe:paypal-limits` and send Claude the output.
 
 ### [I-4] Sandbox test accounts
 - [x] Go to **Testing Tools → Sandbox Accounts**. PayPal creates one Business and one Personal account by default.

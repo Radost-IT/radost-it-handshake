@@ -133,6 +133,15 @@ importers:
       '@handshake/config':
         specifier: workspace:*
         version: link:../packages/config
+      '@handshake/core':
+        specifier: workspace:*
+        version: link:../packages/core
+      '@handshake/paypal':
+        specifier: workspace:*
+        version: link:../packages/paypal
+      '@paypal/paypal-server-sdk':
+        specifier: 2.5.0
+        version: 2.5.0
       zod:
         specifier: ^4.6.5
         version: 4.6.5

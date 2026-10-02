@@ -18,6 +18,7 @@
     "probe:paypal": "tsx --env-file=.env scripts/probes/paypal-auth.ts",
     "probe:channel3": "tsx --env-file=.env scripts/probes/channel3-search.ts",
     "probe:bedrock": "tsx --env-file=.env scripts/probes/bedrock-hello.ts",
+    "probe:paypal-limits": "tsx --env-file=.env scripts/probes/paypal-authorization-limits.ts",
     "ssm:put": "tsx --env-file=.env scripts/put-ssm-parameters.ts"
   },
   "devDependencies": {

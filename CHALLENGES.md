@@ -47,3 +47,9 @@ The script that copies `.env` to SSM first decided which keys were secrets by na
 We expected the PayPal Server SDK to fetch a new OAuth token after a failed one. Reading its auth adapter showed that it stores the token request as a shared promise. If that promise rejects once, every later call on the same client re-throws the same error. Our client lives outside the Lambda handler, so one PayPal blip would break every request until the container is recycled.
 
 We now pass our own `oAuthTokenProvider`. On failure it keeps the error and returns an expired token. That call fails with the SDK's `OAuth token is expired. A valid token is needed to make API calls.`, which we replace with the original token error. The next call fetches a fresh token. A unit test covers the failure and the recovery.
+
+## The sandbox app could not take card payments
+
+*2 Oct 2026 · PayPal sandbox*
+
+To measure authorization limits without a browser login, the probe pays with a PayPal sandbox test card. Creating the order failed with `422 PAYEE_NOT_ENABLED_FOR_CARD_PROCESSING: Payee account is not setup to be able to process card payments`. Card payments are a separate feature of the sandbox app. The probe now stops with a pointer to the manual step in `INSTRUCTIONS.md` [I-3], and the limits stay unmeasured until the feature is on.
