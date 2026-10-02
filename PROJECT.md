@@ -111,14 +111,16 @@ docs                     architecture diagram, demo script, submission drafts
 
 ```
 DRAFT → NEGOTIATING → AGREED → AWAITING_HUMAN_APPROVAL → AUTHORIZING → IN_ESCROW
+                       AGREED → AUTHORIZING                (price below the approval threshold)
 IN_ESCROW → AWAITING_DELIVERY → VERIFYING → CAPTURING → SETTLED
                                           → VOIDING   → REFUSED
                                           → ESCALATED → CAPTURING | VOIDING
-IN_ESCROW ⇄ REAUTHORIZING
-NEGOTIATING → ABANDONED        AWAITING_HUMAN_APPROVAL → CANCELLED
+AWAITING_DELIVERY → VOIDING     (delivery deadline passed)
+CAPTURING → ESCALATED           (capture denied)
+NEGOTIATING → ABANDONED        AWAITING_HUMAN_APPROVAL | AUTHORIZING → CANCELLED
 ```
 
-Terminal states: `SETTLED`, `REFUSED`, `CANCELLED`, `ABANDONED`. Every transition writes an immutable deal event.
+Terminal states: `SETTLED`, `REFUSED`, `CANCELLED`, `ABANDONED`. Every transition writes an immutable deal event. Reauthorization is not a state: it writes an `AUTHORIZATION_RENEWED` event while the deal holds funds (`IN_ESCROW`, `AWAITING_DELIVERY`, `VERIFYING`, `ESCALATED`).
 
 ### DynamoDB keys
 
@@ -179,7 +181,7 @@ Done when the three probes pass against real services and `pnpm cdk:deploy` crea
 
 ### Phase 2 — Escrow core (Oct 10–18)
 
-- [ ] `packages/core`: money helpers, deal contract schema, deal state machine, policy engine; full unit tests.
+- [x] `packages/core`: money helpers, deal contract schema, deal state machine, policy engine; full unit tests.
 - [ ] `packages/paypal`: create order (`intent=AUTHORIZE`), authorize, capture, void, reauthorize, get order; idempotency keys; typed errors with `debug_id`. Use the APIMatic Context Plugin for every SDK call.
 - [ ] Probe and document real sandbox authorization limits (honor period, reauthorization window, void and capture behavior). Put the values in SSM, not code.
 - [ ] `packages/settlement`: executes approved proposals only.
