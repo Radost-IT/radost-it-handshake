@@ -242,6 +242,7 @@ The table gains one global secondary index, `GSI1` (`gsi1pk`, `gsi1sk`), for a c
 /handshake/<stage>/paypal/client-secret         SecureString
 /handshake/<stage>/paypal/base-url              https://api-m.sandbox.paypal.com
 /handshake/<stage>/paypal/webhook-id
+/handshake/<stage>/paypal/honor-period-hours    hours, 72 until the limits probe measures it
 /handshake/<stage>/channel3/api-key             SecureString
 /handshake/<stage>/bedrock/region
 /handshake/<stage>/bedrock/model-fast           inference profile or model ID

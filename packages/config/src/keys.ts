@@ -10,6 +10,11 @@ export const configKeys = {
   paypalClientSecret: { env: 'PAYPAL_CLIENT_SECRET', ssm: 'paypal/client-secret', secret: true },
   paypalBaseUrl: { env: 'PAYPAL_BASE_URL', ssm: 'paypal/base-url', secret: false },
   paypalWebhookId: { env: 'PAYPAL_WEBHOOK_ID', ssm: 'paypal/webhook-id', secret: false },
+  paypalHonorPeriodHours: {
+    env: 'PAYPAL_HONOR_PERIOD_HOURS',
+    ssm: 'paypal/honor-period-hours',
+    secret: false,
+  },
   channel3ApiKey: { env: 'CHANNEL3_API_KEY', ssm: 'channel3/api-key', secret: true },
   bedrockRegion: { env: 'BEDROCK_REGION', ssm: 'bedrock/region', secret: false },
   bedrockModelFast: { env: 'BEDROCK_MODEL_FAST', ssm: 'bedrock/model-fast', secret: false },

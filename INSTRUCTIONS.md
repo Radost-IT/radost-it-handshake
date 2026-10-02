@@ -129,6 +129,7 @@ aws ssm put-parameter --name /handshake/$STAGE/bedrock/model-fast --type String 
 aws ssm put-parameter --name /handshake/$STAGE/bedrock/model-smart --type String --value "eu.anthropic.claude-opus-4-6-v1" --overwrite
 aws ssm put-parameter --name /handshake/$STAGE/limits/daily-token-budget --type String --value "2000000" --overwrite
 aws ssm put-parameter --name /handshake/$STAGE/limits/negotiation-max-turns --type String --value "8" --overwrite
+aws ssm put-parameter --name /handshake/$STAGE/paypal/honor-period-hours --type String --value "72" --overwrite
 ```
 
 - [x] Bootstrap CDK once from **AWS CloudShell** in eu-west-1, logged in as your Identity Center admin. Bootstrap creates IAM roles, which `handshake-dev` is not allowed to do. Deployments then run through those roles, and CloudFormation is limited to `HandshakeCdkExecution`:
@@ -214,7 +215,7 @@ The webhook endpoint is built in Phase 2. After the first deploy that includes i
   ```
 - [ ] Deploy the webhook endpoint. It publishes to an EventBridge bus, which the boundary did not allow before:
   1. Open **IAM → Policies → HandshakeWorkloadBoundary → Edit → JSON** and replace it with the current `infra/iam/workload-boundary.json`.
-  2. Make sure `CHANNEL3_API_KEY` is in SSM ([I-5], then `pnpm ssm:put prod`). The webhook Lambda loads the whole config when it starts and fails with a `ConfigError` naming any missing key.
+  2. Make sure `CHANNEL3_API_KEY` is in SSM ([I-5]) and add `PAYPAL_HONOR_PERIOD_HOURS=72` to `.env`, then run `pnpm ssm:put prod`. The webhook Lambda loads the whole config when it starts and fails with a `ConfigError` naming any missing key.
   3. Deploy: `AWS_PROFILE=handshake pnpm cdk:deploy`. The output `WebhookUrl` must match the URL you registered above.
   - The dashboard's webhook simulator sends events that PayPal's verification API cannot verify, so the endpoint answers them with 401. Real sandbox payments are verified; the endpoint logs `PayPal webhook published` for each one.
 

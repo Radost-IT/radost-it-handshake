@@ -13,6 +13,7 @@ const rawConfigSchema = z.object({
   paypalBaseUrl: z.literal(PAYPAL_SANDBOX_BASE_URL),
   // Optional because the webhook can only be registered after the first deploy.
   paypalWebhookId: nonEmpty.optional(),
+  paypalHonorPeriodHours: positiveInteger,
   channel3ApiKey: nonEmpty,
   bedrockRegion: nonEmpty,
   bedrockModelFast: nonEmpty,
@@ -27,6 +28,8 @@ export interface Config {
     clientSecret: string;
     baseUrl: string;
     webhookId: string | undefined;
+    /** How long a new authorization is guaranteed. The hold is renewed after it. */
+    honorPeriodHours: number;
   };
   channel3: { apiKey: string };
   bedrock: { region: string; modelFast: string; modelSmart: string };
@@ -48,6 +51,7 @@ export function parseConfig(raw: RawConfig, source: (key: ConfigKeyName) => stri
       clientSecret: values.paypalClientSecret,
       baseUrl: values.paypalBaseUrl,
       webhookId: values.paypalWebhookId,
+      honorPeriodHours: values.paypalHonorPeriodHours,
     },
     channel3: { apiKey: values.channel3ApiKey },
     bedrock: {

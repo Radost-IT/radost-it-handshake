@@ -42,6 +42,7 @@ export function stubPayPalClient(
       clientSecret: 'stub-client-secret',
       baseUrl: PAYPAL_SANDBOX_BASE_URL,
       webhookId: undefined,
+      honorPeriodHours: 72,
     },
     {
       httpClientOptions: { retryConfig: { maxNumberOfRetries: 0 } },

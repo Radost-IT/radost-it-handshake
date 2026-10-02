@@ -7,6 +7,7 @@ const validEnv = {
   PAYPAL_CLIENT_ID: 'client-id',
   PAYPAL_CLIENT_SECRET: 'client-secret-value',
   PAYPAL_BASE_URL: 'https://api-m.sandbox.paypal.com',
+  PAYPAL_HONOR_PERIOD_HOURS: '72',
   CHANNEL3_API_KEY: 'channel3-key-value',
   BEDROCK_REGION: 'eu-west-1',
   BEDROCK_MODEL_FAST: 'eu.fast-model',

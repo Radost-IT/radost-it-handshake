@@ -7,6 +7,7 @@ const validEnv = {
   PAYPAL_CLIENT_ID: 'client-id',
   PAYPAL_CLIENT_SECRET: 'client-secret-value',
   PAYPAL_BASE_URL: 'https://api-m.sandbox.paypal.com',
+  PAYPAL_HONOR_PERIOD_HOURS: '72',
   PAYPAL_WEBHOOK_ID: '',
   CHANNEL3_API_KEY: 'channel3-key-value',
   BEDROCK_REGION: 'eu-west-1',
@@ -23,7 +24,7 @@ describe('ssmParametersFromEnv', () => {
   it('maps every set key to its stage path and skips empty values', () => {
     const parameters = ssmParametersFromEnv(validEnv, 'prod');
 
-    expect(parameters).toHaveLength(9);
+    expect(parameters).toHaveLength(10);
     expect(parameters.map((parameter) => parameter.name)).not.toContain(
       '/handshake/prod/paypal/webhook-id',
     );
@@ -90,7 +91,7 @@ describe('ssmParametersFromEnv', () => {
   it('skips a missing required key and stores the others', () => {
     const parameters = ssmParametersFromEnv({ ...validEnv, CHANNEL3_API_KEY: '' }, 'prod');
 
-    expect(parameters).toHaveLength(8);
+    expect(parameters).toHaveLength(9);
     expect(parameters.map((parameter) => parameter.name)).not.toContain(
       '/handshake/prod/channel3/api-key',
     );
