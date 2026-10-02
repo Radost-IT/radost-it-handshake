@@ -20,6 +20,7 @@ export default tseslint.config(
       '@typescript-eslint/restrict-template-expressions': ['error', { allowNumber: true }],
     },
   },
+  { files: ['apps/web/src/**'], languageOptions: { globals: globals.browser } },
   { files: ['**/*.js'], extends: [tseslint.configs.disableTypeChecked] },
   prettier,
 );

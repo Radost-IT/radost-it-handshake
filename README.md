@@ -15,6 +15,16 @@ pnpm typecheck
 pnpm lint
 pnpm test                # unit tests, no credentials needed
 pnpm test:integration    # real PayPal sandbox and Channel3 calls
+pnpm dev                 # web app on localhost
+```
+
+## Deploy
+
+The AWS CDK app in `infra/` deploys one stack per stage (`Handshake-dev`, `Handshake-demo`) to eu-west-1. Bootstrap and SSM setup are described in `INSTRUCTIONS.md` [I-10].
+
+```bash
+pnpm cdk:synth -- --context stage=dev
+pnpm cdk:deploy -- --context stage=dev
 ```
 
 Configuration is validated at startup. Locally it comes from `.env`; on AWS it comes from SSM Parameter Store under `/handshake/<stage>/`.

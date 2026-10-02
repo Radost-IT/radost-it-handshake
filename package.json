@@ -7,11 +7,14 @@
     "node": ">=22.12.0"
   },
   "scripts": {
-    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p apps/web && tsc --noEmit -p infra",
     "lint": "eslint . && prettier --check .",
     "format": "prettier --write .",
     "test": "vitest run",
-    "test:integration": "vitest run --config vitest.integration.config.ts"
+    "test:integration": "vitest run --config vitest.integration.config.ts",
+    "dev": "pnpm --filter @handshake/web dev",
+    "cdk:synth": "pnpm --filter @handshake/web build && pnpm --filter @handshake/infra exec cdk synth",
+    "cdk:deploy": "pnpm --filter @handshake/web build && pnpm --filter @handshake/infra exec cdk deploy"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

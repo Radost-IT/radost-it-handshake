@@ -79,6 +79,7 @@ pnpm test:integration    # real PayPal sandbox and Channel3 calls
 pnpm eval                # agent evals and arena regression suite
 pnpm seed:sellers
 pnpm demo:reset
+pnpm cdk:synth -- --context stage=dev
 pnpm cdk:deploy -- --context stage=demo
 ```
 
