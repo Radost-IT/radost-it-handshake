@@ -159,7 +159,7 @@ Deploys are manual for now: the human runs `pnpm cdk:deploy`. Claude Code writes
 ### Phase 0 — Accounts and access (Oct 2–5)
 
 - [ ] Human completes **[I-1] to [I-9]**.
-- [x] Decide the AWS region: `eu-west-1` (Ireland). Anthropic models there run through EU cross-region inference profiles (`eu.` prefix); confirm the IDs in [I-8].
+- [x] Decide the AWS region: `eu-west-1` (Ireland). Anthropic models there run through EU cross-region inference profiles (`eu.` prefix): `eu.anthropic.claude-sonnet-5-5` (fast) and `eu.anthropic.claude-opus-5-5` (smart), see [I-8].
 - [ ] Confirm the name "Handshake by Radost IT" and the repo slug `radost-it-handshake`.
 - [x] Name one specific target audience and the problem it has today. It drives the README, the video opening, and the Devpost text.
   - **Audience:** teams building AI shopping agents.
