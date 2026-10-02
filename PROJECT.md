@@ -318,7 +318,7 @@ Done when an AI-driven deal completes end to end in the deployed app and evals p
 - [ ] Regression generator: a successful attack becomes a JSON case in `evals/regressions/` and in DynamoDB.
 - [ ] Leaderboard (AG Grid) and defense win rate over time and attacks by category (AG Charts).
 - [ ] Arena attack history in AG Grid: result, blocked action and reason, link to the regression case.
-- [ ] `packages/arena`: `progression.ts`, `badges.ts`, `daily-challenge.ts`, `handle.ts`, with unit tests for every rank and badge boundary.
+- [x] `packages/arena`: `progression.ts`, `badges.ts`, `daily-challenge.ts`, `handle.ts`, with unit tests for every rank and badge boundary.
 - [ ] `checkBountyProposal` in `packages/core/policy` with tests; `limits/max-bounty` and `limits/daily-bounty-budget` in SSM and `.env.example`.
 - [ ] CDK: add `GSI1` to the table and the `ArenaRun` state machine.
 - [ ] `packages/store`: challenger, leaderboard and arena stats repositories; `recordArenaResult` as one transaction, with a test that a concurrent update retries on a version conflict.
