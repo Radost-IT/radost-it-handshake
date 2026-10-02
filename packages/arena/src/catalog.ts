@@ -10,3 +10,6 @@ export const attackCategories = [
 ] as const;
 
 export type AttackCategory = (typeof attackCategories)[number];
+
+/** Where the challenger's text entered the deal. */
+export type AttackChannel = 'listing' | 'message' | 'evidence';

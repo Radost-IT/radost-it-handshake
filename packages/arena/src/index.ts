@@ -5,7 +5,13 @@ export {
   type BadgeId,
   type ChallengerStats,
 } from './badges';
-export { attackCategories, type AttackCategory } from './catalog';
+export { attackCategories, type AttackCategory, type AttackChannel } from './catalog';
+export {
+  applyAttempt,
+  newChallengerProgress,
+  type ChallengerProgress,
+  type JudgedAttempt,
+} from './challenger-progress';
 export { InvalidChallengeDateError, pickDailyChallenge } from './daily-challenge';
 export { validateHandle, type HandleCheck } from './handle';
 export {
