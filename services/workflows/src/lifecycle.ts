@@ -1,5 +1,8 @@
 import {
+  formatMoney,
   InvalidTransitionError,
+  moneyEquals,
+  moneySchema,
   planDeliveryTimer,
   settlementProposalSchema,
   transitionDeal,
@@ -37,11 +40,13 @@ export const lifecycleTaskSchema = z.discriminatedUnion('task', [
   z.object({
     task: z.literal('AwaitSignal'),
     dealId,
-    signal: z.enum(['evidence', 'verdict', 'human-decision']),
+    signal: z.enum(['evidence', 'verdict', 'human-decision', 'capture']),
     taskToken: z.string().min(1),
   }),
   z.object({ task: z.literal('StartVerification'), dealId }),
   z.object({ task: z.literal('Escalate'), dealId, reason: z.string().min(1) }),
+  // The capture resource of a signature-verified PayPal webhook.
+  z.object({ task: z.literal('ConfirmCapture'), dealId, capture: z.unknown() }),
   // The proposal comes from a verifier agent or a person, so it is checked here.
   z.object({
     task: z.literal('Settle'),
@@ -103,8 +108,10 @@ export async function runLifecycleTask(
         'Delivery evidence received',
       );
     case 'Escalate':
-      return deal.state === 'VERIFYING'
-        ? settleBySystem(context, deal, { action: 'ESCALATE', reason: task.reason })
+      return escalate(context, deal, task.reason);
+    case 'ConfirmCapture':
+      return deal.state === 'CAPTURING'
+        ? confirmCapture(context, deal, task.capture)
         : { state: deal.state };
     case 'Settle':
       return task.proposer === 'verifier'
@@ -132,7 +139,7 @@ async function moveIfIn(
   context: LifecycleContext,
   deal: Deal,
   from: DealState,
-  to: 'CANCELLED' | 'VERIFYING',
+  to: 'CANCELLED' | 'VERIFYING' | 'ESCALATED',
   reason: string,
 ): Promise<LifecycleTaskResult> {
   if (deal.state !== from) return { state: deal.state };
@@ -200,6 +207,64 @@ async function checkDeliveryTimer(
         reason: 'The delivery deadline passed without evidence',
       });
   }
+}
+
+// Policy decides escalations while the money is held. During a capture
+// nothing is left to decide, so a person takes over directly.
+function escalate(
+  context: LifecycleContext,
+  deal: Deal,
+  reason: string,
+): Promise<LifecycleTaskResult> {
+  switch (deal.state) {
+    case 'VERIFYING':
+      return settleBySystem(context, deal, { action: 'ESCALATE', reason });
+    case 'CAPTURING':
+      return moveIfIn(context, deal, 'CAPTURING', 'ESCALATED', reason);
+    default:
+      return Promise.resolve({ state: deal.state });
+  }
+}
+
+const webhookCaptureSchema = z.object({
+  id: z.string().min(1),
+  status: z.string().min(1),
+  amount: z
+    .object({ currency_code: z.string(), value: z.string() })
+    .transform(({ currency_code, value }) => ({ currency: currency_code, value }))
+    .pipe(moneySchema),
+});
+
+async function confirmCapture(
+  context: LifecycleContext,
+  deal: Deal,
+  resource: unknown,
+): Promise<LifecycleTaskResult> {
+  const capture = webhookCaptureSchema.parse(resource);
+  if (capture.status === 'PENDING') return { state: deal.state };
+  if (capture.status !== 'COMPLETED') {
+    return moveIfIn(context, deal, 'CAPTURING', 'ESCALATED', `Capture ${capture.status}`);
+  }
+  const price = deal.contract?.terms.price;
+  if (!price || !moneyEquals(capture.amount, price)) {
+    return moveIfIn(
+      context,
+      deal,
+      'CAPTURING',
+      'ESCALATED',
+      `PayPal captured ${formatMoney(capture.amount)}, not the contract price`,
+    );
+  }
+  const change = transitionDeal(
+    deal,
+    {
+      to: 'SETTLED',
+      capture: { captureId: capture.id, status: 'COMPLETED', amount: capture.amount },
+    },
+    context.now(),
+    'Payment captured',
+  );
+  return save(context, change.deal, [change.event]);
 }
 
 async function settleBySystem(

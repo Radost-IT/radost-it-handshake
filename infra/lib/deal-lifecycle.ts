@@ -18,6 +18,8 @@ import { Construct } from 'constructs';
 // Matches the PayPal approval page, which the buyer either finishes or abandons quickly.
 const CHECKOUT_TIMEOUT = Duration.hours(1);
 const VERDICT_TIMEOUT = Duration.days(1);
+// PayPal settles most pending captures within days; past this a person looks at it.
+const CAPTURE_TIMEOUT = Duration.days(7);
 
 /**
  * The DealLifecycle state machine. Each Lambda step loads the deal, applies
@@ -118,12 +120,35 @@ export function createDealLifecycle(scope: Construct, lifecycleFunction: IFuncti
     )
     .next(routeByState);
 
+  // The resumer sends the capture resource of the PayPal webhook.
+  const waitForCapture = waitFor(
+    'WaitForCapture',
+    { task: 'AwaitSignal', signal: 'capture' },
+    '$.capture',
+    Timeout.duration(CAPTURE_TIMEOUT),
+  )
+    .addCatch(
+      step('EscalateUnconfirmedCapture', {
+        task: 'Escalate',
+        reason: 'PayPal did not confirm the capture in time',
+      }).next(routeByState),
+      timeouts,
+    )
+    .next(
+      step('ConfirmCapture', {
+        task: 'ConfirmCapture',
+        capture: JsonPath.objectAt('$.capture'),
+      }),
+    )
+    .next(routeByState);
+
   // A refused human decision leaves the deal ESCALATED, which waits again.
-  // CAPTURING ends here too: the PayPal webhook confirms the pending capture.
+  // A capture that is still pending leaves it CAPTURING, which also waits again.
   routeByState
     .when(Condition.stringEquals('$.result.state', 'AWAITING_DELIVERY'), checkDeliveryTimer)
     .when(Condition.stringEquals('$.result.state', 'VERIFYING'), waitForVerdict)
     .when(Condition.stringEquals('$.result.state', 'ESCALATED'), waitForHumanDecision)
+    .when(Condition.stringEquals('$.result.state', 'CAPTURING'), waitForCapture)
     .otherwise(done);
 
   // The resumer sends `{ "orderId": "..." }` once the buyer approves the order.

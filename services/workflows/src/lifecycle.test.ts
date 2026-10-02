@@ -305,6 +305,77 @@ describe('Settle', () => {
   });
 });
 
+describe('ConfirmCapture', () => {
+  function capturingDeal(): Deal {
+    return transitionDeal(verifyingDeal(), { to: 'CAPTURING' }, '2026-10-04T10:00:00Z', 'pending')
+      .deal;
+  }
+
+  const capture = (status: string, value = '42.50') => ({
+    id: 'capture-1',
+    status,
+    amount: { currency_code: 'USD', value },
+    custom_id: 'deal-1',
+  });
+
+  it('settles the deal once PayPal completes the capture', async () => {
+    storeDeal(capturingDeal());
+
+    const { result } = await run(
+      { task: 'ConfirmCapture', dealId: 'deal-1', capture: capture('COMPLETED') },
+      '2026-10-05T10:00:00Z',
+    );
+
+    expect(result).toEqual({ state: 'SETTLED' });
+    expect(savedStates()).toEqual(['SETTLED']);
+  });
+
+  it('keeps waiting while the capture is pending', async () => {
+    storeDeal(capturingDeal());
+
+    const { result } = await run(
+      { task: 'ConfirmCapture', dealId: 'deal-1', capture: capture('PENDING') },
+      '2026-10-05T10:00:00Z',
+    );
+
+    expect(result).toEqual({ state: 'CAPTURING' });
+    expect(savedStates()).toEqual([]);
+  });
+
+  it('hands a declined capture to a person', async () => {
+    storeDeal(capturingDeal());
+
+    const { result } = await run(
+      { task: 'ConfirmCapture', dealId: 'deal-1', capture: capture('DECLINED') },
+      '2026-10-05T10:00:00Z',
+    );
+
+    expect(result).toEqual({ state: 'ESCALATED' });
+  });
+
+  it('hands a capture of the wrong amount to a person', async () => {
+    storeDeal(capturingDeal());
+
+    const { result } = await run(
+      { task: 'ConfirmCapture', dealId: 'deal-1', capture: capture('COMPLETED', '1.00') },
+      '2026-10-05T10:00:00Z',
+    );
+
+    expect(result).toEqual({ state: 'ESCALATED' });
+  });
+
+  it('escalates a capture PayPal never confirms', async () => {
+    storeDeal(capturingDeal());
+
+    const { result } = await run(
+      { task: 'Escalate', dealId: 'deal-1', reason: 'PayPal did not confirm the capture' },
+      '2026-10-11T10:00:00Z',
+    );
+
+    expect(result).toEqual({ state: 'ESCALATED' });
+  });
+});
+
 it('fails for a deal that does not exist', async () => {
   dynamodb.on(GetCommand).resolves({});
   await expect(

@@ -25,6 +25,9 @@ const approvedOrderSchema = z.object({
   purchase_units: z.array(z.object({ custom_id: z.string().min(1) })).min(1),
 });
 
+// PayPal copies the order's custom_id, our deal ID, onto the capture.
+const captureSchema = z.object({ custom_id: z.string().min(1).optional() });
+
 /**
  * Resumes the DealLifecycle execution that waits for a PayPal event. Events
  * that no execution waits for, such as a repeated delivery, are ignored.
@@ -41,6 +44,13 @@ export async function resumeLifecycleFromPayPal(
       if (dealId) await resume(context, dealId, 'checkout', { orderId: order.id });
       return;
     }
+    case 'PAYMENT.CAPTURE.COMPLETED':
+    case 'PAYMENT.CAPTURE.DENIED': {
+      const { custom_id: dealId } = captureSchema.parse(event.detail.resource);
+      // The lifecycle checks the capture itself, so it gets the whole resource.
+      if (dealId) await resume(context, dealId, 'capture', event.detail.resource);
+      return;
+    }
   }
 }
 
@@ -48,7 +58,7 @@ async function resume(
   context: PayPalEventContext,
   dealId: string,
   signal: WaitSignal,
-  output: Record<string, unknown>,
+  output: unknown,
 ): Promise<void> {
   const taskToken = await takeWait(context.table, dealId, signal);
   if (!taskToken) return;

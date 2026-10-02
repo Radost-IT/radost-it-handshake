@@ -81,6 +81,38 @@ describe('CHECKOUT.ORDER.APPROVED', () => {
   });
 });
 
+describe('PAYMENT.CAPTURE.COMPLETED', () => {
+  const capture = {
+    id: 'capture-1',
+    status: 'COMPLETED',
+    amount: { currency_code: 'USD', value: '42.50' },
+    custom_id: 'deal-1',
+  };
+
+  it('resumes the capture wait with the capture resource', async () => {
+    waitingFor('capture');
+    stepFunctions.on(SendTaskSuccessCommand).resolves({});
+
+    await resumeLifecycleFromPayPal(context, {
+      'detail-type': 'PAYMENT.CAPTURE.COMPLETED',
+      detail: { id: 'WH-2', resource: capture },
+    });
+
+    expect(stepFunctions.commandCalls(SendTaskSuccessCommand)[0]?.args[0].input.output).toBe(
+      JSON.stringify(capture),
+    );
+  });
+
+  it('ignores a capture without a deal ID, which the capture timeout then escalates', async () => {
+    await resumeLifecycleFromPayPal(context, {
+      'detail-type': 'PAYMENT.CAPTURE.COMPLETED',
+      detail: { resource: { ...capture, custom_id: undefined } },
+    });
+
+    expect(dynamodb.calls()).toHaveLength(0);
+  });
+});
+
 it('ignores PayPal events the lifecycle does not wait for', async () => {
   await resumeLifecycleFromPayPal(context, {
     'detail-type': 'PAYMENT.AUTHORIZATION.CREATED',

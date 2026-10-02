@@ -108,6 +108,8 @@ describe('HandshakeStack', () => {
       'SettleByVerifier',
       'WaitForHumanDecision',
       'SettleByHuman',
+      'WaitForCapture',
+      'ConfirmCapture',
     ]) {
       expect(definition).toContain(`\\"${state}\\"`);
     }
@@ -115,9 +117,16 @@ describe('HandshakeStack', () => {
     expect(definition).toContain('TimeoutSecondsPath');
   });
 
-  it('resumes the lifecycle when PayPal reports an approved checkout', () => {
+  it('resumes the lifecycle when PayPal reports an approved checkout or a capture', () => {
     template.hasResourceProperties('AWS::Events::Rule', {
-      EventPattern: { source: ['handshake.paypal'], 'detail-type': ['CHECKOUT.ORDER.APPROVED'] },
+      EventPattern: {
+        source: ['handshake.paypal'],
+        'detail-type': [
+          'CHECKOUT.ORDER.APPROVED',
+          'PAYMENT.CAPTURE.COMPLETED',
+          'PAYMENT.CAPTURE.DENIED',
+        ],
+      },
     });
     template.hasResourceProperties('AWS::IAM::Policy', {
       PolicyDocument: {

@@ -137,7 +137,14 @@ export class HandshakeStack extends Stack {
     dealLifecycle.grantTaskResponse(paypalEventsFunction);
     new Rule(this, 'PayPalEventsRule', {
       eventBus,
-      eventPattern: { source: ['handshake.paypal'], detailType: ['CHECKOUT.ORDER.APPROVED'] },
+      eventPattern: {
+        source: ['handshake.paypal'],
+        detailType: [
+          'CHECKOUT.ORDER.APPROVED',
+          'PAYMENT.CAPTURE.COMPLETED',
+          'PAYMENT.CAPTURE.DENIED',
+        ],
+      },
       targets: [new LambdaFunction(paypalEventsFunction)],
     });
 
