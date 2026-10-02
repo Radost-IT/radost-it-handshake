@@ -1,3 +1,4 @@
+export { concludeAgreement, type AgreementOutcome } from './agreement';
 export {
   dealTermsSchema,
   isSignedByBothParties,
