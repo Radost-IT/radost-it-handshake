@@ -22,3 +22,4 @@ export {
   type SellerProfile,
 } from './negotiator';
 export { runNegotiation, type NegotiationAgent, type NegotiationResult } from './run-negotiation';
+export { verifyDelivery, type Verification } from './verifier';
