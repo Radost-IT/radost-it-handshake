@@ -187,7 +187,7 @@ Done when the three probes pass against real services and `pnpm cdk:deploy` crea
 - [ ] Probe and document real sandbox authorization limits (honor period, reauthorization window, void and capture behavior). Put the values in SSM, not code.
 - [ ] `packages/settlement`: executes approved proposals only.
 - [ ] Step Functions `DealLifecycle` covering authorize → wait for evidence → capture or void, plus the reauthorization timer.
-- [ ] Webhook endpoint: verify the signature with PayPal's API, deduplicate by event ID, publish to EventBridge.
+- [ ] Webhook endpoint `POST /webhooks/paypal`: verify the signature with PayPal's API, deduplicate by event ID, publish to EventBridge. The stack prints a `WebhookUrl` output (`https://<api domain>/webhooks/paypal`) for [I-11], and a stack test fails if the output is missing.
 - [ ] Human completes **[I-11]** (webhook registration) after the first deploy that includes the webhook endpoint.
 - [ ] Integration test: a full sandbox deal with a scripted (non-AI) buyer and seller reaches `SETTLED`; another reaches `REFUSED`.
 

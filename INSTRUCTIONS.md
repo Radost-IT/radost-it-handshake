@@ -185,7 +185,7 @@ aws ssm put-parameter --name /handshake/$STAGE/limits/negotiation-max-turns --ty
 ## During Phase 2
 
 ### [I-11] Register the PayPal webhook
-The webhook endpoint is built in Phase 2. After the first deploy that includes it, the CDK output prints a `WebhookUrl`. The Phase 1 stack has no webhook yet, so its output only shows `ApiUrl`, `WebUrl` and `TableName`.
+The webhook endpoint is built in Phase 2. After the first deploy that includes it, the CDK output prints a `WebhookUrl`, which will be `https://api-handshake.radostit.com/webhooks/paypal`. The Phase 1 stack has no webhook yet, so its output only shows `ApiUrl`, `WebUrl` and `TableName`.
 
 - [ ] In the PayPal developer dashboard (Sandbox), open your app → **Webhooks → Add Webhook**.
 - [ ] Paste the `WebhookUrl`. Select these events if listed: `CHECKOUT.ORDER.APPROVED`, `PAYMENT.AUTHORIZATION.CREATED`, `PAYMENT.AUTHORIZATION.VOIDED`, `PAYMENT.CAPTURE.COMPLETED`, `PAYMENT.CAPTURE.DENIED`, `PAYMENT.CAPTURE.REFUNDED`, `PAYMENT.PAYOUTSBATCH.SUCCESS`, `PAYMENT.PAYOUTS-ITEM.SUCCEEDED`, `PAYMENT.PAYOUTS-ITEM.FAILED`.
