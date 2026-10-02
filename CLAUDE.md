@@ -96,3 +96,4 @@ If you add or change a command, update this list and the README in the same comm
 5. Commit and push each finished task. One task, one commit. The message is short, plain, and human readable: say what changed and why (Conventional Commits format).
 6. If a rule here blocks progress or seems wrong, stop and ask. Do not work around it silently.
 7. When you need the human to do something outside the code (accounts, keys, console clicks), add or update a step in `INSTRUCTIONS.md` and tell them.
+8. When something does not work as documented or expected (a failed deploy, a sandbox quirk, a model or API limit), add an entry to `CHALLENGES.md` in the same commit as the fix. Say what we expected, what happened, and how we solved it, with the exact error message.
