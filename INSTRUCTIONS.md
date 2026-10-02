@@ -90,8 +90,8 @@ Last checked: 2 Oct 2026. Console menus change often; if a label differs, look f
   aws bedrock list-inference-profiles --region eu-west-1 --profile handshake \
     --query "inferenceProfileSummaries[?contains(inferenceProfileId, '4-6')].inferenceProfileId"
   ```
-- [ ] In the Playground, logged in as your Identity Center admin, send one test prompt to **Claude Opus 4.6**. The first call subscribes the account in AWS Marketplace; `handshake-dev` is not allowed to do that. Until then the probe fails with `not authorized to perform the required AWS Marketplace actions`. Claude Sonnet 4.6 already works.
-- [ ] Set `BEDROCK_MODEL_FAST` and `BEDROCK_MODEL_SMART` in `.env` to the IDs above, then run `AWS_PROFILE=handshake pnpm probe:bedrock` and `AWS_PROFILE=handshake AWS_REGION=eu-west-1 pnpm ssm:put prod`.
+- [x] In the Playground, logged in as your Identity Center admin, send one test prompt to **Claude Opus 4.6**. The first call subscribes the account in AWS Marketplace; `handshake-dev` is not allowed to do that. Until then the probe fails with `not authorized to perform the required AWS Marketplace actions`. Claude Sonnet 4.6 already works.
+- [x] Set `BEDROCK_MODEL_FAST` and `BEDROCK_MODEL_SMART` in `.env` to the IDs above, then run `AWS_PROFILE=handshake pnpm probe:bedrock` and `AWS_PROFILE=handshake AWS_REGION=eu-west-1 pnpm ssm:put prod`.
 
 ### [I-9] GitHub, Claude Code, and APIMatic
 - [x] Create a GitHub repo named `radost-it-handshake`. Keeping it private until submission is fine; it must be public by the deadline.
@@ -155,11 +155,29 @@ aws ssm put-parameter --name /handshake/$STAGE/limits/negotiation-max-turns --ty
   ```
 - [x] If the `HandshakeCdkExecution` policy was created before this step was added, replace its JSON with the current `infra/iam/cdk-execution-policy.json` (**IAM → Policies → HandshakeCdkExecution → Edit → JSON**). The new statements let CloudFormation change only the two Handshake records.
 - [x] If you already added `handshake` or `api-handshake` records to the zone by hand, delete them before the next deploy. CloudFormation cannot create a record that already exists.
-- [ ] Add the workload permissions boundary before the next deploy. CloudFormation may now only create Handshake roles that carry this boundary, so no deploy can give a Lambda more access than the boundary lists. In the console, logged in as your Identity Center admin:
+- [x] Add the workload permissions boundary before the next deploy. CloudFormation may now only create Handshake roles that carry this boundary, so no deploy can give a Lambda more access than the boundary lists. In the console, logged in as your Identity Center admin:
   1. **IAM → Policies → Create policy → JSON**. Paste `infra/iam/workload-boundary.json` and name it exactly `HandshakeWorkloadBoundary`.
   2. Open **IAM → Policies → HandshakeCdkExecution → Edit → JSON** and replace it with the current `infra/iam/cdk-execution-policy.json`.
   3. Deploy: `AWS_PROFILE=handshake pnpm cdk:deploy`. Every existing role gets the boundary in place; nothing is replaced.
   - When a later phase uses a new AWS service from a Lambda (Step Functions, EventBridge, WebSocket API), Claude Code updates `workload-boundary.json` and this step comes back: paste the new JSON into `HandshakeWorkloadBoundary` before deploying.
+- [ ] The first boundary did not let the web deploy write to the CDK assets bucket, so the 2 Oct prod deploy failed and its rollback stopped in `UPDATE_ROLLBACK_FAILED`. The rollback tried to remove the boundary from each role, which the execution policy rightly forbids. To recover:
+  1. Open **IAM → Policies → HandshakeWorkloadBoundary → Edit → JSON** and replace it with the current `infra/iam/workload-boundary.json`.
+  2. Finish the rollback and leave the boundary on the roles. The next deploy keeps it there anyway.
+     ```bash
+     AWS_PROFILE=handshake aws cloudformation continue-update-rollback --region eu-west-1 \
+       --stack-name Handshake-prod --resources-to-skip \
+       AWS679f53fac002430cb0da5b7982bd2287ServiceRoleC1EA0FF2 \
+       CustomS3AutoDeleteObjectsCustomResourceProviderRole3B1BD092 \
+       HealthFunctionServiceRole04552894 \
+       WebImageServiceRoleA2E834DC \
+       WebRevalidationDynamoDBProviderFnServiceRoleE92296D9 \
+       WebRevalidationDynamoDBProviderframeworkonEventServiceRoleBB8A66C5 \
+       WebRevalidationQueueFnServiceRoleFA4E4393 \
+       WebServerBucketDeploymentFnServiceRoleA87AD52C \
+       WebStaticAssetsBucketDeploymentFnServiceRole097FD807
+     AWS_PROFILE=handshake aws cloudformation wait stack-rollback-complete --region eu-west-1 --stack-name Handshake-prod
+     ```
+  3. Deploy again: `AWS_PROFILE=handshake pnpm cdk:deploy`.
 - [ ] The webhook ID parameter is added in [I-11].
 
 ---
