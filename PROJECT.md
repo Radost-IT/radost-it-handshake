@@ -159,7 +159,7 @@ Deploys are manual for now: the human runs `pnpm cdk:deploy`. Claude Code writes
 ### Phase 0 — Accounts and access (Oct 2–5)
 
 - [ ] Human completes **[I-1] to [I-9]**.
-- [x] Decide the AWS region: `eu-west-1` (Ireland). Anthropic models there run through EU cross-region inference profiles (`eu.` prefix): `eu.anthropic.claude-sonnet-5-5` (fast) and `eu.anthropic.claude-opus-5-5` (smart), see [I-8].
+- [x] Decide the AWS region: `eu-west-1` (Ireland). Anthropic models there run through EU cross-region inference profiles (`eu.` prefix): `eu.anthropic.claude-sonnet-4-6` (fast) and `eu.anthropic.claude-opus-4-6-v1` (smart), see [I-8].
 - [ ] Confirm the name "Handshake by Radost IT" and the repo slug `radost-it-handshake`.
 - [x] Name one specific target audience and the problem it has today. It drives the README, the video opening, and the Devpost text.
   - **Audience:** teams building AI shopping agents.
@@ -174,7 +174,7 @@ Deploys are manual for now: the human runs `pnpm cdk:deploy`. Claude Code writes
 - [x] CDK app defines an empty `Handshake-prod` stack (`pnpm cdk:synth` passes): DynamoDB table, HTTP API with a health route, Next.js placeholder page on CloudFront. Keep generated resource names under the `Handshake-` prefix, because the policies in `infra/iam/` are scoped to it. In `cdk.json`, set `"toolkitStackName": "Handshake-CDKToolkit"` and the context key `"@aws-cdk/core:bootstrapQualifier": "handshake"` to match the bootstrap in [I-10].
 - [x] Custom domains: the web app on `handshake.radostit.com` and the HTTP API on `api-handshake.radostit.com`. Names stay one level below `radostit.com` so the `*.radostit.com` certificates cover them. Certificate ARNs and the hosted zone ID come from SSM; CDK creates the Route 53 alias records ([I-10]).
 - [ ] Human deploys the stack manually with `pnpm cdk:deploy`.
-- [ ] `scripts/probes/paypal-auth.ts`: get a sandbox access token and print success or failure, never the token.
+- [x] `scripts/probes/paypal-auth.ts`: get a sandbox access token and print success or failure, never the token.
 - [ ] `scripts/probes/channel3-search.ts`: one product search, printing titles and prices.
 - [ ] `scripts/probes/bedrock-hello.ts`: one Converse call per configured model.
 

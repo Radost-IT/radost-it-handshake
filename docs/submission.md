@@ -155,7 +155,7 @@ Up to 25 tags:
 | Tool | What it does in Handshake |
 |---|---|
 | Amazon Bedrock (Converse API, tool use, JSON output) | Runs the buyer, seller, verifier, and arena judge agents. |
-| Anthropic Claude models on Bedrock | Claude Sonnet 5.5 for negotiation turns, Claude Opus 5.5 for verification and arena judging. |
+| Anthropic Claude models on Bedrock | Claude Sonnet 4.6 for negotiation turns, Claude Opus 4.6 for verification and arena judging. |
 | APIMatic Context Plugin for PayPal (in Claude Code) | Gave our coding agent accurate PayPal endpoint and model definitions while we wrote the PayPal client. |
 | Claude Code | Our coding assistant during development. |
 
