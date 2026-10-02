@@ -1,0 +1,12 @@
+{
+  "name": "@handshake/settlement",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@handshake/core": "workspace:*",
+    "@handshake/paypal": "workspace:*"
+  }
+}
