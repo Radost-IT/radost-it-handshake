@@ -41,10 +41,7 @@
     {
       "Sid": "AttachOnlyAwsServiceRolePolicies",
       "Effect": "Allow",
-      "Action": [
-        "iam:AttachRolePolicy",
-        "iam:DetachRolePolicy"
-      ],
+      "Action": "iam:AttachRolePolicy",
       "Resource": "arn:aws:iam::*:role/Handshake-*",
       "Condition": {
         "ArnLike": { "iam:PolicyARN": "arn:aws:iam::aws:policy/service-role/*" },
@@ -52,6 +49,12 @@
           "iam:PermissionsBoundary": "arn:aws:iam::*:policy/HandshakeWorkloadBoundary"
         }
       }
+    },
+    {
+      "Sid": "DetachPoliciesFromHandshakeRoles",
+      "Effect": "Allow",
+      "Action": "iam:DetachRolePolicy",
+      "Resource": "arn:aws:iam::*:role/Handshake-*"
     },
     {
       "Sid": "PassHandshakeRolesToServices",
@@ -122,6 +125,12 @@
         "scheduler:*",
         "sqs:*",
         "sns:*",
+        "lambda:GetEventSourceMapping",
+        "lambda:ListEventSourceMappings",
+        "application-autoscaling:DescribeScalableTargets",
+        "application-autoscaling:DescribeScalingPolicies",
+        "application-autoscaling:DeleteScalingPolicy",
+        "application-autoscaling:DeregisterScalableTarget",
         "cloudwatch:PutMetricAlarm",
         "cloudwatch:DeleteAlarms",
         "cloudwatch:DescribeAlarms",
