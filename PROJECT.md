@@ -188,7 +188,7 @@ Done when the three probes pass against real services and `pnpm cdk:deploy` crea
 - [ ] `packages/settlement`: executes approved proposals only.
 - [ ] Step Functions `DealLifecycle` covering authorize → wait for evidence → capture or void, plus the reauthorization timer.
 - [ ] Webhook endpoint: verify the signature with PayPal's API, deduplicate by event ID, publish to EventBridge.
-- [ ] Human completes **[I-11]** (webhook registration) after the first deploy.
+- [ ] Human completes **[I-11]** (webhook registration) after the first deploy that includes the webhook endpoint.
 - [ ] Integration test: a full sandbox deal with a scripted (non-AI) buyer and seller reaches `SETTLED`; another reaches `REFUSED`.
 
 Done when both integration paths pass against the sandbox, triggered through the deployed API.
@@ -200,6 +200,7 @@ Done when both integration paths pass against the sandbox, triggered through the
 - [ ] `scripts/seed-sellers.ts`: create seller agents from Channel3 products with floor prices and personas.
 - [ ] Seller agent with persona and floor price; negotiation loop with a turn cap.
 - [ ] Deal contract generation and signing; human approval step.
+  - Signatures from `packages/core/contract` are plain digests that anyone can compute. Create them only on the server after checking who the party is, never accept one from a client or seller agent, or switch to an HMAC with a server-held key.
 - [ ] Verifier agent: deterministic checks first (price, currency, product ID, deadline), then per-criterion LLM checks; low confidence escalates.
 - [ ] Untrusted-data wrapping for all third-party text in prompts.
 - [ ] WebSocket streaming of negotiation messages and state changes.

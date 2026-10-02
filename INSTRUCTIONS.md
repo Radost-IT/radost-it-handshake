@@ -106,7 +106,7 @@ Last checked: 2 Oct 2026. Console menus change often; if a label differs, look f
 ## During Phase 1
 
 ### [I-10] Store configuration in SSM and bootstrap CDK
-Fill in `.env`, then copy it to SSM in one step. The script checks every value that is set, skips empty keys (for example `CHANNEL3_API_KEY` while the account is pending), and stores keys ending in `_SECRET`, `_KEY`, `_TOKEN` or `_PASSWORD` as `SecureString`. Certificate ARNs go to `/handshake/certificates/…`, outside the stage. It prints parameter names, never values:
+Fill in `.env`, then copy it to SSM in one step. The script checks every value that is set, skips empty keys (for example `CHANNEL3_API_KEY` while the account is pending), and stores the keys marked `secret` in `packages/config/src/keys.ts` (`PAYPAL_CLIENT_SECRET`, `CHANNEL3_API_KEY`) as `SecureString`. Certificate ARNs go to `/handshake/certificates/…`, outside the stage. It prints parameter names, never values:
 
 ```bash
 AWS_PROFILE=handshake AWS_REGION=eu-west-1 pnpm ssm:put prod
@@ -130,7 +130,7 @@ aws ssm put-parameter --name /handshake/$STAGE/limits/daily-token-budget --type 
 aws ssm put-parameter --name /handshake/$STAGE/limits/negotiation-max-turns --type String --value "8" --overwrite
 ```
 
-- [ ] Bootstrap CDK once from **AWS CloudShell** in eu-west-1, logged in as your Identity Center admin. Bootstrap creates IAM roles, which `handshake-dev` is not allowed to do. Deployments then run through those roles, and CloudFormation is limited to `HandshakeCdkExecution`:
+- [x] Bootstrap CDK once from **AWS CloudShell** in eu-west-1, logged in as your Identity Center admin. Bootstrap creates IAM roles, which `handshake-dev` is not allowed to do. Deployments then run through those roles, and CloudFormation is limited to `HandshakeCdkExecution`:
   ```bash
   ACCOUNT=$(aws sts get-caller-identity --query Account --output text)
   npx aws-cdk@latest bootstrap aws://$ACCOUNT/eu-west-1 \
@@ -155,6 +155,11 @@ aws ssm put-parameter --name /handshake/$STAGE/limits/negotiation-max-turns --ty
   ```
 - [x] If the `HandshakeCdkExecution` policy was created before this step was added, replace its JSON with the current `infra/iam/cdk-execution-policy.json` (**IAM → Policies → HandshakeCdkExecution → Edit → JSON**). The new statements let CloudFormation change only the two Handshake records.
 - [x] If you already added `handshake` or `api-handshake` records to the zone by hand, delete them before the next deploy. CloudFormation cannot create a record that already exists.
+- [ ] Add the workload permissions boundary before the next deploy. CloudFormation may now only create Handshake roles that carry this boundary, so no deploy can give a Lambda more access than the boundary lists. In the console, logged in as your Identity Center admin:
+  1. **IAM → Policies → Create policy → JSON**. Paste `infra/iam/workload-boundary.json` and name it exactly `HandshakeWorkloadBoundary`.
+  2. Open **IAM → Policies → HandshakeCdkExecution → Edit → JSON** and replace it with the current `infra/iam/cdk-execution-policy.json`.
+  3. Deploy: `AWS_PROFILE=handshake pnpm cdk:deploy`. Every existing role gets the boundary in place; nothing is replaced.
+  - When a later phase uses a new AWS service from a Lambda (Step Functions, EventBridge, WebSocket API), Claude Code updates `workload-boundary.json` and this step comes back: paste the new JSON into `HandshakeWorkloadBoundary` before deploying.
 - [ ] The webhook ID parameter is added in [I-11].
 
 ---
@@ -162,7 +167,7 @@ aws ssm put-parameter --name /handshake/$STAGE/limits/negotiation-max-turns --ty
 ## During Phase 2
 
 ### [I-11] Register the PayPal webhook
-After Claude Code's first deploy, the CDK output prints a `WebhookUrl`.
+The webhook endpoint is built in Phase 2. After the first deploy that includes it, the CDK output prints a `WebhookUrl`. The Phase 1 stack has no webhook yet, so its output only shows `ApiUrl`, `WebUrl` and `TableName`.
 
 - [ ] In the PayPal developer dashboard (Sandbox), open your app → **Webhooks → Add Webhook**.
 - [ ] Paste the `WebhookUrl`. Select these events if listed: `CHECKOUT.ORDER.APPROVED`, `PAYMENT.AUTHORIZATION.CREATED`, `PAYMENT.AUTHORIZATION.VOIDED`, `PAYMENT.CAPTURE.COMPLETED`, `PAYMENT.CAPTURE.DENIED`, `PAYMENT.CAPTURE.REFUNDED`, `PAYMENT.PAYOUTSBATCH.SUCCESS`, `PAYMENT.PAYOUTS-ITEM.SUCCEEDED`, `PAYMENT.PAYOUTS-ITEM.FAILED`.
