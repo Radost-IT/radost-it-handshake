@@ -180,6 +180,24 @@ aws ssm put-parameter --name /handshake/$STAGE/limits/negotiation-max-turns --ty
   3. Deploy again: `AWS_PROFILE=handshake pnpm cdk:deploy`.
 - [ ] The webhook ID parameter is added in [I-11].
 
+### [I-10b] Create the logo
+- [ ] Generate the logo with an image model, using the Forge logo as a style reference and the prompt below.
+- [ ] Check the spelling of "HANDSHAKE" and "BY RADOST IT" letter by letter; image models often misspell text.
+- [ ] Also generate the frame alone, without text, for the favicon and app icon.
+- [ ] Save the files as `apps/web/public/logo.png` (1024×1024) and `apps/web/public/logo-mark.png` (frame only), then tell Claude Code.
+
+```
+Square 1024x1024 logo on a very dark navy background (#0b0f1a) with a soft vignette.
+A large glowing neon octagon frame, outlined twice like a neon tube, with a gradient
+from hot pink (#ff3b6b) to orange (#ff9a3d) and a soft outer glow.
+Inside, the word "HANDSHAKE" in polished silver 3D serif letters with a subtle bevel;
+the first letter "H" is larger, with an elegant calligraphic swash that breaks out
+of the frame on the left. The word fits on one line inside the octagon.
+Below it, a thin teal (#22a8c6) line, and under the line the text "BY RADOST IT"
+in teal bold serif capitals, aligned right.
+Clean, centered, premium, no other objects, no hands, no extra text, no watermark.
+```
+
 ---
 
 ## During Phase 2
@@ -187,9 +205,9 @@ aws ssm put-parameter --name /handshake/$STAGE/limits/negotiation-max-turns --ty
 ### [I-11] Register the PayPal webhook
 The webhook endpoint is built in Phase 2. After the first deploy that includes it, the CDK output prints a `WebhookUrl`, which will be `https://api-handshake.radostit.com/webhooks/paypal`. The Phase 1 stack has no webhook yet, so its output only shows `ApiUrl`, `WebUrl` and `TableName`.
 
-- [ ] In the PayPal developer dashboard (Sandbox), open your app → **Webhooks → Add Webhook**.
-- [ ] Paste the `WebhookUrl`. Select these events if listed: `CHECKOUT.ORDER.APPROVED`, `PAYMENT.AUTHORIZATION.CREATED`, `PAYMENT.AUTHORIZATION.VOIDED`, `PAYMENT.CAPTURE.COMPLETED`, `PAYMENT.CAPTURE.DENIED`, `PAYMENT.CAPTURE.REFUNDED`, `PAYMENT.PAYOUTSBATCH.SUCCESS`, `PAYMENT.PAYOUTS-ITEM.SUCCEEDED`, `PAYMENT.PAYOUTS-ITEM.FAILED`.
-- [ ] Copy the **Webhook ID** and store it:
+- [x] In the PayPal developer dashboard (Sandbox), open your app → **Webhooks → Add Webhook**.
+- [x] Paste the `WebhookUrl`. Select these events if listed: `CHECKOUT.ORDER.APPROVED`, `PAYMENT.AUTHORIZATION.CREATED`, `PAYMENT.AUTHORIZATION.VOIDED`, `PAYMENT.CAPTURE.COMPLETED`, `PAYMENT.CAPTURE.DENIED`, `PAYMENT.CAPTURE.REFUNDED`, `PAYMENT.PAYOUTSBATCH.SUCCESS`, `PAYMENT.PAYOUTS-ITEM.SUCCEEDED`, `PAYMENT.PAYOUTS-ITEM.FAILED`.
+- [x] Copy the **Webhook ID** and store it:
   ```bash
   aws ssm put-parameter --name /handshake/$STAGE/paypal/webhook-id --type String --value "<webhook-id>" --overwrite
   ```

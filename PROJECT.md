@@ -27,7 +27,7 @@ Stage one is pass/fail: reasonable fit with the theme and proper use of the PayP
 | Criterion | What judges ask | Where we answer it |
 |---|---|---|
 | Technological Implementation | Thorough, skilled, non-trivial use of PayPal and AI | Escrow via authorize/capture/void/reauthorize, Payouts, webhooks; README API mapping table |
-| Design | A complete, coherent product, not a proof of concept | Phase 5 screens and states |
+| Design | A complete, coherent product, not a proof of concept | Look and feel section; Phase 5 screens and states |
 | Potential Impact | A credible, specific case for a real problem and a real audience | The named target audience (Phase 0), shown in the first 20 seconds of the video |
 | Innovation/Idea | Creative, novel, different from existing concepts | Arena mode: exploits become paid bounties and regression tests |
 | Presentation | Video shows it working end to end; problem, audience, and why it matters are clear | Demo video outline below |
@@ -66,6 +66,94 @@ Stage one is pass/fail: reasonable fit with the theme and proper use of the PayP
 ### Attack catalog (initial)
 
 Prompt injection in a listing, fake urgency, price bait-and-switch after agreement, swapped-item evidence, partial delivery claimed as complete, impersonating the platform, currency confusion, and split-payment tricks.
+
+### Arena gamification
+
+The goal is to make visitors try a second and a third time. Every attempt makes the agents harder to fool, so play feeds the product. The arena must suit any age, so the UI calls players **challengers** and a successful attack a **loophole found**. Code and docs keep the technical terms (attack, breach).
+
+Scoring, XP, ranks and badges are pure functions in `packages/arena`, unit tested and computed on the server. They never decide money. The bounty amount comes from the deterministic score and goes through policy and settlement like any other payout, to the arena recipient sandbox account ([I-12]).
+
+**Mechanics**
+
+- **Handle, no account.** A visitor picks a handle and gets a random session token in an HTTP-only cookie. No email, no login. The handle passes a length, charset and blocklist check.
+- **XP.** Every attempt earns XP: 10 for a held attempt, 100 for a loophole, plus a bonus for severity and novelty. Near-duplicates of a known loophole earn the held amount only.
+- **Ranks** from XP: Newcomer, Explorer, Investigator, Puzzle Solver, Codebreaker, Master Tester. The rank shows next to the handle and on the leaderboard.
+- **Badges**, unlocked from thresholds and computed from the challenger's stats on every read, so changing a threshold needs no migration:
+
+| Badge | Unlocked when |
+|---|---|
+| Eureka | First loophole found |
+| Trailblazer | First challenger ever to find a loophole in a category |
+| Map Maker | Tried all eight attack categories |
+| Wordsmith | Found a loophole through listing or message text |
+| Sharp Eye | Found a loophole through delivery evidence |
+| Never Give Up | Ten held attempts in a row |
+| Shield Builder | Your loophole became a regression test that now holds |
+| Daily Regular | Played the daily challenge on five different days |
+
+- **Open bounties.** Each attack category shows whether anyone has found a loophole in it yet. Untouched categories pay a higher sandbox bounty, which points players at the least tested defenses.
+- **Daily challenge.** One deal template a day, chosen by a pure function of the date (`pickDailyChallenge(date, templates)`), so it needs no scheduler. It has its own leaderboard.
+- **Defense counter.** A live, global counter: "Agents held 412 of 430 attempts". It is the same number as the defense win rate chart, so play and the product story stay one number.
+- **Hall of fame.** Each regression case in `evals/regressions/` credits the handle that found it. The case page shows the original attempt, the fix, and the rerun that now holds.
+- **Share image.** Every loophole and badge gets a share image from `next/og` (built into Next.js, no new dependency) and an Open Graph link to the attempt replay.
+
+**Code layout**
+
+```
+packages/arena/src
+  catalog.ts          attack categories and deal templates
+  scoring.ts          severity, novelty, bounty tier (scoreAttempt)
+  progression.ts      xpForAttempt, rankForXp, progress to next rank
+  badges.ts           badge definitions, unlockedBadges(stats), newlyUnlocked(before, after)
+  daily-challenge.ts  pickDailyChallenge(date, templates)
+  handle.ts           validateHandle (length, charset, blocklist)
+packages/core/src/policy.ts       adds checkBountyProposal: amount cap, daily bounty budget, sandbox recipient only
+packages/store                    ChallengerRepository, LeaderboardRepository, ArenaStatsRepository (DynamoDB and in-memory)
+services/api                      arena handlers listed below
+services/workflows                ArenaRun task handlers
+apps/web/app/arena                /arena, /arena/leaderboard, /arena/hall-of-fame, /arena/me,
+                                  /arena/attempts/[id] with opengraph-image.tsx
+```
+
+**Flow of one attempt**
+
+1. `POST /arena/attempts` checks the session cookie, input limits and per-IP rate limit, stores the attempt and starts the `ArenaRun` state machine.
+2. `ArenaRun` runs the deal with the challenger's text as the seller, then the arena judge agent returns a structured verdict.
+3. `recordArenaResult` scores the attempt and writes everything in one DynamoDB `TransactWriteItems`: attempt result, challenger stats (with an optimistic `version` check), the leaderboard entry (delete old score item, put new), the daily leaderboard entry, category stats, and global and daily stats.
+4. For a loophole, `ArenaRun` builds a bounty proposal. Policy checks it, settlement pays it through Payouts, and the regression generator writes the case.
+5. The WebSocket pushes `arena.result` (verdict, policy reason), `challenger.progress` (XP gained, rank change, new badges) and `arena.stats` (defense counter) to connected clients.
+
+**Read endpoints:** `POST /arena/challengers` (create handle, set cookie), `GET /arena/challengers/me`, `GET /arena/leaderboard?scope=all|daily`, `GET /arena/categories`, `GET /arena/stats`, `GET /arena/hall-of-fame`, `GET /arena/attempts/{id}`.
+
+## Look and feel
+
+Design is one of five equal criteria, and judges see the app before they read code. The bar is the same as radost-it-forge: dark first, one strong accent, ambient light, motion with a purpose. Every effect must show something true about the deal (money held, money moved, attack blocked), never decoration alone.
+
+**Design tokens** (`apps/web/app/globals.css`, Tailwind v4 `@theme`):
+
+- Dark first, light mode supported. Near-black background, slightly blue-grey cards, 7% white borders, large radius.
+- One accent for actions (teal), and one "heat" gradient (pink to orange) used once per screen for the hero element. Arena screens swap to the heat gradient as their accent, so the visitor feels the switch to challenger mode.
+- Semantic state colors, each paired with an icon and a label so color is never the only signal: escrow held (amber), settled (green), refused or voided (red), escalated (violet).
+- Two ambient radial gradients fixed behind the page (the "aura"), frosted-glass navbar on scroll.
+- Fonts via `next/font/google`: Outfit for text and headings, a monospaced font for money, IDs and `debug_id` values. Money always uses tabular figures.
+- AG Grid and AG Charts read the same tokens through their theming API, so tables and charts look native in both modes.
+
+**Motion:** `motion` (`motion/react`) for entrances, layout changes and state transitions. CSS transforms and opacity only. Respect `prefers-reduced-motion` everywhere. One confetti library (`canvas-confetti`, small, ISC license) for breaches and settled deals only.
+
+**Signature moments.** Each one maps to a step in the demo video.
+
+| Screen | Moment | Driven by |
+|---|---|---|
+| Landing | Hero replays the latest real settled deal: two agent avatars trade offers, the price converges, a handshake, the escrow lock closes and opens | Latest `SETTLED` deal from the API, not hardcoded data |
+| Landing | Live counters roll up: money in escrow now, deals settled, attacks blocked | API aggregates |
+| Deal room | Negotiation as a split chat with a price track that converges toward agreement (AG Charts line) | WebSocket messages |
+| Deal room | Contract card fills in field by field, then both signatures stamp in | `AGREED` event |
+| Escrow timeline | Vertical state-machine stepper. The vault locks on authorize, opens on capture, and the coin returns to the buyer on void. A countdown ring shows time to authorization expiry; it refills on reauthorization | Deal events |
+| Verification | Acceptance criteria tick one by one with evidence thumbnails and a confidence bar per criterion | Verifier output |
+| Arena | Result reveal: a shield slams down with the blocked action and policy reason, or a "breach" banner with confetti, the bounty receipt and XP gained | Arena judge result |
+| Leaderboard | Top-3 podium above the AG Grid table, rank badges, the live defense counter | Leaderboard and score data |
+
+Budget: no screen ships more than one ambient animation, and the Lighthouse performance score on the landing page stays at 90 or above.
 
 ## Architecture (AWS serverless)
 
@@ -130,12 +218,22 @@ Terminal states: `SETTLED`, `REFUSED`, `CANCELLED`, `ABANDONED`. Every transitio
 | Deal event | `DEAL#<id>` | `EVT#<ts>#<seq>` |
 | Negotiation message | `DEAL#<id>` | `MSG#<ts>#<seq>` |
 | Seller | `SELLER#<id>` | `META` |
-| Arena attack | `ATTACK#<id>` | `META` |
-| Leaderboard | `LEADERBOARD` | `SCORE#<padded>#<attackerId>` |
+| Arena attempt | `ATTEMPT#<id>` | `META` (GSI1: `CHALLENGER#<id>` / `ATTEMPT#<ts>`) |
+| Challenger (handle, XP, stats, version) | `CHALLENGER#<id>` | `META` |
+| Challenger session | `SESSION#<sha256(token)>` | `META` (TTL) |
+| Handle reservation | `HANDLE#<lowercase handle>` | `META` |
+| Leaderboard | `LEADERBOARD` | `SCORE#<padded>#<challengerId>` |
+| Daily leaderboard | `DAILY#<yyyy-mm-dd>` | `SCORE#<padded>#<challengerId>` |
+| Category stats (attempts, loopholes, first finder) | `CATEGORY#<category>` | `META` |
+| Global stats (attempts, held) | `STATS` | `GLOBAL` |
+| Daily stats (for the win rate chart) | `STATS` | `DAY#<yyyy-mm-dd>` |
+| Hall of fame | `HALL_OF_FAME` | `CASE#<ts>#<attemptId>` |
 | Channel3 cache | `C3#<queryHash>` | `RESULT` (TTL) |
 | WebSocket connection | `WS#<connectionId>` | `META` (TTL) |
 | Idempotency | `IDEMP#<key>` | `META` (TTL) |
 | Token budget | `BUDGET#<yyyy-mm-dd>` | `TOKENS` |
+
+The table gains one global secondary index, `GSI1` (`gsi1pk`, `gsi1sk`), for a challenger's attempt history. Everything else is a direct key lookup or a query on one partition. The session token is random and never stored in plain text; the public challenger ID is a separate random ID, so leaderboard keys reveal nothing that grants access. Badges are not stored; they are computed from the challenger's stats.
 
 ### SSM parameters (stage = `prod`)
 
@@ -150,6 +248,8 @@ Terminal states: `SETTLED`, `REFUSED`, `CANCELLED`, `ABANDONED`. Every transitio
 /handshake/<stage>/bedrock/model-smart          inference profile or model ID
 /handshake/<stage>/limits/daily-token-budget
 /handshake/<stage>/limits/negotiation-max-turns
+/handshake/<stage>/limits/max-bounty              decimal string, e.g. 5.00
+/handshake/<stage>/limits/daily-bounty-budget     decimal string
 ```
 
 ## Phase plan
@@ -158,9 +258,9 @@ Deploys are manual for now: the human runs `pnpm cdk:deploy`. Claude Code writes
 
 ### Phase 0 — Accounts and access (Oct 2–5)
 
-- [ ] Human completes **[I-1] to [I-9]**.
+- [x] Human completes **[I-1] to [I-9]**.
 - [x] Decide the AWS region: `eu-west-1` (Ireland). Anthropic models there run through EU cross-region inference profiles (`eu.` prefix): `eu.anthropic.claude-sonnet-4-6` (fast) and `eu.anthropic.claude-opus-4-6-v1` (smart), see [I-8].
-- [ ] Confirm the name "Handshake by Radost IT" and the repo slug `radost-it-handshake`.
+- [x] Confirm the name "Handshake by Radost IT" and the repo slug `radost-it-handshake`.
 - [x] Name one specific target audience and the problem it has today. It drives the README, the video opening, and the Devpost text.
   - **Audience:** teams building AI shopping agents.
   - **Problem:** their users will not let the agent pay, because one fake listing or injected message could cost them money. Today the options are a card with no limits or a human in every step.
@@ -168,15 +268,16 @@ Deploys are manual for now: the human runs `pnpm cdk:deploy`. Claude Code writes
 
 ### Phase 1 — Skeleton (Oct 3–9)
 
-- [ ] Human completes **[I-10]** (SSM parameters, CDK bootstrap).
+- [x] Human completes **[I-10]** (SSM parameters, CDK bootstrap).
 - [x] pnpm monorepo with the layout above, TypeScript strict, ESLint, Vitest, Prettier.
 - [x] `packages/config`: load from `.env` locally or from SSM by stage on AWS; keep `.env.example` in sync; zod validation; fail-fast errors naming missing keys only.
 - [x] CDK app defines an empty `Handshake-prod` stack (`pnpm cdk:synth` passes): DynamoDB table, HTTP API with a health route, Next.js placeholder page on CloudFront. Keep generated resource names under the `Handshake-` prefix, because the policies in `infra/iam/` are scoped to it. In `cdk.json`, set `"toolkitStackName": "Handshake-CDKToolkit"` and the context key `"@aws-cdk/core:bootstrapQualifier": "handshake"` to match the bootstrap in [I-10].
 - [x] Custom domains: the web app on `handshake.radostit.com` and the HTTP API on `api-handshake.radostit.com`. Names stay one level below `radostit.com` so the `*.radostit.com` certificates cover them. Certificate ARNs and the hosted zone ID come from SSM; CDK creates the Route 53 alias records ([I-10]).
-- [ ] Human deploys the stack manually with `pnpm cdk:deploy`.
+- [x] Human deploys the stack manually with `pnpm cdk:deploy`.
 - [x] `scripts/probes/paypal-auth.ts`: get a sandbox access token and print success or failure, never the token.
 - [ ] `scripts/probes/channel3-search.ts`: one product search, printing titles and prices.
 - [ ] `scripts/probes/bedrock-hello.ts`: one Converse call per configured model.
+- [ ] Logo from **[I-10b]** in the navbar, favicon and Open Graph image. Design tokens, fonts, aura background, glass navbar and an app shell with dark and light mode, as described in Look and feel. Every later screen builds on them, so polish is not left to Phase 5.
 
 Done when the three probes pass against real services and `pnpm cdk:deploy` creates the stack.
 
@@ -216,6 +317,16 @@ Done when an AI-driven deal completes end to end in the deployed app and evals p
 - [ ] Regression generator: a successful attack becomes a JSON case in `evals/regressions/` and in DynamoDB.
 - [ ] Leaderboard (AG Grid) and defense win rate over time and attacks by category (AG Charts).
 - [ ] Arena attack history in AG Grid: result, blocked action and reason, link to the regression case.
+- [ ] `packages/arena`: `progression.ts`, `badges.ts`, `daily-challenge.ts`, `handle.ts`, with unit tests for every rank and badge boundary.
+- [ ] `checkBountyProposal` in `packages/core/policy` with tests; `limits/max-bounty` and `limits/daily-bounty-budget` in SSM and `.env.example`.
+- [ ] CDK: add `GSI1` to the table and the `ArenaRun` state machine.
+- [ ] `packages/store`: challenger, leaderboard and arena stats repositories; `recordArenaResult` as one transaction, with a test that a concurrent update retries on a version conflict.
+- [ ] Handles and sessions: `POST /arena/challengers`, `GET /arena/challengers/me`, hashed session tokens, handle reservation.
+- [ ] WebSocket events `arena.result`, `challenger.progress`, `arena.stats`.
+- [ ] Arena UI: challenger card with rank progress, badge grid (locked badges show how to earn them), open bounties per category, daily challenge, defense counter, rank-up and badge toasts.
+- [ ] Hall of fame: regression case pages credit the challenger and show attempt, fix, and the rerun that holds.
+- [ ] Share images for loopholes and badges with `next/og`.
+- [ ] UI copy check: every arena screen uses "challenger" and "loophole found", suitable for any age.
 - [ ] Run every catalog attack ourselves, fix what breaks, keep at least one realistic success for the demo story.
 
 Done when a successful attack produces a payout and a regression case, and the patched system then blocks it.
@@ -223,6 +334,8 @@ Done when a successful attack produces a payout and a regression case, and the p
 ### Phase 5 — Product polish (Nov 3–8)
 
 - [ ] Screens: landing, deal room, escrow timeline, evidence and verification, arena, leaderboard, audit log.
+- [ ] Signature moments from Look and feel, each driven by real deal or arena data. Reduced-motion fallbacks checked.
+- [ ] Landing page Lighthouse performance at 90 or above on mobile.
 - [ ] Audit log and active escrow holds (amount, time to expiry, reauthorization status) in AG Grid, with sorting, filtering, and quick search.
 - [ ] AG Grid and AG Charts themed to match the app in dark and light mode, keyboard navigable, loaded only on the screens that use them. Community modules only, imported one by one.
 - [ ] Clear states for loading, errors, budget exhausted, and escalation.
