@@ -41,6 +41,18 @@ export {
   type Money,
 } from './money';
 export {
+  addTurn,
+  holdPriceLimit,
+  InvalidNegotiationMoveError,
+  negotiationStatus,
+  standingOffer,
+  type Negotiation,
+  type NegotiationMove,
+  type NegotiationParty,
+  type NegotiationStatus,
+  type NegotiationTurn,
+} from './negotiation';
+export {
   evaluateProposal,
   MIN_CRITERION_CONFIDENCE,
   reviewAgreement,
