@@ -83,6 +83,12 @@
       "Resource": "arn:aws:sqs:eu-west-1:*:Handshake-*"
     },
     {
+      "Sid": "PublishHandshakeEvents",
+      "Effect": "Allow",
+      "Action": "events:PutEvents",
+      "Resource": "arn:aws:events:eu-west-1:*:event-bus/Handshake-*"
+    },
+    {
       "Sid": "InvokeHandshakeFunctions",
       "Effect": "Allow",
       "Action": [

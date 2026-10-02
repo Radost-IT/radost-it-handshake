@@ -3,7 +3,13 @@ import { z } from 'zod';
 import type { PayPalClient } from './client';
 
 export type PayPalOperation =
-  'create-order' | 'get-order' | 'authorize' | 'capture' | 'void' | 'reauthorize';
+  | 'create-order'
+  | 'get-order'
+  | 'authorize'
+  | 'capture'
+  | 'void'
+  | 'reauthorize'
+  | 'verify-webhook';
 
 /** PayPal answered with a non-2xx status. `debugId` is what PayPal support asks for. */
 export class PayPalApiError extends Error {
@@ -81,7 +87,7 @@ function translateError(client: PayPalClient, operation: PayPalOperation, error:
   );
 }
 
-function parseJson(body: unknown): unknown {
+export function parseJson(body: unknown): unknown {
   if (typeof body !== 'string') return undefined;
   try {
     return JSON.parse(body);

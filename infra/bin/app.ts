@@ -5,6 +5,7 @@ import { HandshakeStack } from '../lib/handshake-stack';
 const app = new App();
 
 new HandshakeStack(app, 'Handshake-prod', {
+  stage: 'prod',
   webAppPath: fileURLToPath(new URL('../../apps/web', import.meta.url)),
   domains: {
     zone: 'radostit.com',

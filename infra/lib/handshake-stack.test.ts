@@ -32,6 +32,7 @@ describe('HandshakeStack', () => {
   beforeAll(() => {
     const app = new App({ context: { '@aws-cdk/core:bootstrapQualifier': 'handshake' } });
     const stack = new HandshakeStack(app, 'Handshake-test', {
+      stage: 'test',
       webAppPath: createBuiltWebApp(),
       domains: {
         zone: 'radostit.com',
@@ -61,6 +62,28 @@ describe('HandshakeStack', () => {
 
   it('exposes GET /health on the HTTP API', () => {
     template.hasResourceProperties('AWS::ApiGatewayV2::Route', { RouteKey: 'GET /health' });
+  });
+
+  it('accepts PayPal webhooks and prints the URL to register with PayPal', () => {
+    template.hasResourceProperties('AWS::ApiGatewayV2::Route', {
+      RouteKey: 'POST /webhooks/paypal',
+    });
+    template.hasOutput('WebhookUrl', {
+      Value: 'https://api-test-handshake.radostit.com/webhooks/paypal',
+    });
+  });
+
+  it('publishes webhook events to a bus named after the stack', () => {
+    template.hasResourceProperties('AWS::Events::EventBus', { Name: 'Handshake-test-events' });
+    template.hasResourceProperties('AWS::Lambda::Function', {
+      Environment: {
+        Variables: Match.objectLike({
+          HANDSHAKE_STAGE: 'test',
+          EVENT_BUS_NAME: Match.anyValue(),
+          TABLE_NAME: Match.anyValue(),
+        }),
+      },
+    });
   });
 
   it('throttles the API and serves it only on the custom domain', () => {

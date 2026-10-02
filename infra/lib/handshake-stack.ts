@@ -3,6 +3,8 @@ import { DomainName, HttpApi, HttpMethod } from 'aws-cdk-lib/aws-apigatewayv2';
 import { HttpLambdaIntegration } from 'aws-cdk-lib/aws-apigatewayv2-integrations';
 import { Certificate } from 'aws-cdk-lib/aws-certificatemanager';
 import { AttributeType, Billing, TableV2 } from 'aws-cdk-lib/aws-dynamodb';
+import { EventBus } from 'aws-cdk-lib/aws-events';
+import { PolicyStatement } from 'aws-cdk-lib/aws-iam';
 import { Architecture, Runtime } from 'aws-cdk-lib/aws-lambda';
 import { NodejsFunction, OutputFormat } from 'aws-cdk-lib/aws-lambda-nodejs';
 import { LogGroup, RetentionDays } from 'aws-cdk-lib/aws-logs';
@@ -14,6 +16,8 @@ import type { Construct } from 'constructs';
 import { fileURLToPath } from 'node:url';
 
 export interface HandshakeStackProps extends StackProps {
+  /** Selects the config under `/handshake/<stage>` in SSM. */
+  stage: string;
   /** A Next.js app already built with `open-next build`. */
   webAppPath: string;
   /** The Route 53 zone and the hostnames in it covered by its wildcard certificates. */
@@ -34,8 +38,8 @@ const workloadBoundaryPolicyName = 'HandshakeWorkloadBoundary';
 // Caps what public traffic can cost before per-route limits exist.
 const apiThrottle = { rateLimit: 25, burstLimit: 50 };
 
-const apiSource = (handlerFile: string) =>
-  fileURLToPath(new URL(`../../services/api/src/${handlerFile}`, import.meta.url));
+const serviceSource = (service: string, handlerFile: string) =>
+  fileURLToPath(new URL(`../../services/${service}/src/${handlerFile}`, import.meta.url));
 
 // Generated resource names start with the stack name (`Handshake-prod`),
 // which is what the IAM policies in infra/iam/ are scoped to.
@@ -54,8 +58,10 @@ export class HandshakeStack extends Stack {
       pointInTimeRecoverySpecification: { pointInTimeRecoveryEnabled: true },
     });
 
+    const eventBus = new EventBus(this, 'EventBus', { eventBusName: `${this.stackName}-events` });
+
     const healthFunction = new NodejsFunction(this, 'HealthFunction', {
-      entry: apiSource('health.ts'),
+      entry: serviceSource('api', 'health.ts'),
       runtime: Runtime.NODEJS_22_X,
       architecture: Architecture.ARM_64,
       memorySize: 256,
@@ -63,6 +69,28 @@ export class HandshakeStack extends Stack {
       logGroup: new LogGroup(this, 'HealthFunctionLogs', { retention: RetentionDays.ONE_MONTH }),
       bundling: { format: OutputFormat.ESM, minify: true, sourceMap: true },
     });
+
+    const configPath = `/handshake/${props.stage}`;
+    const paypalWebhookFunction = new NodejsFunction(this, 'PayPalWebhookFunction', {
+      entry: serviceSource('webhooks', 'handler.ts'),
+      runtime: Runtime.NODEJS_22_X,
+      architecture: Architecture.ARM_64,
+      memorySize: 512,
+      // Leaves room for one PayPal verification call with its retries.
+      timeout: Duration.seconds(25),
+      logGroup: new LogGroup(this, 'PayPalWebhookFunctionLogs', {
+        retention: RetentionDays.ONE_MONTH,
+      }),
+      bundling: { format: OutputFormat.ESM, minify: true, sourceMap: true },
+      environment: {
+        HANDSHAKE_STAGE: props.stage,
+        TABLE_NAME: table.tableName,
+        EVENT_BUS_NAME: eventBus.eventBusName,
+      },
+    });
+    table.grant(paypalWebhookFunction, 'dynamodb:PutItem', 'dynamodb:DeleteItem');
+    eventBus.grantPutEventsTo(paypalWebhookFunction);
+    this.grantConfigRead(paypalWebhookFunction, configPath);
 
     const certificateFromParameter = (id: string, parameterName: string) =>
       Certificate.fromCertificateArn(
@@ -92,6 +120,11 @@ export class HandshakeStack extends Stack {
       path: '/health',
       methods: [HttpMethod.GET],
       integration: new HttpLambdaIntegration('HealthIntegration', healthFunction),
+    });
+    httpApi.addRoutes({
+      path: '/webhooks/paypal',
+      methods: [HttpMethod.POST],
+      integration: new HttpLambdaIntegration('PayPalWebhookIntegration', paypalWebhookFunction),
     });
 
     // Building here would run a full Next.js build on every synth and in every
@@ -139,5 +172,29 @@ export class HandshakeStack extends Stack {
     new CfnOutput(this, 'ApiUrl', { value: `https://${props.domains.api}` });
     new CfnOutput(this, 'WebUrl', { value: `https://${props.domains.web}` });
     new CfnOutput(this, 'TableName', { value: table.tableName });
+    // Registered with PayPal by hand ([I-11]).
+    new CfnOutput(this, 'WebhookUrl', { value: `https://${props.domains.api}/webhooks/paypal` });
+  }
+
+  private grantConfigRead(fn: NodejsFunction, configPath: string): void {
+    fn.addToRolePolicy(
+      new PolicyStatement({
+        actions: ['ssm:GetParametersByPath'],
+        resources: [
+          this.formatArn({
+            service: 'ssm',
+            resource: 'parameter',
+            resourceName: configPath.slice(1),
+          }),
+        ],
+      }),
+    );
+    fn.addToRolePolicy(
+      new PolicyStatement({
+        actions: ['kms:Decrypt'],
+        resources: ['*'],
+        conditions: { StringEquals: { 'kms:ViaService': `ssm.${this.region}.amazonaws.com` } },
+      }),
+    );
   }
 }

@@ -12,6 +12,7 @@ export interface SentRequest {
   url: string;
   headers: Record<string, string>;
   body: unknown;
+  rawBody: string | undefined;
 }
 
 interface AxiosLikeConfig {
@@ -53,6 +54,7 @@ export function stubPayPalClient(
               url: config.url,
               headers: config.headers,
               body: config.data === undefined ? undefined : JSON.parse(config.data),
+              rawBody: config.data,
             });
           }
           const next = isTokenRequest

@@ -1,6 +1,6 @@
 import type { PayPalOperation } from './errors';
 
-export type MutatingOperation = Exclude<PayPalOperation, 'get-order'>;
+export type MutatingOperation = Exclude<PayPalOperation, 'get-order' | 'verify-webhook'>;
 
 /**
  * The PayPal-Request-Id for one money operation on a deal. The same deal,

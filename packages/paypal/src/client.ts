@@ -11,6 +11,8 @@ import { PAYPAL_SANDBOX_BASE_URL, type Config } from '@handshake/config';
 export interface PayPalClient {
   orders: OrdersController;
   payments: PaymentsController;
+  /** Raw request builder for PayPal APIs the SDK does not cover, such as webhook verification. */
+  createRequest: ReturnType<Client['getRequestBuilderFactory']>;
   /** Returns the error from the last failed token request once, then forgets it. */
   consumeTokenFailure: () => unknown;
 }
@@ -74,6 +76,7 @@ export function buildPayPalClient(
   return {
     orders: new OrdersController(client),
     payments: new PaymentsController(client),
+    createRequest: client.getRequestBuilderFactory(),
     consumeTokenFailure: () => {
       const failure = tokenFailure;
       tokenFailure = undefined;
