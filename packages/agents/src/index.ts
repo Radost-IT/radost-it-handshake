@@ -13,3 +13,12 @@ export type {
   TokenUsage,
 } from './llm';
 export { untrustedDataRule, wrapUntrustedData } from './untrusted-data';
+export {
+  decideBuyerMove,
+  decideSellerMove,
+  type BuyerBrief,
+  type DecidedMove,
+  type Listing,
+  type SellerProfile,
+} from './negotiator';
+export { runNegotiation, type NegotiationAgent, type NegotiationResult } from './run-negotiation';
