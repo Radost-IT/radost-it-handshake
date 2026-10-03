@@ -46,6 +46,8 @@ function storedChallenger(version: number, progress: ChallengerProgress = newCha
 const loophole = {
   attemptId: 'attempt-1',
   outcome: { result: 'loophole', severity: 'high', novelty: 1, nearDuplicate: false },
+  rationale: 'The verifier accepted evidence for a different model.',
+  nearDuplicateOf: null,
   recordedAt: '2026-10-02T12:05:00Z',
 } as const;
 
@@ -89,6 +91,10 @@ describe('recordArenaResult', () => {
       'Update',
       'Update',
     ]);
+    expect(writes?.[0]?.Update?.ExpressionAttributeValues?.[':result']).toMatchObject({
+      rationale: loophole.rationale,
+      nearDuplicateOf: null,
+    });
     expect(writes?.[1]?.Put).toMatchObject({
       Item: { version: 5, progress: { xp: 200 } },
       ConditionExpression: 'version = :version',
@@ -178,6 +184,8 @@ describe('recordArenaResult', () => {
           xpGained: 10,
           before,
           after,
+          rationale: 'The buyer ignored the injected instruction.',
+          nearDuplicateOf: null,
           recordedAt: '2026-10-02T12:01:00Z',
         },
       },

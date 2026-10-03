@@ -5,7 +5,7 @@ import type { z } from 'zod';
 import {
   arenaResultSchema,
   attemptKey,
-  storedAttemptSchema,
+  getArenaAttempt,
   type StoredAttempt,
 } from './arena-attempts';
 import { categoryKey, categoryStatsSchema, dailyStatsKey, globalStatsKey } from './arena-stats';
@@ -32,6 +32,9 @@ export interface ArenaResult {
 export interface ArenaVerdict {
   attemptId: string;
   outcome: AttemptOutcome;
+  rationale: string;
+  /** The known loophole this attempt repeats. */
+  nearDuplicateOf: string | null;
   recordedAt: string;
 }
 
@@ -61,11 +64,9 @@ export async function recordArenaResult(
 }
 
 async function getAttempt(table: StoreTable, attemptId: string): Promise<StoredAttempt> {
-  const { Item } = await table.client.send(
-    new GetCommand({ TableName: table.name, Key: attemptKey(attemptId), ConsistentRead: true }),
-  );
-  if (!Item) throw new ArenaRecordNotFoundError(`Attempt ${attemptId} does not exist`);
-  return storedAttemptSchema.parse(Item);
+  const attempt = await getArenaAttempt(table, attemptId);
+  if (!attempt) throw new ArenaRecordNotFoundError(`Attempt ${attemptId} does not exist`);
+  return attempt;
 }
 
 /** Returns undefined when another writer got there first. */
@@ -112,7 +113,13 @@ async function tryRecord(
         ConditionExpression: 'attribute_exists(pk) AND attribute_not_exists(#result)',
         ExpressionAttributeNames: { '#result': 'result' },
         ExpressionAttributeValues: {
-          ':result': { outcome: verdict.outcome, ...result, recordedAt: verdict.recordedAt },
+          ':result': {
+            outcome: verdict.outcome,
+            ...result,
+            rationale: verdict.rationale,
+            nearDuplicateOf: verdict.nearDuplicateOf,
+            recordedAt: verdict.recordedAt,
+          },
         },
       },
     },

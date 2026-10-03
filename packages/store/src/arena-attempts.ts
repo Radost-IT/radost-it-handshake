@@ -1,5 +1,5 @@
 import { ConditionalCheckFailedException } from '@aws-sdk/client-dynamodb';
-import { PutCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';
+import { GetCommand, PutCommand, QueryCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
 import { attackCategories, type AttackCategory, type AttackChannel } from '@handshake/arena';
 import { z } from 'zod';
 import { challengerProgressSchema } from './challengers';
@@ -30,8 +30,19 @@ export const arenaResultSchema = z.object({
   xpGained: z.number().int().nonnegative(),
   before: challengerProgressSchema,
   after: challengerProgressSchema,
+  /** Why the judge decided this way. A loophole's regression case keeps it. */
+  rationale: z.string().min(1),
+  nearDuplicateOf: z.string().nullable(),
   recordedAt: z.iso.datetime({ offset: true }),
 });
+
+/** What happened when the attempt ran, kept for the judge and the attempt replay. */
+export const arenaRunSchema = z.object({
+  transcript: z.string().min(1),
+  policyDecisions: z.array(z.string().min(1)),
+});
+
+export type ArenaRun = z.infer<typeof arenaRunSchema>;
 
 export const storedAttemptSchema = z.object({
   id: z.string().min(1),
@@ -41,6 +52,7 @@ export const storedAttemptSchema = z.object({
   attackText: z.string().min(1),
   dailyChallengeDate: z.iso.date().nullable(),
   createdAt: z.iso.datetime({ offset: true }),
+  run: arenaRunSchema.optional(),
   result: arenaResultSchema.optional(),
 });
 
@@ -83,6 +95,33 @@ export async function createArenaAttempt(
     }
     throw error;
   }
+}
+
+export async function getArenaAttempt(
+  table: StoreTable,
+  attemptId: string,
+): Promise<StoredAttempt | undefined> {
+  const { Item } = await table.client.send(
+    new GetCommand({ TableName: table.name, Key: attemptKey(attemptId), ConsistentRead: true }),
+  );
+  return Item ? storedAttemptSchema.parse(Item) : undefined;
+}
+
+export async function saveArenaRun(
+  table: StoreTable,
+  attemptId: string,
+  run: ArenaRun,
+): Promise<void> {
+  await table.client.send(
+    new UpdateCommand({
+      TableName: table.name,
+      Key: attemptKey(attemptId),
+      UpdateExpression: 'SET #run = :run',
+      ConditionExpression: 'attribute_exists(pk)',
+      ExpressionAttributeNames: { '#run': 'run' },
+      ExpressionAttributeValues: { ':run': run },
+    }),
+  );
 }
 
 /** The challenger's attempts, newest first. */

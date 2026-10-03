@@ -1,7 +1,10 @@
 export {
   AttemptExistsError,
   createArenaAttempt,
+  getArenaAttempt,
   listChallengerAttempts,
+  saveArenaRun,
+  type ArenaRun,
   type NewArenaAttempt,
   type StoredAttempt,
 } from './arena-attempts';
