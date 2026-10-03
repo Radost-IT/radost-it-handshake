@@ -25,10 +25,14 @@ export function Navbar() {
       }`}
     >
       <nav className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
-        <Link href="/" className="flex items-baseline gap-2 rounded-md">
-          <span className="text-lg font-semibold tracking-tight">Handshake</span>
-          <span className="text-accent text-xs font-semibold tracking-widest uppercase">
-            by Radost IT
+        <Link href="/" className="flex items-center gap-3 rounded-md">
+          {/* Pre-sized at twice the display size, so it needs no image optimizer. */}
+          <img src="/logo-112.webp" alt="" width={44} height={44} className="rounded-lg" />
+          <span className="flex items-baseline gap-2">
+            <span className="text-lg font-semibold tracking-tight">Handshake</span>
+            <span className="text-accent text-xs font-semibold tracking-widest uppercase">
+              by Radost IT
+            </span>
           </span>
         </Link>
         <ThemeToggle />

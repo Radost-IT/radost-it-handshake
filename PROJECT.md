@@ -279,7 +279,7 @@ Deploys are manual for now: the human runs `pnpm cdk:deploy`. Claude Code writes
 - [x] `scripts/probes/paypal-auth.ts`: get a sandbox access token and print success or failure, never the token.
 - [ ] `scripts/probes/channel3-search.ts`: one product search, printing titles and prices.
 - [ ] `scripts/probes/bedrock-hello.ts`: one Converse call per configured model.
-- [ ] Logo from **[I-10b]** in the navbar, favicon and Open Graph image. Design tokens, fonts, aura background, glass navbar and an app shell with dark and light mode, as described in Look and feel. Every later screen builds on them, so polish is not left to Phase 5.
+- [x] Logo from **[I-10b]** in the navbar, favicon and Open Graph image. Design tokens, fonts, aura background, glass navbar and an app shell with dark and light mode, as described in Look and feel. Every later screen builds on them, so polish is not left to Phase 5.
 
 Done when the three probes pass against real services and `pnpm cdk:deploy` creates the stack.
 

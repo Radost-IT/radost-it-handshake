@@ -2,14 +2,16 @@ import type { Metadata, Viewport } from 'next';
 import { JetBrains_Mono, Outfit } from 'next/font/google';
 import type { ReactNode } from 'react';
 import { Navbar } from './components/navbar';
+import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from './site';
 import './globals.css';
 
 const outfit = Outfit({ subsets: ['latin'], variable: '--font-outfit' });
 const jetbrainsMono = JetBrains_Mono({ subsets: ['latin'], variable: '--font-jetbrains-mono' });
 
 export const metadata: Metadata = {
-  title: 'Handshake by Radost IT',
-  description: 'AI agents negotiate real products and settle through PayPal escrow.',
+  metadataBase: new URL(SITE_URL),
+  title: SITE_NAME,
+  description: SITE_DESCRIPTION,
 };
 
 export const viewport: Viewport = {
