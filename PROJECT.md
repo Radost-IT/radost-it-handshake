@@ -305,7 +305,7 @@ Done when both integration paths pass against the sandbox, triggered through the
 - [ ] Deal contract generation and signing; human approval step.
   - Signatures from `packages/core/contract` are plain digests that anyone can compute. Create them only on the server after checking who the party is, never accept one from a client or seller agent, or switch to an HMAC with a server-held key.
 - [x] Verifier agent: deterministic checks first (price, currency, product ID, deadline), then per-criterion LLM checks; low confidence escalates.
-- [ ] Untrusted-data wrapping for all third-party text in prompts.
+- [x] Untrusted-data wrapping for all third-party text in prompts.
 - [ ] WebSocket streaming of negotiation messages and state changes.
 - [ ] `evals/`: at least 15 scripted scenarios (honest deals, hard bargains, bad evidence) with expected outcomes.
 

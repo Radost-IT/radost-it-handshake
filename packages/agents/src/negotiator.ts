@@ -148,8 +148,11 @@ function describeState(
     return `${action} and said:\n${words}`;
   });
   return [
-    `Product: ${listing.productId}, listed at ${formatMoney(listing.listPrice)}.`,
-    wrapUntrustedData('product listing', `${listing.title}\n${listing.description}`),
+    `The product is listed at ${formatMoney(listing.listPrice)}.`,
+    wrapUntrustedData(
+      'product listing',
+      `Product ID: ${listing.productId}\n${listing.title}\n${listing.description}`,
+    ),
     transcript.length ? `Negotiation so far:\n\n${transcript.join('\n\n')}` : 'No moves yet.',
     `You may make at most ${negotiation.maxTurns - negotiation.turns.length} more moves together before the negotiation ends without a deal.`,
     'Make your move.',

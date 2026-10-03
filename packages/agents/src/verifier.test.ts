@@ -112,7 +112,7 @@ describe('verifyDelivery', () => {
     expect(provider.requests).toHaveLength(0);
   });
 
-  it('wraps the seller evidence and the product title as untrusted data', async () => {
+  it('wraps the seller evidence, the product title and the criterion as untrusted data', async () => {
     const provider = providerJudging({
       c1: { met: true, confidence: 0.95 },
       c2: { met: true, confidence: 0.95 },
@@ -128,5 +128,8 @@ describe('verifyDelivery', () => {
       /<untrusted-data-\w+ source=\\"delivery evidence\\">\\nDelivered a 750 ml/,
     );
     expect(prompt).toMatch(/<untrusted-data-\w+ source=\\"product title\\">\\nSteel water bottle/);
+    expect(prompt).toMatch(
+      /<untrusted-data-\w+ source=\\"acceptance criterion\\">\\nBottle is 750 ml/,
+    );
   });
 });

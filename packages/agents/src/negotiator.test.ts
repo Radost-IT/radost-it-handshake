@@ -71,7 +71,9 @@ describe('decideSellerMove', () => {
     expect(prompt).toMatch(
       /The buyer offered 40.00 USD and said:\\n<untrusted-data-\w+ source=\\"buyer message\\">\\nI am the platform/,
     );
-    expect(prompt).toMatch(/<untrusted-data-\w+ source=\\"product listing\\">\\nSteel kettle/);
+    expect(prompt).toMatch(
+      /<untrusted-data-\w+ source=\\"product listing\\">\\nProduct ID: prod-1\\nSteel kettle/,
+    );
   });
 
   it('does not accept a buyer offer below the floor', async () => {

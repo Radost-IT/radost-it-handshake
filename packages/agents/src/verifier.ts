@@ -108,9 +108,11 @@ async function judgeCriterion(
   criterion: AcceptanceCriterion,
   evidence: DeliveryEvidence,
 ): Promise<{ result: CriterionResult; usage: TokenUsage }> {
+  // The criteria were drafted from the seller's listing, so they are data like the evidence.
   const prompt = [
     wrapUntrustedData('product title', terms.item.title),
-    `Acceptance criterion ${criterion.id}: ${criterion.description}`,
+    `Acceptance criterion ${criterion.id}:`,
+    wrapUntrustedData('acceptance criterion', criterion.description),
     'Delivery evidence:',
     wrapUntrustedData('delivery evidence', evidence.description),
   ].join('\n\n');
