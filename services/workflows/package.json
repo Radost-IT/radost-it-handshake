@@ -6,9 +6,11 @@
     "./resume-lifecycle": "./src/resume-lifecycle.ts"
   },
   "dependencies": {
+    "@aws-sdk/client-bedrock-runtime": "^3.1145.0",
     "@aws-sdk/client-dynamodb": "^3.1146.0",
     "@aws-sdk/client-sfn": "^3.1146.0",
     "@aws-sdk/lib-dynamodb": "^3.1146.0",
+    "@handshake/agents": "workspace:*",
     "@handshake/arena": "workspace:*",
     "@handshake/config": "workspace:*",
     "@handshake/core": "workspace:*",

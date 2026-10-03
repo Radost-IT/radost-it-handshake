@@ -15,6 +15,7 @@ import { StringParameter } from 'aws-cdk-lib/aws-ssm';
 import { Nextjs } from 'cdk-nextjs-standalone';
 import type { Construct } from 'constructs';
 import { fileURLToPath } from 'node:url';
+import { createArenaRun } from './arena-run';
 import { createDealLifecycle } from './deal-lifecycle';
 
 export interface HandshakeStackProps extends StackProps {
@@ -139,6 +140,29 @@ export class HandshakeStack extends Stack {
     );
     this.grantConfigRead(workflowsFunction, configPath);
     const dealLifecycle = createDealLifecycle(this, workflowsFunction);
+
+    const arenaRunFunction = new NodejsFunction(this, 'ArenaRunFunction', {
+      entry: serviceSource('workflows', 'arena-run-handler.ts'),
+      runtime: Runtime.NODEJS_22_X,
+      architecture: Architecture.ARM_64,
+      memorySize: 512,
+      // A full negotiation is up to the turn limit of model calls in a row.
+      timeout: Duration.minutes(5),
+      logGroup: new LogGroup(this, 'ArenaRunFunctionLogs', { retention: RetentionDays.ONE_MONTH }),
+      bundling: { format: OutputFormat.ESM, minify: true, sourceMap: true },
+      environment: { HANDSHAKE_STAGE: props.stage, TABLE_NAME: table.tableName },
+    });
+    table.grant(
+      arenaRunFunction,
+      'dynamodb:GetItem',
+      'dynamodb:PutItem',
+      'dynamodb:UpdateItem',
+      'dynamodb:DeleteItem',
+      'dynamodb:Query',
+    );
+    this.grantConfigRead(arenaRunFunction, configPath);
+    this.grantAnthropicModels(arenaRunFunction);
+    const arenaRun = createArenaRun(this, arenaRunFunction);
 
     const paypalEventsFunction = new NodejsFunction(this, 'PayPalEventsFunction', {
       entry: serviceSource('workflows', 'paypal-events-handler.ts'),
@@ -304,6 +328,7 @@ export class HandshakeStack extends Stack {
     new CfnOutput(this, 'WebUrl', { value: `https://${props.domains.web}` });
     new CfnOutput(this, 'TableName', { value: table.tableName });
     new CfnOutput(this, 'DealLifecycleArn', { value: dealLifecycle.stateMachineArn });
+    new CfnOutput(this, 'ArenaRunArn', { value: arenaRun.stateMachineArn });
     // Registered with PayPal by hand ([I-11]).
     new CfnOutput(this, 'WebhookUrl', { value: `https://${props.domains.api}/webhooks/paypal` });
   }
@@ -322,6 +347,30 @@ export class HandshakeStack extends Stack {
       }),
     );
     this.grantSsmDecrypt(fn);
+  }
+
+  // Matches the Bedrock statement in the workload boundary. Inference profiles route
+  // to foundation models in other regions, so both resources are needed.
+  private grantAnthropicModels(fn: IFunction): void {
+    fn.addToRolePolicy(
+      new PolicyStatement({
+        actions: ['bedrock:InvokeModel'],
+        resources: [
+          this.formatArn({
+            service: 'bedrock',
+            resource: 'inference-profile',
+            resourceName: '*anthropic.*',
+          }),
+          this.formatArn({
+            service: 'bedrock',
+            region: '*',
+            account: '',
+            resource: 'foundation-model',
+            resourceName: 'anthropic.*',
+          }),
+        ],
+      }),
+    );
   }
 
   private grantSsmDecrypt(fn: IFunction): void {

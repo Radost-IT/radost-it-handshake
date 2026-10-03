@@ -146,6 +146,33 @@ describe('HandshakeStack', () => {
     expect(definition).toContain('TimeoutSecondsPath');
   });
 
+  it('runs arena attempts in a state machine that pays only after a loophole', () => {
+    template.hasResourceProperties('AWS::StepFunctions::StateMachine', {
+      StateMachineName: 'Handshake-test-ArenaRun',
+    });
+    template.hasOutput('ArenaRunArn', {});
+    const arenaRun = Object.values(template.findResources('AWS::StepFunctions::StateMachine')).find(
+      (stateMachine) => JSON.stringify(stateMachine).includes('Handshake-test-ArenaRun'),
+    );
+    const definition = JSON.stringify(arenaRun);
+    for (const state of ['RunDeal', 'Judge', 'FoundLoophole', 'SaveRegression', 'PayBounty']) {
+      expect(definition).toContain(`\\"${state}\\"`);
+    }
+    expect(definition).toContain('$.result.loophole');
+    template.hasResourceProperties('AWS::IAM::Policy', {
+      PolicyDocument: {
+        Statement: Match.arrayWith([
+          Match.objectLike({
+            Action: 'bedrock:InvokeModel',
+            Resource: Match.arrayWith([
+              { 'Fn::Join': ['', Match.arrayWith([':inference-profile/*anthropic.*'])] },
+            ]),
+          }),
+        ]),
+      },
+    });
+  });
+
   it('resumes the lifecycle when PayPal reports an approved checkout or a capture', () => {
     template.hasResourceProperties('AWS::Events::Rule', {
       EventPattern: {

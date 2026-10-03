@@ -326,7 +326,7 @@ Done when an AI-driven deal completes end to end in the deployed app and evals p
 - [ ] Arena attack history in AG Grid: result, blocked action and reason, link to the regression case.
 - [x] `packages/arena`: `progression.ts`, `badges.ts`, `daily-challenge.ts`, `handle.ts`, with unit tests for every rank and badge boundary.
 - [x] `checkBountyProposal` in `packages/core/policy` with tests; `limits/max-bounty` and `limits/daily-bounty-budget` in SSM and `.env.example`.
-- [ ] CDK: add `GSI1` to the table and the `ArenaRun` state machine.
+- [x] CDK: add `GSI1` to the table and the `ArenaRun` state machine.
 - [x] `packages/store`: challenger, leaderboard and arena stats repositories; `recordArenaResult` as one transaction, with a test that a concurrent update retries on a version conflict.
 - [x] Handles and sessions: `POST /arena/challengers`, `GET /arena/challengers/me`, hashed session tokens, handle reservation.
 - [ ] WebSocket events `arena.result`, `challenger.progress`, `arena.stats`.
