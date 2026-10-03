@@ -12,19 +12,29 @@ import {
   type ArenaRunContext,
   type ArenaTaskResult,
 } from './arena-run';
+import { withDailyTokenBudget } from './token-budget';
 
 const environment = z.object({ TABLE_NAME: z.string().min(1) }).parse(process.env);
 
 const config = await loadConfig();
 
+const table = {
+  client: DynamoDBDocumentClient.from(new DynamoDBClient({})),
+  name: environment.TABLE_NAME,
+};
+const now = () => new Date().toISOString();
+
+const bedrock = createBedrockLlmProvider(
+  new BedrockRuntimeClient({ region: config.bedrock.region }),
+  { fast: config.bedrock.modelFast, smart: config.bedrock.modelSmart },
+);
+
 const context: ArenaRunContext = {
-  table: {
-    client: DynamoDBDocumentClient.from(new DynamoDBClient({})),
-    name: environment.TABLE_NAME,
-  },
-  llm: createBedrockLlmProvider(new BedrockRuntimeClient({ region: config.bedrock.region }), {
-    fast: config.bedrock.modelFast,
-    smart: config.bedrock.modelSmart,
+  table,
+  llm: withDailyTokenBudget(bedrock, {
+    table,
+    dailyTokenBudget: config.limits.dailyTokenBudget,
+    now,
   }),
   paypal: createPayPalClient(config.paypal),
   dealSource: config.arena.dealSource,
@@ -34,7 +44,7 @@ const context: ArenaRunContext = {
     dailyBudget: money(config.limits.dailyBountyBudget, 'USD'),
     recipientEmail: config.arena.recipientEmail,
   },
-  now: () => new Date().toISOString(),
+  now,
 };
 
 /** One step of the ArenaRun state machine. Errors fail the step so Step Functions can retry. */

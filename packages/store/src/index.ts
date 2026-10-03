@@ -30,6 +30,7 @@ export {
   type NewChallenger,
 } from './sessions';
 export type { StoreTable } from './table';
+export { addTokensUsed, getTokensUsed } from './token-budget';
 export { saveWait, takeWait, type WaitSignal } from './waits';
 export {
   listSellers,
