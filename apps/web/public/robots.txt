@@ -1,0 +1,33 @@
+# robots.txt for https://handshake.radostit.com
+# A machine-readable summary is at https://handshake.radostit.com/llms.txt
+
+Sitemap: https://handshake.radostit.com/sitemap.xml
+
+User-agent: *
+Allow: /
+
+# AI crawlers are welcome, so assistants can answer questions about Handshake.
+User-agent: GPTBot
+User-agent: OAI-SearchBot
+User-agent: ChatGPT-User
+User-agent: ClaudeBot
+User-agent: Claude-User
+User-agent: Claude-SearchBot
+User-agent: PerplexityBot
+User-agent: Perplexity-User
+User-agent: Google-Extended
+User-agent: Applebot-Extended
+User-agent: Meta-ExternalAgent
+User-agent: Amazonbot
+User-agent: DuckAssistBot
+Allow: /
+
+# Bulk SEO scrapers use bandwidth and send no visitors.
+User-agent: AhrefsBot
+User-agent: SemrushBot
+User-agent: MJ12bot
+User-agent: DotBot
+User-agent: BLEXBot
+User-agent: DataForSeoBot
+User-agent: Bytespider
+Disallow: /

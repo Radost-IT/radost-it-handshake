@@ -1,0 +1,36 @@
+# Handshake by Radost IT
+
+> Escrow for AI shopping agents. A buyer agent finds real products, negotiates with seller agents, and pays through PayPal escrow. The money is authorized, not captured, and moves only when a verifier checks the delivery against the signed deal contract. The language model never moves money: agents propose, and tested code captures or voids the payment.
+
+Handshake is an entry in the PayPal AI Hackathon 2026, built by Radost IT. It runs on the PayPal sandbox only, so no real money moves.
+
+## Who it is for
+
+Teams building AI shopping agents. Their users will not let an agent pay, because one fake listing or injected message could cost them money. Today the options are a card with no limits or a human in every step. Handshake adds escrow plus a policy check, so the agent can pay and the money moves only when the deal checks out.
+
+## How a deal works
+
+1. The user gives the buyer agent a goal, a budget and a mandate: maximum price, blocked categories, and a price above which a human must approve.
+2. The buyer agent searches real products through Channel3 and negotiates with seller agents, within a turn cap.
+3. On agreement, both sides sign a deal contract: item, price, delivery deadline and checkable acceptance criteria.
+4. The payment is authorized with PayPal Orders (intent AUTHORIZE). This hold is the escrow.
+5. The seller submits delivery evidence. A verifier agent checks each acceptance criterion and proposes capture, void or escalation.
+6. A deterministic policy engine checks the proposal against the contract and the mandate. Only then does the settlement code capture or void the PayPal authorization.
+7. Holds near expiry are reauthorized automatically. A deal is marked settled only after a confirmed capture.
+
+## Arena mode
+
+Visitors play a malicious seller and try to trick the agents: prompt injection in a listing, fake urgency, a price switch after agreement, swapped-item evidence, partial delivery, impersonating the platform, currency confusion and split payments. A judge agent decides whether the attempt found a loophole. A loophole earns a sandbox bounty through PayPal Payouts and becomes a regression test, so every attempt makes the agents harder to fool. Players are called challengers; there is no account, only a handle.
+
+## Technology
+
+- PayPal Orders v2 with authorize, capture, void and reauthorize; PayPal Payouts; signature-verified PayPal webhooks
+- Channel3 for real product search
+- Amazon Bedrock (Converse API) for the buyer, seller, verifier and judge agents
+- AWS serverless: Lambda, API Gateway, Step Functions, EventBridge, DynamoDB, CloudFront
+- Next.js, AG Grid Community and AG Charts Community
+
+## Links
+
+- App: https://handshake.radostit.com
+- Radost IT: https://radostit.com

@@ -10,8 +10,49 @@ const jetbrainsMono = JetBrains_Mono({ subsets: ['latin'], variable: '--font-jet
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
-  title: SITE_NAME,
+  title: {
+    default: `${SITE_NAME} - Escrow for AI shopping agents`,
+    template: `%s - ${SITE_NAME}`,
+  },
   description: SITE_DESCRIPTION,
+  applicationName: 'Handshake',
+  keywords: [
+    'agentic commerce',
+    'AI shopping agent',
+    'AI agent payments',
+    'AI agent escrow',
+    'PayPal escrow',
+    'PayPal authorize and capture',
+    'agent negotiation',
+    'prompt injection defense',
+    'AI red teaming arena',
+    'Radost IT',
+  ],
+  authors: [{ name: 'Radost IT', url: 'https://radostit.com' }],
+  creator: 'Radost IT',
+  publisher: 'Radost IT',
+  category: 'technology',
+  alternates: { canonical: '/' },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: { index: true, follow: true, 'max-image-preview': 'large', 'max-snippet': -1 },
+  },
+  openGraph: {
+    type: 'website',
+    locale: 'en_US',
+    url: '/',
+    siteName: SITE_NAME,
+    title: `${SITE_NAME} - Escrow for AI shopping agents`,
+    description: SITE_DESCRIPTION,
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: `${SITE_NAME} - Escrow for AI shopping agents`,
+    description: SITE_DESCRIPTION,
+    creator: '@radostithq',
+    site: '@radostithq',
+  },
 };
 
 export const viewport: Viewport = {
