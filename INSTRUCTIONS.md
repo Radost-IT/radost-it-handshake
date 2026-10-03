@@ -193,6 +193,14 @@ The web app loads the Seven script with `data-domain-id="handshake.radostit.com"
 - [ ] In Seven by Radost IT, add the domain `handshake.radostit.com` with an active subscription, so it is in the edge KeyValueStore.
 - [ ] After the next deploy, open https://handshake.radostit.com and check that a visit appears in Seven. The script records nothing on `localhost`, because it needs HTTPS and a matching host.
 
+### [I-10d] Turn on the contact and newsletter forms
+The web forms post to the shared Radost IT contact Lambda with the website key `handshake.radostit.com`. The web server signs a spam challenge with its own secret.
+- [ ] Generate the secret into `.env`: `echo "FORM_SIGNING_SECRET=$(openssl rand -hex 32)" >> .env`.
+- [ ] Copy it to SSM: `AWS_PROFILE=handshake AWS_REGION=eu-west-1 pnpm ssm:put prod`.
+- [ ] In `radostit-app-lambdas`, commit and deploy the contact Lambda with `handshake.radostit.com` in `lambdas/contact/src/constants/websites.ts`. The Lambda rejects unknown website keys.
+- [ ] Deploy Handshake: `AWS_PROFILE=handshake pnpm cdk:deploy`.
+- [ ] Send a test message from https://handshake.radostit.com/contact and subscribe from the footer.
+
 ---
 
 ## During Phase 2

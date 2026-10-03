@@ -3,15 +3,17 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "next dev",
+    "dev": "node --env-file-if-exists=../../.env node_modules/next/dist/bin/next dev",
     "build": "next build",
     "build:aws": "open-next build",
     "start": "next start"
   },
   "dependencies": {
+    "@handshake/config": "workspace:*",
     "next": "16.3.8",
     "react": "^19.3.0",
-    "react-dom": "^19.3.0"
+    "react-dom": "^19.3.0",
+    "zod": "^4.6.5"
   },
   "devDependencies": {
     "@opennextjs/aws": "4.1.6",

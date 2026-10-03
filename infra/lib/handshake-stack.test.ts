@@ -187,6 +187,30 @@ describe('HandshakeStack', () => {
     template.hasResourceProperties('AWS::Lambda::Url', { AuthType: 'NONE' });
   });
 
+  it('lets the web server read only its form signing secret', () => {
+    template.hasResourceProperties('AWS::Lambda::Function', {
+      Environment: { Variables: Match.objectLike({ HANDSHAKE_STAGE: 'test' }) },
+      Handler: 'index.handler',
+      Runtime: Match.stringLikeRegexp('nodejs'),
+      Description: Match.stringLikeRegexp('Next.js Server'),
+    });
+    template.hasResourceProperties('AWS::IAM::Policy', {
+      PolicyDocument: {
+        Statement: Match.arrayWith([
+          Match.objectLike({
+            Action: 'ssm:GetParameter',
+            Resource: {
+              'Fn::Join': [
+                '',
+                Match.arrayWith([':parameter/handshake/test/web/form-signing-secret']),
+              ],
+            },
+          }),
+        ]),
+      },
+    });
+  });
+
   it('serves the web app and the API on their own hostnames with certificates from SSM', () => {
     template.hasResourceProperties('AWS::CloudFront::Distribution', {
       DistributionConfig: Match.objectLike({

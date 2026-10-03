@@ -6,7 +6,7 @@ import { AttributeType, Billing, TableV2 } from 'aws-cdk-lib/aws-dynamodb';
 import { EventBus, Rule } from 'aws-cdk-lib/aws-events';
 import { LambdaFunction } from 'aws-cdk-lib/aws-events-targets';
 import { PolicyStatement } from 'aws-cdk-lib/aws-iam';
-import { Architecture, Runtime } from 'aws-cdk-lib/aws-lambda';
+import { Architecture, type IFunction, Runtime } from 'aws-cdk-lib/aws-lambda';
 import { NodejsFunction, OutputFormat } from 'aws-cdk-lib/aws-lambda-nodejs';
 import { LogGroup, RetentionDays } from 'aws-cdk-lib/aws-logs';
 import { AaaaRecord, ARecord, HostedZone, RecordTarget } from 'aws-cdk-lib/aws-route53';
@@ -221,6 +221,7 @@ export class HandshakeStack extends Stack {
     const web = new Nextjs(this, 'Web', {
       nextjsPath: props.webAppPath,
       skipBuild: true,
+      environment: { HANDSHAKE_STAGE: props.stage },
       overrides: {
         nextjsDistribution: {
           distributionProps: {
@@ -233,6 +234,21 @@ export class HandshakeStack extends Stack {
         },
       },
     });
+    // The web server signs its form spam checks and must not see the PayPal or Channel3 keys.
+    const webServer = web.serverFunction.lambdaFunction;
+    webServer.addToRolePolicy(
+      new PolicyStatement({
+        actions: ['ssm:GetParameter'],
+        resources: [
+          this.formatArn({
+            service: 'ssm',
+            resource: 'parameter',
+            resourceName: `${configPath.slice(1)}/web/form-signing-secret`,
+          }),
+        ],
+      }),
+    );
+    this.grantSsmDecrypt(webServer);
 
     const zone = HostedZone.fromHostedZoneAttributes(this, 'Zone', {
       zoneName: props.domains.zone,
@@ -277,6 +293,10 @@ export class HandshakeStack extends Stack {
         ],
       }),
     );
+    this.grantSsmDecrypt(fn);
+  }
+
+  private grantSsmDecrypt(fn: IFunction): void {
     fn.addToRolePolicy(
       new PolicyStatement({
         actions: ['kms:Decrypt'],

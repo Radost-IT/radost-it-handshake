@@ -4,6 +4,8 @@ import type { ConfigKeyName, RawConfig } from './keys';
 export const PAYPAL_SANDBOX_BASE_URL = 'https://api-m.sandbox.paypal.com';
 
 const nonEmpty = z.string().trim().min(1);
+// 32 bytes as hex, the output of `openssl rand -hex 32`.
+export const formSigningSecretSchema = z.string().regex(/^[0-9a-f]{64}$/);
 const positiveInteger = z.coerce.number().int().positive();
 // Bounties are paid in USD, so amounts have at most two decimals.
 const positiveUsdAmount = z
@@ -29,6 +31,9 @@ const rawConfigSchema = z.object({
   maxBounty: positiveUsdAmount,
   dailyBountyBudget: positiveUsdAmount,
   arenaRecipientEmail: z.email(),
+  // Only the web server reads it, through `loadFormSigningSecret`. It is listed
+  // here so `pnpm ssm:put` checks it, and the other services do not need it.
+  formSigningSecret: formSigningSecretSchema.optional(),
 } satisfies Record<ConfigKeyName, z.ZodType>);
 
 export interface Config {
