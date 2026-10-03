@@ -259,6 +259,31 @@ describe('PayBounty', () => {
   });
 });
 
+describe('MarkFailed', () => {
+  it('marks an attempt stopped by the daily token budget', async () => {
+    const { result } = await runTask({
+      task: 'MarkFailed',
+      attemptId: 'attempt-1',
+      error: 'TokenBudgetExhaustedError',
+    });
+
+    expect(result).toEqual({ task: 'MarkFailed', marked: true });
+    expect(dynamodb.commandCalls(UpdateCommand)[0]?.args[0].input).toMatchObject({
+      Key: attemptKey,
+      ExpressionAttributeValues: { ':failure': { reason: 'budget', failedAt: now } },
+    });
+  });
+
+  it('marks any other error as a plain failure without reading the attempt', async () => {
+    await runTask({ task: 'MarkFailed', attemptId: 'attempt-1', error: 'States.Timeout' });
+
+    expect(dynamodb.commandCalls(GetCommand)).toHaveLength(0);
+    expect(dynamodb.commandCalls(UpdateCommand)[0]?.args[0].input).toMatchObject({
+      ExpressionAttributeValues: { ':failure': { reason: 'error', failedAt: now } },
+    });
+  });
+});
+
 function regressionCase(attemptId: string, category: string) {
   return {
     attemptId,

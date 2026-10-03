@@ -8,6 +8,7 @@ import {
   getArenaAttempt,
   getChallenger,
   listRegressionCases,
+  markArenaAttemptFailed,
   markBountyPaid,
   recordArenaResult,
   releaseBounty,
@@ -20,6 +21,7 @@ import {
 import { z } from 'zod';
 import { runArenaAttack } from './arena-attack';
 import { pickArenaDeal, type ArenaDealSource } from './arena-deal';
+import { TOKEN_BUDGET_EXHAUSTED } from './token-budget';
 
 export interface ArenaRunContext {
   table: StoreTable;
@@ -39,6 +41,8 @@ export const arenaTaskSchema = z.discriminatedUnion('task', [
   z.object({ task: z.literal('Judge'), attemptId }),
   z.object({ task: z.literal('SaveRegression'), attemptId }),
   z.object({ task: z.literal('PayBounty'), attemptId }),
+  // Step Functions passes the name of the error that stopped the run.
+  z.object({ task: z.literal('MarkFailed'), attemptId, error: z.string() }),
 ]);
 
 export type ArenaTask = z.infer<typeof arenaTaskSchema>;
@@ -47,7 +51,8 @@ export type ArenaTaskResult =
   | { task: 'RunDeal' }
   | { task: 'Judge'; loophole: boolean }
   | { task: 'SaveRegression'; saved: boolean }
-  | { task: 'PayBounty'; bounty: 'none' | 'paid' | 'refused'; reason?: string };
+  | { task: 'PayBounty'; bounty: 'none' | 'paid' | 'refused'; reason?: string }
+  | { task: 'MarkFailed'; marked: boolean };
 
 /** A step ran before the step it depends on, which means the state machine is wrong. */
 export class ArenaStepOrderError extends Error {
@@ -62,6 +67,7 @@ export async function runArenaTask(
   context: ArenaRunContext,
   task: ArenaTask,
 ): Promise<ArenaTaskResult> {
+  if (task.task === 'MarkFailed') return markFailed(context, task.attemptId, task.error);
   const attempt = await getArenaAttempt(context.table, task.attemptId);
   if (!attempt) throw new ArenaRecordNotFoundError(`Attempt ${task.attemptId} does not exist`);
   switch (task.task) {
@@ -75,6 +81,21 @@ export async function runArenaTask(
     case 'PayBounty':
       return { task: 'PayBounty', ...(await rewardLoophole(context, attempt)) };
   }
+}
+
+async function markFailed(
+  context: ArenaRunContext,
+  attemptId: string,
+  error: string,
+): Promise<ArenaTaskResult> {
+  const failure = {
+    reason: error === TOKEN_BUDGET_EXHAUSTED ? 'budget' : 'error',
+    failedAt: context.now(),
+  } as const;
+  return {
+    task: 'MarkFailed',
+    marked: await markArenaAttemptFailed(context.table, attemptId, failure),
+  };
 }
 
 async function runDeal(context: ArenaRunContext, attempt: StoredAttempt): Promise<void> {

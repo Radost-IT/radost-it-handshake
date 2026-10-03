@@ -167,8 +167,31 @@ describe('getAttempt', () => {
     expect(JSON.parse(response.body ?? '')).toMatchObject({
       id: attemptId,
       status: 'running',
+      failureReason: null,
       run: null,
       result: null,
+    });
+  });
+
+  it('shows why a run failed', async () => {
+    dynamodb.on(GetCommand, { Key: { pk: `ATTEMPT#${attemptId}`, sk: 'META' } }).resolves({
+      Item: { ...stored, failure: { reason: 'budget', failedAt: '2026-10-03T12:30:20.000Z' } },
+    });
+
+    expect(JSON.parse((await getAttempt(context, attemptId)).body ?? '')).toMatchObject({
+      status: 'failed',
+      failureReason: 'budget',
+    });
+  });
+
+  it('counts an attempt still running past the run deadline as failed', async () => {
+    dynamodb.on(GetCommand, { Key: { pk: `ATTEMPT#${attemptId}`, sk: 'META' } }).resolves({
+      Item: { ...stored, createdAt: '2026-10-03T11:50:00.000Z' },
+    });
+
+    expect(JSON.parse((await getAttempt(context, attemptId)).body ?? '')).toMatchObject({
+      status: 'failed',
+      failureReason: 'error',
     });
   });
 

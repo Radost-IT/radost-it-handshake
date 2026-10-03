@@ -13,6 +13,7 @@ import {
   createArenaAttempt,
   getArenaAttempt,
   listChallengerAttempts,
+  markArenaAttemptFailed,
   saveArenaRun,
 } from './arena-attempts';
 
@@ -112,5 +113,28 @@ describe('getArenaAttempt and saveArenaRun', () => {
       ConditionExpression: 'attribute_exists(pk)',
       ExpressionAttributeValues: { ':run': run },
     });
+  });
+});
+
+describe('markArenaAttemptFailed', () => {
+  const failure = { reason: 'budget', failedAt: '2026-10-03T12:01:00.000Z' } as const;
+
+  it('stores the failure on an attempt without a result', async () => {
+    dynamodb.on(UpdateCommand).resolves({});
+
+    await expect(markArenaAttemptFailed(table, 'attempt-1', failure)).resolves.toBe(true);
+    expect(dynamodb.commandCalls(UpdateCommand)[0]?.args[0].input).toMatchObject({
+      Key: { pk: 'ATTEMPT#attempt-1', sk: 'META' },
+      ConditionExpression: 'attribute_exists(pk) AND attribute_not_exists(#result)',
+      ExpressionAttributeValues: { ':failure': failure },
+    });
+  });
+
+  it('leaves a judged attempt alone', async () => {
+    dynamodb
+      .on(UpdateCommand)
+      .rejects(new ConditionalCheckFailedException({ message: 'judged', $metadata: {} }));
+
+    await expect(markArenaAttemptFailed(table, 'attempt-1', failure)).resolves.toBe(false);
   });
 });

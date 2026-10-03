@@ -177,9 +177,18 @@ describe('HandshakeStack', () => {
       (stateMachine) => JSON.stringify(stateMachine).includes('Handshake-test-ArenaRun'),
     );
     const definition = JSON.stringify(arenaRun);
-    for (const state of ['RunDeal', 'Judge', 'FoundLoophole', 'SaveRegression', 'PayBounty']) {
+    for (const state of [
+      'RunDeal',
+      'Judge',
+      'FoundLoophole',
+      'SaveRegression',
+      'PayBounty',
+      'MarkFailed',
+      'AttemptFailed',
+    ]) {
       expect(definition).toContain(`\\"${state}\\"`);
     }
+    expect(definition).toContain('States.ALL');
     expect(definition).toContain('$.result.loophole');
     template.hasResourceProperties('AWS::IAM::Policy', {
       PolicyDocument: {

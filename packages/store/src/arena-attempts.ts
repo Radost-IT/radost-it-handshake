@@ -44,6 +44,14 @@ export const arenaRunSchema = z.object({
 
 export type ArenaRun = z.infer<typeof arenaRunSchema>;
 
+/** Why an attempt stopped before the judge decided. `budget` means the day's tokens ran out. */
+export const arenaFailureSchema = z.object({
+  reason: z.enum(['budget', 'error']),
+  failedAt: z.iso.datetime({ offset: true }),
+});
+
+export type ArenaFailure = z.infer<typeof arenaFailureSchema>;
+
 export const storedAttemptSchema = z.object({
   id: z.string().min(1),
   challengerId: z.string().min(1),
@@ -54,6 +62,7 @@ export const storedAttemptSchema = z.object({
   createdAt: z.iso.datetime({ offset: true }),
   run: arenaRunSchema.optional(),
   result: arenaResultSchema.optional(),
+  failure: arenaFailureSchema.optional(),
 });
 
 export type StoredAttempt = z.infer<typeof storedAttemptSchema>;
@@ -122,6 +131,33 @@ export async function saveArenaRun(
       ExpressionAttributeValues: { ':run': run },
     }),
   );
+}
+
+/**
+ * Marks an attempt that stopped before it was judged. A judged attempt keeps
+ * its verdict, so this returns false when the attempt already has a result.
+ */
+export async function markArenaAttemptFailed(
+  table: StoreTable,
+  attemptId: string,
+  failure: ArenaFailure,
+): Promise<boolean> {
+  try {
+    await table.client.send(
+      new UpdateCommand({
+        TableName: table.name,
+        Key: attemptKey(attemptId),
+        UpdateExpression: 'SET #failure = :failure',
+        ConditionExpression: 'attribute_exists(pk) AND attribute_not_exists(#result)',
+        ExpressionAttributeNames: { '#failure': 'failure', '#result': 'result' },
+        ExpressionAttributeValues: { ':failure': failure },
+      }),
+    );
+    return true;
+  } catch (error) {
+    if (error instanceof ConditionalCheckFailedException) return false;
+    throw error;
+  }
 }
 
 /** The challenger's attempts, newest first. */

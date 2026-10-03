@@ -4,6 +4,7 @@ import {
   Choice,
   Condition,
   DefinitionBody,
+  Fail,
   JsonPath,
   StateMachine,
   Succeed,
@@ -18,12 +19,27 @@ const ATTEMPT_TIMEOUT = Duration.minutes(30);
 /**
  * The ArenaRun state machine: run the arena deal, judge it, and for a
  * loophole save the regression case and pay the bounty. Each step stores its
- * work before returning, so a retried step picks up where it stopped.
+ * work before returning, so a retried step picks up where it stopped. A step
+ * that still fails marks the attempt failed.
  * Started with `{ "attemptId": "..." }` once the attempt is stored.
  */
 export function createArenaRun(scope: Construct, arenaFunction: IFunction): StateMachine {
   const arena = new Construct(scope, 'ArenaRun');
   const attemptId = JsonPath.stringAt('$.attemptId');
+
+  // Without this, an attempt whose run stopped would show as running forever.
+  const markFailed = new LambdaInvoke(arena, 'MarkFailed', {
+    lambdaFunction: arenaFunction,
+    payload: TaskInput.fromObject({
+      task: 'MarkFailed',
+      attemptId,
+      error: JsonPath.stringAt('$.error.Error'),
+    }),
+    payloadResponseOnly: true,
+    resultPath: JsonPath.DISCARD,
+  }).next(
+    new Fail(arena, 'AttemptFailed', { errorPath: '$.error.Error', causePath: '$.error.Cause' }),
+  );
 
   const step = (task: string, retryOn: string[]) =>
     new LambdaInvoke(arena, task, {
@@ -31,12 +47,14 @@ export function createArenaRun(scope: Construct, arenaFunction: IFunction): Stat
       payload: TaskInput.fromObject({ task, attemptId }),
       payloadResponseOnly: true,
       resultPath: '$.result',
-    }).addRetry({
-      errors: retryOn,
-      interval: Duration.seconds(5),
-      backoffRate: 2,
-      maxAttempts: 2,
-    });
+    })
+      .addRetry({
+        errors: retryOn,
+        interval: Duration.seconds(5),
+        backoffRate: 2,
+        maxAttempts: 2,
+      })
+      .addCatch(markFailed, { resultPath: '$.error' });
 
   // Rerunning a model step costs tokens, so only failures a second try can fix are retried.
   const modelErrors = ['ThrottlingException', 'ServiceUnavailableException', 'LlmOutputError'];

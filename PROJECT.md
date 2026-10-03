@@ -121,7 +121,8 @@ apps/web/app/arena                /arena, /arena/leaderboard, /arena/hall-of-fam
 2. `ArenaRun` runs the deal with the challenger's text as the seller, then the arena judge agent returns a structured verdict.
 3. `recordArenaResult` scores the attempt and writes everything in one DynamoDB `TransactWriteItems`: attempt result, challenger stats (with an optimistic `version` check), the leaderboard entry (delete old score item, put new), the daily leaderboard entry, category stats, and global and daily stats.
 4. For a loophole, `ArenaRun` builds a bounty proposal. Policy checks it, settlement pays it through Payouts, and the regression generator writes the case.
-5. The WebSocket pushes `arena.result` (verdict, policy reason), `challenger.progress` (XP gained, rank change, new badges) and `arena.stats` (defense counter) to connected clients.
+5. If a step still fails after its retries, `MarkFailed` stores why (`budget` when the daily token budget ran out, `error` otherwise) and `GET /arena/attempts/{id}` shows the attempt as `failed`. An attempt older than the 30-minute run timeout without a result also counts as failed.
+6. The WebSocket pushes `arena.result` (verdict, policy reason), `challenger.progress` (XP gained, rank change, new badges) and `arena.stats` (defense counter) to connected clients.
 
 **Read endpoints:** `POST /arena/challengers` (create handle, set cookie), `GET /arena/challengers/me`, `GET /arena/leaderboard?scope=all|daily`, `GET /arena/categories`, `GET /arena/stats`, `GET /arena/hall-of-fame`, `GET /arena/attempts/{id}`.
 

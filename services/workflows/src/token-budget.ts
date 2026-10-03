@@ -1,8 +1,12 @@
 import type { LlmProvider } from '@handshake/agents';
 import { addTokensUsed, getTokensUsed, type StoreTable } from '@handshake/store';
 
+// Step Functions sees this name as the error of a failed step. Minifying renames
+// classes, so the name is a string and not the class name.
+export const TOKEN_BUDGET_EXHAUSTED = 'TokenBudgetExhaustedError';
+
 export class TokenBudgetExhaustedError extends Error {
-  override name = 'TokenBudgetExhaustedError';
+  override name = TOKEN_BUDGET_EXHAUSTED;
 }
 
 export interface DailyTokenBudget {

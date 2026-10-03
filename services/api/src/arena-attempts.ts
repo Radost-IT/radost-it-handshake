@@ -16,6 +16,9 @@ import { hashToken, json, parseJson } from './http';
 // leaves room for several of them testing at once.
 const ATTEMPTS_PER_IP_PER_HOUR = 30;
 const HOUR_MS = 60 * 60 * 1000;
+// ArenaRun stops itself after 30 minutes. That timeout cannot mark the attempt,
+// and neither can a run that never started, so an older attempt counts as failed.
+const RUN_DEADLINE_MS = 35 * 60 * 1000;
 
 const attemptBodySchema = z.object({
   category: z.enum(attackCategories),
@@ -93,11 +96,18 @@ export async function getAttempt(
     ? await getArenaAttempt(context.table, attemptId ?? '')
     : undefined;
   if (!attempt) return json(404, { error: 'There is no attempt with this ID' });
-  return json(200, publicAttempt(attempt));
+  return json(200, publicAttempt(attempt, context.now()));
 }
 
-function publicAttempt(attempt: StoredAttempt) {
+function failureReason(attempt: StoredAttempt, now: Date): 'budget' | 'error' | null {
+  if (attempt.result) return null;
+  if (attempt.failure) return attempt.failure.reason;
+  return now.getTime() - Date.parse(attempt.createdAt) > RUN_DEADLINE_MS ? 'error' : null;
+}
+
+function publicAttempt(attempt: StoredAttempt, now: Date) {
   const { result } = attempt;
+  const failure = failureReason(attempt, now);
   return {
     id: attempt.id,
     challengerId: attempt.challengerId,
@@ -106,7 +116,8 @@ function publicAttempt(attempt: StoredAttempt) {
     attackText: attempt.attackText,
     dailyChallengeDate: attempt.dailyChallengeDate,
     createdAt: attempt.createdAt,
-    status: result ? 'judged' : 'running',
+    status: result ? 'judged' : failure ? 'failed' : 'running',
+    failureReason: failure,
     run: attempt.run ?? null,
     result: result
       ? {
