@@ -33,6 +33,10 @@ const dealId = z.string().min(1);
 
 /** The input the DealLifecycle state machine sends with each Lambda task. */
 export const lifecycleTaskSchema = z.discriminatedUnion('task', [
+  z.object({ task: z.literal('ReadState'), dealId }),
+  // The buyer's answer to a price above their approval threshold.
+  z.object({ task: z.literal('DecidePurchase'), dealId, decision: z.unknown() }),
+  z.object({ task: z.literal('CancelPurchase'), dealId, reason: z.string().min(1) }),
   z.object({ task: z.literal('StartCheckout'), dealId, taskToken: z.string().min(1) }),
   z.object({ task: z.literal('AuthorizePayment'), dealId, orderId: z.string().min(1) }),
   z.object({ task: z.literal('CancelCheckout'), dealId, reason: z.string().min(1) }),
@@ -40,7 +44,7 @@ export const lifecycleTaskSchema = z.discriminatedUnion('task', [
   z.object({
     task: z.literal('AwaitSignal'),
     dealId,
-    signal: z.enum(['evidence', 'verdict', 'human-decision', 'capture']),
+    signal: z.enum(['purchase-approval', 'evidence', 'verdict', 'human-decision', 'capture']),
     taskToken: z.string().min(1),
   }),
   z.object({ task: z.literal('StartVerification'), dealId }),
@@ -86,6 +90,12 @@ export async function runLifecycleTask(
 ): Promise<LifecycleTaskResult> {
   const deal = await loadDeal(context.table, task.dealId);
   switch (task.task) {
+    case 'ReadState':
+      return { state: deal.state };
+    case 'DecidePurchase':
+      return decidePurchase(context, deal, task.decision);
+    case 'CancelPurchase':
+      return moveIfIn(context, deal, 'AWAITING_HUMAN_APPROVAL', 'CANCELLED', task.reason);
     case 'StartCheckout':
       return startCheckout(context, deal, task.taskToken);
     case 'AuthorizePayment':
@@ -139,12 +149,29 @@ async function moveIfIn(
   context: LifecycleContext,
   deal: Deal,
   from: DealState,
-  to: 'CANCELLED' | 'VERIFYING' | 'ESCALATED',
+  to: 'AUTHORIZING' | 'CANCELLED' | 'VERIFYING' | 'ESCALATED',
   reason: string,
 ): Promise<LifecycleTaskResult> {
   if (deal.state !== from) return { state: deal.state };
   const change = transitionDeal(deal, { to }, context.now(), reason);
   return save(context, change.deal, [change.event]);
+}
+
+const purchaseDecisionSchema = z.object({ approved: z.boolean() });
+
+async function decidePurchase(
+  context: LifecycleContext,
+  deal: Deal,
+  decision: unknown,
+): Promise<LifecycleTaskResult> {
+  if (deal.state !== 'AWAITING_HUMAN_APPROVAL') return { state: deal.state };
+  const parsed = purchaseDecisionSchema.safeParse(decision);
+  if (!parsed.success) {
+    return { state: deal.state, refusal: `The decision is not valid: ${parsed.error.message}` };
+  }
+  return parsed.data.approved
+    ? moveIfIn(context, deal, deal.state, 'AUTHORIZING', 'The buyer approved the price')
+    : moveIfIn(context, deal, deal.state, 'CANCELLED', 'The buyer declined the price');
 }
 
 async function startCheckout(

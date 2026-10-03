@@ -17,6 +17,8 @@ import { Construct } from 'constructs';
 
 // Matches the PayPal approval page, which the buyer either finishes or abandons quickly.
 const CHECKOUT_TIMEOUT = Duration.hours(1);
+// A buyer asked to approve a price gets a day before the deal is cancelled.
+const PURCHASE_APPROVAL_TIMEOUT = Duration.days(1);
 const VERDICT_TIMEOUT = Duration.days(1);
 // PayPal settles most pending captures within days; past this a person looks at it.
 const CAPTURE_TIMEOUT = Duration.days(7);
@@ -24,9 +26,10 @@ const CAPTURE_TIMEOUT = Duration.days(7);
 /**
  * The DealLifecycle state machine. Each Lambda step loads the deal, applies
  * one change and reports the deal's state; the state decides what comes next.
- * The machine pauses with a task token until the buyer approves the checkout,
- * delivery evidence arrives, the verifier answers or a person decides.
- * Started with `{ "dealId": "..." }` once the deal reaches AUTHORIZING.
+ * The machine pauses with a task token until the buyer approves a price above
+ * their threshold or the checkout, delivery evidence arrives, the verifier
+ * answers or a person decides. Started with `{ "dealId": "..." }` once the
+ * deal reaches AWAITING_HUMAN_APPROVAL or AUTHORIZING.
  */
 export function createDealLifecycle(scope: Construct, lifecycleFunction: IFunction): StateMachine {
   const lifecycle = new Construct(scope, 'DealLifecycle');
@@ -173,7 +176,7 @@ export function createDealLifecycle(scope: Construct, lifecycleFunction: IFuncti
       { errors: ['CheckoutCancelled'], resultPath: JsonPath.DISCARD },
     );
 
-  const definition = startCheckout
+  startCheckout
     .next(
       step('AuthorizePayment', {
         task: 'AuthorizePayment',
@@ -181,6 +184,39 @@ export function createDealLifecycle(scope: Construct, lifecycleFunction: IFuncti
       }),
     )
     .next(routeByState);
+
+  // The resumer sends the buyer's `{ "approved": true | false }` as the task output.
+  const waitForPurchaseApproval = waitFor(
+    'WaitForPurchaseApproval',
+    { task: 'AwaitSignal', signal: 'purchase-approval' },
+    '$.decision',
+    Timeout.duration(PURCHASE_APPROVAL_TIMEOUT),
+  ).addCatch(
+    step('CancelUnapprovedPurchase', {
+      task: 'CancelPurchase',
+      reason: 'The buyer did not approve the price in time',
+    }).next(done),
+    timeouts,
+  );
+  const routeStart = new Choice(lifecycle, 'RouteStart');
+  // A refused decision leaves the deal AWAITING_HUMAN_APPROVAL, which waits again.
+  waitForPurchaseApproval
+    .next(
+      step('DecidePurchase', {
+        task: 'DecidePurchase',
+        decision: JsonPath.objectAt('$.decision'),
+      }),
+    )
+    .next(routeStart);
+  routeStart
+    .when(
+      Condition.stringEquals('$.result.state', 'AWAITING_HUMAN_APPROVAL'),
+      waitForPurchaseApproval,
+    )
+    .when(Condition.stringEquals('$.result.state', 'AUTHORIZING'), startCheckout)
+    .otherwise(done);
+
+  const definition = step('ReadState', { task: 'ReadState' }).next(routeStart);
 
   return new StateMachine(lifecycle, 'StateMachine', {
     stateMachineName: `${Stack.of(scope).stackName}-DealLifecycle`,

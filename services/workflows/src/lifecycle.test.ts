@@ -5,8 +5,15 @@ import {
   PutCommand,
   TransactWriteCommand,
 } from '@aws-sdk/lib-dynamodb';
-import { money, transitionDeal, type Deal } from '@handshake/core';
-import { authorizingDeal, buildEscrow, verifyingDeal } from '@handshake/core/testing';
+import { createDeal, money, transitionDeal, type Deal } from '@handshake/core';
+import {
+  authorizingDeal,
+  buildEscrow,
+  buildTerms,
+  mandate,
+  signBoth,
+  verifyingDeal,
+} from '@handshake/core/testing';
 import { lastSent, stubPayPalClient, type StubResponse } from '@handshake/paypal/testing';
 import { mockClient } from 'aws-sdk-client-mock';
 import { beforeEach, describe, expect, it } from 'vitest';
@@ -166,6 +173,93 @@ describe('AuthorizePayment', () => {
     expect(result).toEqual({ state: 'AWAITING_DELIVERY' });
     expect(sent).toHaveLength(0);
     expect(savedStates()).toEqual([]);
+  });
+});
+
+function awaitingApprovalDeal(): Deal {
+  const at = '2026-10-02T12:00:00Z';
+  let { deal } = createDeal('deal-1', mandate, at);
+  deal = transitionDeal(deal, { to: 'NEGOTIATING' }, at, 'start').deal;
+  deal = transitionDeal(
+    deal,
+    { to: 'AGREED', contract: signBoth(buildTerms()) },
+    at,
+    'agreed',
+  ).deal;
+  return transitionDeal(deal, { to: 'AWAITING_HUMAN_APPROVAL' }, at, 'needs approval').deal;
+}
+
+describe('ReadState', () => {
+  it('reports where the deal is so the state machine can pick its first step', async () => {
+    storeDeal(awaitingApprovalDeal());
+
+    const { result } = await run({ task: 'ReadState', dealId: 'deal-1' }, '2026-10-02T12:00:00Z');
+
+    expect(result).toEqual({ state: 'AWAITING_HUMAN_APPROVAL' });
+    expect(savedStates()).toEqual([]);
+  });
+});
+
+describe('DecidePurchase', () => {
+  it('moves on to checkout once the buyer approves the price', async () => {
+    storeDeal(awaitingApprovalDeal());
+
+    const { result } = await run(
+      { task: 'DecidePurchase', dealId: 'deal-1', decision: { approved: true } },
+      '2026-10-02T12:10:00Z',
+    );
+
+    expect(result).toEqual({ state: 'AUTHORIZING' });
+    expect(savedStates()).toEqual(['AUTHORIZING']);
+  });
+
+  it('cancels the deal when the buyer declines the price', async () => {
+    storeDeal(awaitingApprovalDeal());
+
+    const { result } = await run(
+      { task: 'DecidePurchase', dealId: 'deal-1', decision: { approved: false } },
+      '2026-10-02T12:10:00Z',
+    );
+
+    expect(result).toEqual({ state: 'CANCELLED' });
+  });
+
+  it('keeps waiting when the decision is not valid', async () => {
+    storeDeal(awaitingApprovalDeal());
+
+    const { result } = await run(
+      { task: 'DecidePurchase', dealId: 'deal-1', decision: { approved: 'yes' } },
+      '2026-10-02T12:10:00Z',
+    );
+
+    expect(result).toMatchObject({ state: 'AWAITING_HUMAN_APPROVAL' });
+    expect(result.refusal).toContain('The decision is not valid');
+    expect(savedStates()).toEqual([]);
+  });
+
+  it('only reports the state of a deal that is not waiting for approval', async () => {
+    storeDeal(authorizingDeal());
+
+    const { result } = await run(
+      { task: 'DecidePurchase', dealId: 'deal-1', decision: { approved: false } },
+      '2026-10-02T12:10:00Z',
+    );
+
+    expect(result).toEqual({ state: 'AUTHORIZING' });
+    expect(savedStates()).toEqual([]);
+  });
+});
+
+describe('CancelPurchase', () => {
+  it('cancels a deal whose buyer never answered', async () => {
+    storeDeal(awaitingApprovalDeal());
+
+    const { result } = await run(
+      { task: 'CancelPurchase', dealId: 'deal-1', reason: 'No answer in time' },
+      '2026-10-03T12:00:00Z',
+    );
+
+    expect(result).toEqual({ state: 'CANCELLED' });
   });
 });
 

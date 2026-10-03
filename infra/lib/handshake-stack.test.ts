@@ -100,6 +100,9 @@ describe('HandshakeStack', () => {
     );
     const definition = JSON.stringify(stateMachine);
     for (const state of [
+      'ReadState',
+      'WaitForPurchaseApproval',
+      'DecidePurchase',
       'StartCheckout',
       'AuthorizePayment',
       'CheckDeliveryTimer',
