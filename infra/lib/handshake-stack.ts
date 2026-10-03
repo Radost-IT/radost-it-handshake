@@ -38,6 +38,16 @@ const hostedZoneIdParameter = '/handshake/dns/hosted-zone-id';
 // only lets CloudFormation create roles that carry it, so a deploy cannot grant more.
 const workloadBoundaryPolicyName = 'HandshakeWorkloadBoundary';
 
+// The PayPal SDK pulls in CommonJS packages that require Node built-ins. An
+// ESM bundle has no require, so the banner provides one.
+const esmBundling = {
+  format: OutputFormat.ESM,
+  minify: true,
+  sourceMap: true,
+  banner:
+    "import { createRequire } from 'node:module'; const require = createRequire(import.meta.url);",
+};
+
 // Caps what public traffic can cost before per-route limits exist.
 const apiThrottle = { rateLimit: 25, burstLimit: 50 };
 
@@ -77,7 +87,7 @@ export class HandshakeStack extends Stack {
       memorySize: 256,
       timeout: Duration.seconds(5),
       logGroup: new LogGroup(this, 'HealthFunctionLogs', { retention: RetentionDays.ONE_MONTH }),
-      bundling: { format: OutputFormat.ESM, minify: true, sourceMap: true },
+      bundling: esmBundling,
     });
 
     const arenaApiFunction = new NodejsFunction(this, 'ArenaApiFunction', {
@@ -87,7 +97,7 @@ export class HandshakeStack extends Stack {
       memorySize: 256,
       timeout: Duration.seconds(10),
       logGroup: new LogGroup(this, 'ArenaApiFunctionLogs', { retention: RetentionDays.ONE_MONTH }),
-      bundling: { format: OutputFormat.ESM, minify: true, sourceMap: true },
+      bundling: esmBundling,
       environment: { HANDSHAKE_STAGE: props.stage, TABLE_NAME: table.tableName },
     });
     table.grant(arenaApiFunction, 'dynamodb:GetItem', 'dynamodb:PutItem', 'dynamodb:UpdateItem');
@@ -105,7 +115,7 @@ export class HandshakeStack extends Stack {
       logGroup: new LogGroup(this, 'PayPalWebhookFunctionLogs', {
         retention: RetentionDays.ONE_MONTH,
       }),
-      bundling: { format: OutputFormat.ESM, minify: true, sourceMap: true },
+      bundling: esmBundling,
       environment: {
         HANDSHAKE_STAGE: props.stage,
         TABLE_NAME: table.tableName,
@@ -126,7 +136,7 @@ export class HandshakeStack extends Stack {
       logGroup: new LogGroup(this, 'WorkflowsFunctionLogs', {
         retention: RetentionDays.ONE_MONTH,
       }),
-      bundling: { format: OutputFormat.ESM, minify: true, sourceMap: true },
+      bundling: esmBundling,
       environment: {
         HANDSHAKE_STAGE: props.stage,
         TABLE_NAME: table.tableName,
@@ -151,7 +161,7 @@ export class HandshakeStack extends Stack {
       // A full negotiation is up to the turn limit of model calls in a row.
       timeout: Duration.minutes(5),
       logGroup: new LogGroup(this, 'ArenaRunFunctionLogs', { retention: RetentionDays.ONE_MONTH }),
-      bundling: { format: OutputFormat.ESM, minify: true, sourceMap: true },
+      bundling: esmBundling,
       environment: { HANDSHAKE_STAGE: props.stage, TABLE_NAME: table.tableName },
     });
     table.grant(
@@ -177,7 +187,7 @@ export class HandshakeStack extends Stack {
       logGroup: new LogGroup(this, 'PayPalEventsFunctionLogs', {
         retention: RetentionDays.ONE_MONTH,
       }),
-      bundling: { format: OutputFormat.ESM, minify: true, sourceMap: true },
+      bundling: esmBundling,
       environment: { TABLE_NAME: table.tableName },
     });
     table.grant(paypalEventsFunction, 'dynamodb:PutItem', 'dynamodb:DeleteItem');
@@ -202,7 +212,7 @@ export class HandshakeStack extends Stack {
       memorySize: 256,
       timeout: Duration.seconds(10),
       logGroup: new LogGroup(this, 'DealApiFunctionLogs', { retention: RetentionDays.ONE_MONTH }),
-      bundling: { format: OutputFormat.ESM, minify: true, sourceMap: true },
+      bundling: esmBundling,
       environment: { TABLE_NAME: table.tableName },
     });
     table.grant(dealApiFunction, 'dynamodb:GetItem', 'dynamodb:PutItem', 'dynamodb:DeleteItem');

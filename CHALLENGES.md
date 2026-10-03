@@ -85,3 +85,11 @@ We expected to pay arena bounties through the PayPal Server SDK, like the escrow
 We expected `POST /arena/attempts` to start the ArenaRun state machine, because CDK granted the API role `states:StartExecution`. The API answered `{"message":"Internal Server Error"}`. Every Handshake role carries the `HandshakeWorkloadBoundary` permissions boundary, and AWS allows only actions that both the role policy and the boundary allow. The boundary listed the Step Functions task callbacks but not `StartExecution`, so the call was denied at run time even though the deploy succeeded.
 
 The boundary now allows `states:StartExecution` on `Handshake-*` state machines. An infra test compares every action the stack grants with the boundary and fails when one is missing, so the next gap shows up in `pnpm test` instead of in production. The developer policy also gained read access to the `Handshake-*` log groups and to ArenaRun executions, so failures like this can be read from the terminal.
+
+## The ESM Lambda bundles could not load the PayPal SDK
+
+*3 Oct 2026 · Lambda bundling*
+
+We expected the first ArenaRun execution to reach the model calls. The Lambda failed while loading with `Error: Dynamic require of "util" is not supported`. The functions are bundled as ES modules, and the PayPal Server SDK pulls in CommonJS packages that call `require` for Node built-ins such as `util`, `http` and `zlib`. An ES module has no `require`, so esbuild's fallback throws. The deal workflows and the PayPal webhook bundles had the same calls; no real deal had reached them yet.
+
+Every function now uses one bundling setting whose banner defines `require` with `createRequire(import.meta.url)`. A local esbuild bundle of the SDK threw the same error without the banner and loaded with it.
