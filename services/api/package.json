@@ -4,7 +4,6 @@
   "type": "module",
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.1146.0",
-    "@aws-sdk/client-sesv2": "^3.1146.0",
     "@aws-sdk/client-sfn": "^3.1146.0",
     "@aws-sdk/lib-dynamodb": "^3.1146.0",
     "@handshake/arena": "workspace:*",

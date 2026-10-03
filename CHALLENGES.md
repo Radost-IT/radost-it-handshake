@@ -109,3 +109,5 @@ The role now also has `BatchGetItem` and `Query`, which the boundary already all
 SES gives three DKIM tokens for the domain, and each needs a CNAME record named `<token>._domainkey.handshake.radostit.com`. We first used the CDK `CnameRecord` construct with the record name from the SES identity. That name is a deploy-time token, and the construct cannot see that it already ends with the zone name, so it appends the zone name again. The records would have been named `<token>._domainkey.handshake.radostit.com.handshake.radostit.com` and DKIM would never verify.
 
 We switched to the low-level `CfnRecordSet`, which takes the name as given. A stack test now checks that the three DKIM records are in the zone.
+
+The same day we moved arena email to ZeptoMail, the service radost-it-forge already uses, so the SES identity and these records were removed before they were ever deployed.

@@ -1,5 +1,4 @@
 import { ConditionalCheckFailedException } from '@aws-sdk/client-dynamodb';
-import { SendEmailCommand, SESv2Client } from '@aws-sdk/client-sesv2';
 import {
   DeleteCommand,
   DynamoDBDocumentClient,
@@ -8,14 +7,14 @@ import {
   UpdateCommand,
 } from '@aws-sdk/lib-dynamodb';
 import { mockClient } from 'aws-sdk-client-mock';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { accountIdForEmail } from '@handshake/store';
 import { requestSignInCode, signOut, verifySignInCode } from './arena-sign-in';
-import { arenaTestContext, sessionCookies, testAccount } from './arena-test-context';
+import { arenaTestContext, sessionCookies, testAccount, stubZeptoMail } from './arena-test-context';
 import { hashToken } from './http';
 
 const dynamodb = mockClient(DynamoDBDocumentClient);
-const ses = mockClient(SESv2Client);
+let sentEmails: ReturnType<typeof stubZeptoMail>;
 const context = arenaTestContext('2026-10-03T12:30:00Z');
 const accountId = accountIdForEmail('ada@example.com');
 const signIn = (body: unknown) =>
@@ -23,10 +22,13 @@ const signIn = (body: unknown) =>
 
 beforeEach(() => {
   dynamodb.reset();
-  ses.reset();
   dynamodb.on(UpdateCommand).resolves({});
   dynamodb.on(PutCommand).resolves({});
-  ses.on(SendEmailCommand).resolves({});
+  sentEmails = stubZeptoMail();
+});
+
+afterEach(() => {
+  vi.unstubAllGlobals();
 });
 
 describe('requestSignInCode', () => {
@@ -37,9 +39,9 @@ describe('requestSignInCode', () => {
     const stored = dynamodb.commandCalls(PutCommand)[0]?.args[0].input.Item;
     expect(stored?.pk).toBe(`SIGNIN#${accountId}`);
     expect(JSON.stringify(stored)).not.toContain('123456');
-    const email = ses.commandCalls(SendEmailCommand)[0]?.args[0].input;
-    expect(email?.Destination?.ToAddresses).toEqual(['ada@example.com']);
-    expect(email?.Content?.Simple?.Body?.Text?.Data).toContain('123456');
+    const email = sentEmails()[0];
+    expect(email?.to).toBe('ada@example.com');
+    expect(email?.text).toContain('123456');
   });
 
   it('limits codes per email and per network', async () => {
@@ -50,7 +52,7 @@ describe('requestSignInCode', () => {
     const response = await signIn({ email: 'ada@example.com' });
 
     expect(response.statusCode).toBe(429);
-    expect(ses.commandCalls(SendEmailCommand)).toHaveLength(0);
+    expect(sentEmails()).toHaveLength(0);
     const subjects = dynamodb
       .commandCalls(UpdateCommand)
       .map((call): unknown => call.args[0].input.Key?.pk);

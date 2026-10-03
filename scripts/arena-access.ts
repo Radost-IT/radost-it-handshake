@@ -1,5 +1,4 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { SESv2Client } from '@aws-sdk/client-sesv2';
 import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
 import { loadArenaMailConfig } from '@handshake/config';
 import { accessApprovedEmail, accessRejectedEmail, sendEmail } from '@handshake/mail';
@@ -32,7 +31,7 @@ async function decide(access: 'approved' | 'rejected', address: string): Promise
     console.error(`${address} has no pending request.`);
     process.exit(1);
   }
-  await sendEmail(new SESv2Client({}), {
+  await sendEmail(mail.zeptoMail, {
     from: mail.from,
     to: account.email,
     ...(access === 'approved' ? accessApprovedEmail() : accessRejectedEmail()),

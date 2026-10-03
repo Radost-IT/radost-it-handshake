@@ -16,7 +16,7 @@ AI agents negotiate and settle real-product deals through PayPal escrow. A buyer
    - **`.env.example`** is committed and lists every key with an empty or dummy value and a short comment. When you add or rename a config key, update `.env.example` in the same commit, and tell the human to add the real value to their `.env`.
    - Configuration is read once by `packages/config`: locally from `.env`, on AWS from SSM Parameter Store under `/handshake/<stage>/…`. Lambdas receive only the parameter *path* and stage as environment variables, never secret values.
    - Validate the whole config with zod at startup and fail fast with a clear message naming the missing key, never its value.
-4. **Free for judges.** Do not add dependencies on paid services or trials that expire before Dec 21, 2026. Allowed external services: PayPal sandbox, Channel3, Amazon Bedrock, AWS serverless services.
+4. **Free for judges.** Do not add dependencies on paid services or trials that expire before Dec 21, 2026. Allowed external services: PayPal sandbox, Channel3, Amazon Bedrock, AWS serverless services, and ZeptoMail for arena email. ZeptoMail runs on prepaid credits, so keep enough credits to last past judging.
 5. **Never mark a deal settled** without a confirmed capture (API response or signature-verified webhook).
 6. **Never invent APIs.** Before writing PayPal SDK code, query the APIMatic Context Plugin (`endpoint_search`, `model_search`). For Channel3 and Bedrock, check the official docs. If behavior is uncertain (timing limits, sandbox quirks), write a probe script in `scripts/probes/`, run it, and report the result.
 

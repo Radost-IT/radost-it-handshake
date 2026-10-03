@@ -225,12 +225,17 @@ The arena pages call the deployed API, which accepts browser calls only from htt
 - [ ] Open https://handshake.radostit.com/arena, pick a handle, and launch one attack. The attempt page should switch from running to a result within about a minute.
 - [ ] Open https://handshake.radostit.com/arena/leaderboard and check that your handle is listed under All time.
 ### [I-22] Turn on email sign-in for the arena
-The arena now asks for an email sign-in and an approved request before anyone can play. The API sends the codes with Amazon SES from the web domain. In the console, logged in as your Identity Center admin:
-- [ ] Open **IAM → Policies → HandshakeWorkloadBoundary → Edit → JSON** and replace it with the current `infra/iam/workload-boundary.json`. It lets the arena API send email from the Handshake domain.
-- [ ] Do the same for **HandshakeCdkExecution** with `infra/iam/cdk-execution-policy.json` (it may create the SES identity and its DKIM records) and **HandshakeDeveloper** with `infra/iam/developer-policy.json` (it lets `pnpm arena:access` read requests and send the answer).
-- [ ] Add `ARENA_EMAIL_FROM=arena@handshake.radostit.com` and `ARENA_ADMIN_EMAIL=<your email>` to `.env`, then run `pnpm ssm:put prod`.
-- [ ] Run `AWS_PROFILE=handshake pnpm cdk:deploy`. It creates the SES domain identity and three DKIM records in the Route 53 zone. **SES → Identities → handshake.radostit.com** should show "Verified" within about an hour.
-- [ ] New SES accounts are in the sandbox and send only to verified addresses. Request production access in **SES → Account dashboard → Request production access** (transactional mail, sign-in codes only). Until it is granted, verify your own address under **SES → Identities** to test.
+The arena now asks for an email sign-in and an approved request before anyone can play. The API sends the codes through ZeptoMail, the same service radost-it-forge uses.
+- [ ] In ZeptoMail, add and verify the domain `handshake.radostit.com` (or use a domain already verified there, and set `ARENA_EMAIL_FROM` to an address on it). Add the DNS records ZeptoMail shows in Route 53.
+- [ ] In ZeptoMail, open the Mail Agent, then **SMTP/API → API**, and copy the Send Mail token. It starts with `Zoho-enczapikey`. Check that the account has enough credits to last past Dec 21, 2026.
+- [ ] Add these to `.env`, then run `pnpm ssm:put prod`:
+  - `ARENA_EMAIL_FROM=arena@handshake.radostit.com`
+  - `ARENA_ADMIN_EMAIL=<your email>`
+  - `ZEPTOMAIL_API_URL=https://api.zeptomail.<region>`, the same host as `OTP_ENDPOINT` in radost-it-forge, with `https://` in front.
+  - `ZEPTOMAIL_TOKEN=<the Send Mail token>`, the whole value including the prefix.
+- [ ] Open **IAM → Policies → HandshakeDeveloper → Edit → JSON** and replace it with the current `infra/iam/developer-policy.json`. It lets `pnpm arena:access` read requests.
+- [ ] If you pasted the policies while they still allowed SES, replace **HandshakeWorkloadBoundary** and **HandshakeCdkExecution** with the current `infra/iam/workload-boundary.json` and `infra/iam/cdk-execution-policy.json` too. The SES statements are gone.
+- [ ] Run `AWS_PROFILE=handshake pnpm cdk:deploy`.
 - [ ] Open https://handshake.radostit.com/arena, sign in with your email and send a request to join. The request arrives at `ARENA_ADMIN_EMAIL`.
 - [ ] Run `pnpm arena:access <table>` to list pending requests, then `pnpm arena:access <table> approve <email>`. Refresh the arena, pick a handle and play. Handles picked before this change belong to old sessions and can no longer be used.
 

@@ -172,6 +172,7 @@ Budget: no screen ships more than one ambient animation, and the Lighthouse perf
 | Data | DynamoDB single table, on-demand |
 | Config and secrets | SSM Parameter Store (SecureString for secrets) |
 | AI | Amazon Bedrock (Converse API, tool use, JSON output) |
+| Email | ZeptoMail API for arena sign-in codes and access emails |
 | Infrastructure | AWS CDK (TypeScript) |
 | Hosting outside AWS | None |
 
@@ -264,6 +265,8 @@ The table gains one global secondary index, `GSI1` (`gsi1pk`, `gsi1sk`), for a c
 /handshake/<stage>/arena/deal-source              templates (default) or sellers
 /handshake/<stage>/arena/email-from               sender for sign-in codes, on the web domain
 /handshake/<stage>/arena/admin-email              receives requests to join the arena
+/handshake/<stage>/arena/zeptomail-api-url        regional ZeptoMail API host
+/handshake/<stage>/arena/zeptomail-token          SecureString, ZeptoMail Send Mail token
 ```
 
 ## Phase plan
@@ -343,7 +346,7 @@ Done when an AI-driven deal completes end to end in the deployed app and evals p
 - [x] CDK: add `GSI1` to the table and the `ArenaRun` state machine.
 - [x] `packages/store`: challenger, leaderboard and arena stats repositories; `recordArenaResult` as one transaction, with a test that a concurrent update retries on a version conflict.
 - [x] Handles and sessions: `POST /arena/challengers`, `GET /arena/challengers/me`, hashed session tokens, handle reservation.
-- [x] Email sign-in and approved access: one-time codes by SES, access requests with a reason, `pnpm arena:access` to approve or reject.
+- [x] Email sign-in and approved access: one-time codes by ZeptoMail, access requests with a reason, `pnpm arena:access` to approve or reject.
 - [x] WebSocket events `arena.result`, `challenger.progress`, `arena.stats`.
 - [x] Arena UI: challenger card with rank progress, badge grid (locked badges show how to earn them), open bounties per category, daily challenge, defense counter, rank-up and badge toasts.
 - [ ] Hall of fame: regression case pages credit the challenger and show attempt, fix, and the rerun that holds.

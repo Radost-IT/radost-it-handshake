@@ -1,28 +1,53 @@
-import { SendEmailCommand, SESv2Client } from '@aws-sdk/client-sesv2';
-import { mockClient } from 'aws-sdk-client-mock';
-import { expect, it } from 'vitest';
-import { sendEmail } from './send';
+import { afterEach, expect, it, vi } from 'vitest';
+import { EmailRejectedError, sendEmail } from './send';
 
-const ses = mockClient(SESv2Client);
+const account = { apiUrl: 'https://api.zeptomail.eu', token: 'Zoho-enczapikey test-token' };
+const message = {
+  from: 'arena@example.com',
+  to: 'ada@example.com',
+  subject: 'Hello',
+  text: 'Body',
+};
 
-it('sends a plain text email to one recipient', async () => {
-  ses.on(SendEmailCommand).resolves({ MessageId: 'message-1' });
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
 
-  await sendEmail(new SESv2Client({}), {
-    from: 'arena@example.com',
-    to: 'ada@example.com',
+it('posts a plain text email to the ZeptoMail send endpoint', async () => {
+  const fetch = vi.fn().mockResolvedValue(Response.json({ message: 'OK' }, { status: 201 }));
+  vi.stubGlobal('fetch', fetch);
+
+  await sendEmail(account, message);
+
+  const [url, init] = fetch.mock.calls[0] as [URL, RequestInit];
+  expect(url.href).toBe('https://api.zeptomail.eu/v1.1/email');
+  expect(init.headers).toEqual({
+    Authorization: 'Zoho-enczapikey test-token',
+    'Content-Type': 'application/json',
+  });
+  expect(JSON.parse(init.body as string)).toEqual({
+    from: { address: 'arena@example.com', name: 'Handshake Arena' },
+    to: [{ email_address: { address: 'ada@example.com' } }],
     subject: 'Hello',
-    text: 'Body',
+    textbody: 'Body',
   });
+});
 
-  expect(ses.commandCalls(SendEmailCommand)[0]?.args[0].input).toEqual({
-    FromEmailAddress: 'arena@example.com',
-    Destination: { ToAddresses: ['ada@example.com'] },
-    Content: {
-      Simple: {
-        Subject: { Data: 'Hello', Charset: 'UTF-8' },
-        Body: { Text: { Data: 'Body', Charset: 'UTF-8' } },
-      },
-    },
-  });
+it('throws with the ZeptoMail error code and request ID when the email is rejected', async () => {
+  vi.stubGlobal(
+    'fetch',
+    vi
+      .fn()
+      .mockResolvedValue(
+        Response.json(
+          { error: { code: 'TM_3201', message: 'Mandatory Field missing', request_id: 'req-1' } },
+          { status: 400 },
+        ),
+      ),
+  );
+
+  const error: unknown = await sendEmail(account, message).catch((caught: unknown) => caught);
+
+  expect(error).toBeInstanceOf(EmailRejectedError);
+  expect(error).toMatchObject({ status: 400, code: 'TM_3201', requestId: 'req-1' });
 });

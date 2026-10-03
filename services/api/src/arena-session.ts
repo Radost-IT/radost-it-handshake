@@ -1,4 +1,4 @@
-import { SESv2Client } from '@aws-sdk/client-sesv2';
+import type { ArenaMailConfig } from '@handshake/config';
 import type { SFNClient } from '@aws-sdk/client-sfn';
 import {
   findSessionAccountId,
@@ -24,7 +24,7 @@ export interface ArenaApiContext {
   arenaRunArn: string;
   /** LLM tokens allowed per UTC day; new attempts are refused once they are used. */
   dailyTokenBudget: number;
-  mail: { client: SESv2Client; from: string; adminEmail: string };
+  mail: ArenaMailConfig;
 }
 
 // The __Host- prefix makes browsers refuse the cookie unless it is Secure,

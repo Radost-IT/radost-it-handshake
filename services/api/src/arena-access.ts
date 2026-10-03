@@ -51,7 +51,7 @@ export async function requestAccessFromSession(
   if (!stored) return json(409, { error: 'You have already asked to join' });
 
   const command = `pnpm arena:access ${context.table.name}`;
-  await sendEmail(context.mail.client, {
+  await sendEmail(context.mail.zeptoMail, {
     from: context.mail.from,
     to: context.mail.adminEmail,
     ...accessRequestEmail({

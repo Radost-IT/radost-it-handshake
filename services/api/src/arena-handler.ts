@@ -1,5 +1,4 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { SESv2Client } from '@aws-sdk/client-sesv2';
 import { SFNClient } from '@aws-sdk/client-sfn';
 import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
 import { loadArenaMailConfig, loadDailyTokenBudget } from '@handshake/config';
@@ -33,7 +32,7 @@ const context: ArenaApiContext = {
   stepFunctions: new SFNClient({}),
   arenaRunArn: environment.ARENA_RUN_ARN,
   dailyTokenBudget,
-  mail: { client: new SESv2Client({}), ...mail },
+  mail,
 };
 
 export function handler(event: APIGatewayProxyEventV2): Promise<APIGatewayProxyStructuredResultV2> {

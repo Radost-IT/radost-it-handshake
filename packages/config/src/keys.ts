@@ -39,6 +39,8 @@ export const configKeys = {
   arenaDealSource: { env: 'ARENA_DEAL_SOURCE', ssm: 'arena/deal-source', secret: false },
   arenaEmailFrom: { env: 'ARENA_EMAIL_FROM', ssm: 'arena/email-from', secret: false },
   arenaAdminEmail: { env: 'ARENA_ADMIN_EMAIL', ssm: 'arena/admin-email', secret: false },
+  zeptoMailApiUrl: { env: 'ZEPTOMAIL_API_URL', ssm: 'arena/zeptomail-api-url', secret: false },
+  zeptoMailToken: { env: 'ZEPTOMAIL_TOKEN', ssm: 'arena/zeptomail-token', secret: true },
   formSigningSecret: { env: 'FORM_SIGNING_SECRET', ssm: 'web/form-signing-secret', secret: true },
 } as const satisfies Record<string, ConfigKey>;
 

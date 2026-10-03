@@ -1,9 +1,9 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { SESv2Client } from '@aws-sdk/client-sesv2';
 import { SFNClient } from '@aws-sdk/client-sfn';
 import { DynamoDBDocumentClient, GetCommand } from '@aws-sdk/lib-dynamodb';
 import { newChallengerProgress } from '@handshake/arena';
 import type { AwsClientStub } from 'aws-sdk-client-mock';
+import { vi } from 'vitest';
 import { hashToken } from './http';
 import { SESSION_COOKIE, type ArenaApiContext } from './arena-session';
 
@@ -22,9 +22,9 @@ export function arenaTestContext(now: string): ArenaApiContext {
     arenaRunArn: testArenaRunArn,
     dailyTokenBudget: 1000,
     mail: {
-      client: new SESv2Client({}),
       from: 'arena@example.com',
       adminEmail: 'admin@example.com',
+      zeptoMail: { apiUrl: 'https://api.zeptomail.eu', token: 'Zoho-enczapikey test-token' },
     },
   };
 }
@@ -59,4 +59,23 @@ export function mockSignedIn(
       progress: newChallengerProgress,
     },
   });
+}
+
+/** Stubs the ZeptoMail API and returns the recipient and text of each email sent. */
+export function stubZeptoMail(): () => { to: string; text: string }[] {
+  const fetch = vi.fn<(url: URL, init: RequestInit) => Promise<Response>>(() =>
+    Promise.resolve(Response.json({ message: 'OK' }, { status: 201 })),
+  );
+  vi.stubGlobal('fetch', fetch);
+  return () =>
+    fetch.mock.calls.map(([, init]) => {
+      const body = JSON.parse(init.body as string) as {
+        to: { email_address: { address: string } }[];
+        textbody: string;
+      };
+      return {
+        to: body.to.map(({ email_address }) => email_address.address).join(','),
+        text: body.textbody,
+      };
+    });
 }

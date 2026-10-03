@@ -85,7 +85,7 @@ export async function requestSignInCode(
     codeHash: hashSignInCode(accountId, code),
     expiresAt: new Date(now.getTime() + CODE_VALID_MINUTES * MINUTE_MS),
   });
-  await sendEmail(context.mail.client, {
+  await sendEmail(context.mail.zeptoMail, {
     from: context.mail.from,
     to: email,
     ...signInCodeEmail(code, CODE_VALID_MINUTES),

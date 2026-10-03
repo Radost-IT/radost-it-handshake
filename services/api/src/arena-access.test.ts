@@ -1,13 +1,18 @@
 import { ConditionalCheckFailedException } from '@aws-sdk/client-dynamodb';
-import { SendEmailCommand, SESv2Client } from '@aws-sdk/client-sesv2';
 import { DynamoDBDocumentClient, UpdateCommand } from '@aws-sdk/lib-dynamodb';
 import { mockClient } from 'aws-sdk-client-mock';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { getAccountFromSession, requestAccessFromSession } from './arena-access';
-import { arenaTestContext, mockSignedIn, sessionCookies, testAccount } from './arena-test-context';
+import {
+  arenaTestContext,
+  mockSignedIn,
+  sessionCookies,
+  testAccount,
+  stubZeptoMail,
+} from './arena-test-context';
 
 const dynamodb = mockClient(DynamoDBDocumentClient);
-const ses = mockClient(SESv2Client);
+let sentEmails: ReturnType<typeof stubZeptoMail>;
 const context = arenaTestContext('2026-10-03T12:30:00Z');
 const newAccount = {
   id: 'account-1',
@@ -20,8 +25,11 @@ const ask = (reason: string) =>
 
 beforeEach(() => {
   dynamodb.reset();
-  ses.reset();
-  ses.on(SendEmailCommand).resolves({});
+  sentEmails = stubZeptoMail();
+});
+
+afterEach(() => {
+  vi.unstubAllGlobals();
 });
 
 describe('getAccountFromSession', () => {
@@ -63,11 +71,9 @@ describe('requestAccessFromSession', () => {
     expect(
       dynamodb.commandCalls(UpdateCommand)[0]?.args[0].input.ExpressionAttributeValues?.[':reason'],
     ).toBe('I build payment agents and want to test them.');
-    const email = ses.commandCalls(SendEmailCommand)[0]?.args[0].input;
-    expect(email?.Destination?.ToAddresses).toEqual(['admin@example.com']);
-    expect(email?.Content?.Simple?.Body?.Text?.Data).toContain(
-      'pnpm arena:access T approve ada@example.com',
-    );
+    const email = sentEmails()[0];
+    expect(email?.to).toBe('admin@example.com');
+    expect(email?.text).toContain('pnpm arena:access T approve ada@example.com');
   });
 
   it('asks for a longer reason', async () => {
@@ -76,7 +82,7 @@ describe('requestAccessFromSession', () => {
     const response = await ask('let me in');
 
     expect(response.statusCode).toBe(400);
-    expect(ses.commandCalls(SendEmailCommand)).toHaveLength(0);
+    expect(sentEmails()).toHaveLength(0);
   });
 
   it('refuses a second request', async () => {
@@ -88,6 +94,6 @@ describe('requestAccessFromSession', () => {
     const response = await ask('I build payment agents and want to test them.');
 
     expect(response.statusCode).toBe(409);
-    expect(ses.commandCalls(SendEmailCommand)).toHaveLength(0);
+    expect(sentEmails()).toHaveLength(0);
   });
 });

@@ -6,9 +6,6 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
-    "@aws-sdk/client-sesv2": "^3.1146.0"
-  },
-  "devDependencies": {
-    "aws-sdk-client-mock": "^4.1.0"
+    "zod": "^4.6.5"
   }
 }

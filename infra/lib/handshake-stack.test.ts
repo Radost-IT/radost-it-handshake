@@ -258,16 +258,23 @@ describe('HandshakeStack', () => {
     });
   });
 
-  it('sends arena email from the web domain with DKIM records in the zone', () => {
-    template.hasResourceProperties('AWS::SES::EmailIdentity', {
-      EmailIdentity: 'test-handshake.radostit.com',
+  it('lets the arena API read the ZeptoMail token and no other secret', () => {
+    template.hasResourceProperties('AWS::IAM::Policy', {
+      PolicyDocument: {
+        Statement: Match.arrayWith([
+          Match.objectLike({
+            Action: 'ssm:GetParameter',
+            Resource: {
+              'Fn::Join': [
+                '',
+                Match.arrayWith([':parameter/handshake/test/arena/zeptomail-token']),
+              ],
+            },
+          }),
+        ]),
+      },
     });
-    expect(
-      Object.values(
-        template.findResources('AWS::Route53::RecordSet', { Properties: { Type: 'CNAME' } }),
-      ),
-    ).toHaveLength(3);
-    expect(arenaApiActions()).toEqual(expect.arrayContaining(['ses:SendEmail']));
+    expect(arenaApiActions()).not.toContain('ssm:GetParametersByPath');
   });
 
   it('lets the arena API read stats, leaderboards and attempt history, and end sessions', () => {

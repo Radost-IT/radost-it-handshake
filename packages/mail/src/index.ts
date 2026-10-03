@@ -4,4 +4,4 @@ export {
   accessRequestEmail,
   signInCodeEmail,
 } from './arena-emails';
-export { sendEmail, type Email } from './send';
+export { EmailRejectedError, sendEmail, type Email, type ZeptoMailAccount } from './send';

@@ -6,6 +6,9 @@ export const PAYPAL_SANDBOX_BASE_URL = 'https://api-m.sandbox.paypal.com';
 const nonEmpty = z.string().trim().min(1);
 // 32 bytes as hex, the output of `openssl rand -hex 32`.
 export const formSigningSecretSchema = z.string().regex(/^[0-9a-f]{64}$/);
+export const zeptoMailApiUrlSchema = z.url({ protocol: /^https$/ });
+// ZeptoMail sends the token as the whole Authorization header, prefix included.
+export const zeptoMailTokenSchema = z.string().regex(/^Zoho-enczapikey \S+$/);
 const positiveInteger = z.coerce.number().int().positive();
 // Bounties are paid in USD, so amounts have at most two decimals.
 const positiveUsdAmount = z
@@ -38,6 +41,8 @@ const rawConfigSchema = z.object({
   // Only the arena API reads these, through `loadArenaMailConfig`.
   arenaEmailFrom: z.email().optional(),
   arenaAdminEmail: z.email().optional(),
+  zeptoMailApiUrl: zeptoMailApiUrlSchema.optional(),
+  zeptoMailToken: zeptoMailTokenSchema.optional(),
   // Only the web server reads it, through `loadFormSigningSecret`. It is listed
   // here so `pnpm ssm:put` checks it, and the other services do not need it.
   formSigningSecret: formSigningSecretSchema.optional(),

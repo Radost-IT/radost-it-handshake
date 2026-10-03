@@ -151,23 +151,6 @@
       }
     },
     {
-      "Sid": "ManageArenaEmailIdentity",
-      "Effect": "Allow",
-      "Action": [
-        "ses:CreateEmailIdentity",
-        "ses:DeleteEmailIdentity",
-        "ses:GetEmailIdentity",
-        "ses:PutEmailIdentityConfigurationSetAttributes",
-        "ses:PutEmailIdentityDkimAttributes",
-        "ses:PutEmailIdentityDkimSigningAttributes",
-        "ses:PutEmailIdentityFeedbackAttributes",
-        "ses:PutEmailIdentityMailFromAttributes",
-        "ses:TagResource",
-        "ses:UntagResource"
-      ],
-      "Resource": "arn:aws:ses:eu-west-1:*:identity/*handshake.radostit.com"
-    },
-    {
       "Sid": "UseCertificatesForCustomDomains",
       "Effect": "Allow",
       "Action": [
@@ -186,8 +169,7 @@
           "route53:ChangeResourceRecordSetsNormalizedRecordNames": [
             "handshake.radostit.com",
             "api-handshake.radostit.com",
-            "ws-handshake.radostit.com",
-            "*._domainkey.handshake.radostit.com"
+            "ws-handshake.radostit.com"
           ]
         }
       }

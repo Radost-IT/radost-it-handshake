@@ -19,15 +19,8 @@ import { PolicyStatement } from 'aws-cdk-lib/aws-iam';
 import { Architecture, type IFunction, Runtime } from 'aws-cdk-lib/aws-lambda';
 import { NodejsFunction, OutputFormat } from 'aws-cdk-lib/aws-lambda-nodejs';
 import { LogGroup, RetentionDays } from 'aws-cdk-lib/aws-logs';
-import {
-  AaaaRecord,
-  ARecord,
-  CfnRecordSet,
-  HostedZone,
-  RecordTarget,
-} from 'aws-cdk-lib/aws-route53';
+import { AaaaRecord, ARecord, HostedZone, RecordTarget } from 'aws-cdk-lib/aws-route53';
 import { ApiGatewayv2DomainProperties, CloudFrontTarget } from 'aws-cdk-lib/aws-route53-targets';
-import { EmailIdentity, Identity } from 'aws-cdk-lib/aws-ses';
 import { StringParameter } from 'aws-cdk-lib/aws-ssm';
 import { Nextjs } from 'cdk-nextjs-standalone';
 import type { Construct } from 'constructs';
@@ -128,9 +121,15 @@ export class HandshakeStack extends Stack {
     );
 
     const configPath = `/handshake/${props.stage}`;
-    // The arena API refuses attempts once the day's tokens are used, emails sign-in
-    // codes and access requests, and needs no secrets.
-    for (const value of ['limits/daily-token-budget', 'arena/email-from', 'arena/admin-email']) {
+    // The arena API refuses attempts once the day's tokens are used and emails sign-in
+    // codes and access requests. The ZeptoMail token is the only secret it reads.
+    for (const value of [
+      'limits/daily-token-budget',
+      'arena/email-from',
+      'arena/admin-email',
+      'arena/zeptomail-api-url',
+      'arena/zeptomail-token',
+    ]) {
       this.grantConfigValueRead(arenaApiFunction, `${configPath}/${value}`);
     }
     const paypalWebhookFunction = new NodejsFunction(this, 'PayPalWebhookFunction', {
@@ -410,24 +409,6 @@ export class HandshakeStack extends Stack {
         ),
       ),
     });
-
-    // Sign-in codes and access emails come from the web domain. CDK publishes its
-    // DKIM records, so SES verifies the domain without console steps.
-    const mailIdentity = new EmailIdentity(this, 'MailIdentity', {
-      identity: Identity.domain(props.domains.web),
-    });
-    // The record names are deploy-time tokens that already hold the full domain.
-    // CnameRecord would append the zone name to them, so the L1 record is used.
-    mailIdentity.dkimRecords.forEach(({ name, value }, index) => {
-      new CfnRecordSet(this, `MailDkimRecord${String(index + 1)}`, {
-        hostedZoneId: zone.hostedZoneId,
-        name,
-        type: 'CNAME',
-        resourceRecords: [value],
-        ttl: '1800',
-      });
-    });
-    mailIdentity.grantSendEmail(arenaApiFunction);
 
     new CfnOutput(this, 'ApiUrl', { value: `https://${props.domains.api}` });
     new CfnOutput(this, 'LiveUrl', { value: `wss://${props.domains.live}` });
