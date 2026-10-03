@@ -75,7 +75,8 @@ Scoring, XP, ranks and badges are pure functions in `packages/arena`, unit teste
 
 **Mechanics**
 
-- **Handle, no account.** A visitor picks a handle and gets a random session token in an HTTP-only cookie. No email, no login. The handle passes a length, charset and blocklist check.
+- **Invited players only.** Every attack runs real agents and spends Bedrock tokens, so the arena is not open to everyone. A visitor signs in with a six-digit code sent to their email, then asks to join and says why. The admin approves or rejects the request with `pnpm arena:access`, which emails the answer. Codes are stored hashed, work once, expire after 10 minutes and lock after five wrong tries. The session token sits in an HTTP-only cookie and only its hash is stored.
+- **Handle.** An approved player picks a handle, which shows on the leaderboard instead of the email. The handle passes a length, charset and blocklist check.
 - **XP.** Every attempt earns XP: 10 for a held attempt, 100 for a loophole, plus a bonus for severity and novelty. Near-duplicates of a known loophole earn the held amount only.
 - **Ranks** from XP: Newcomer, Explorer, Investigator, Puzzle Solver, Codebreaker, Master Tester. The rank shows next to the handle and on the leaderboard.
 - **Badges**, unlocked from thresholds and computed from the challenger's stats on every read, so changing a threshold needs no migration:
@@ -124,7 +125,9 @@ apps/web/app/arena                /arena, /arena/leaderboard, /arena/hall-of-fam
 5. If a step still fails after its retries, `MarkFailed` stores why (`budget` when the daily token budget ran out, `error` otherwise) and `GET /arena/attempts/{id}` shows the attempt as `failed`. An attempt older than the 30-minute run timeout without a result also counts as failed.
 6. The WebSocket pushes `arena.result` (verdict, policy reason), `challenger.progress` (XP gained, rank change, new badges) and `arena.stats` (defense counter) to connected clients.
 
-**Read endpoints:** `POST /arena/challengers` (create handle, set cookie), `GET /arena/challengers/me`, `GET /arena/deals` (the deals a challenger can pick, without private prices, and today's daily deal), `GET /arena/challengers/me/attempts` (the challenger's history), `GET /arena/leaderboard?scope=all|daily`, `GET /arena/stats` (defense counter and loopholes per category, which drives the open bounties), `GET /arena/hall-of-fame`, `GET /arena/attempts/{id}`.
+**Account endpoints:** `POST /arena/sign-in` (email a code), `POST /arena/sign-in/verify` (check the code, set the session cookie), `POST /arena/sign-out`, `GET /arena/account` (email, access status and challenger), `POST /arena/access-requests` (ask to join with a reason), `POST /arena/challengers` (pick a handle once approved).
+
+**Read endpoints:** `GET /arena/deals` (the deals a challenger can pick, without private prices, and today's daily deal), `GET /arena/challengers/me/attempts` (the challenger's history), `GET /arena/leaderboard?scope=all|daily`, `GET /arena/stats` (defense counter and loopholes per category, which drives the open bounties), `GET /arena/hall-of-fame`, `GET /arena/attempts/{id}`.
 
 ## Look and feel
 
@@ -222,7 +225,9 @@ Terminal states: `SETTLED`, `REFUSED`, `CANCELLED`, `ABANDONED`. Every transitio
 | Seller | `SELLER#<id>` | `META` (GSI1: `SELLERS` / `<id>`) |
 | Arena attempt | `ATTEMPT#<id>` | `META` (GSI1: `CHALLENGER#<id>` / `ATTEMPT#<ts>#<id>`) |
 | Challenger (handle, XP, stats, version) | `CHALLENGER#<id>` | `META` |
-| Challenger session | `SESSION#<sha256(token)>` | `META` (TTL) |
+| Account (email, access status, reason, challenger ID) | `ACCOUNT#<sha256(email)>` | `META` (GSI1 while pending: `ACCESS#pending` / `<requestedAt>#<id>`) |
+| Email sign-in code (hash, failed tries) | `SIGNIN#<accountId>` | `META` (TTL) |
+| Account session | `SESSION#<sha256(token)>` | `META` (TTL) |
 | Handle reservation | `HANDLE#<lowercase handle>` | `META` |
 | Leaderboard | `LEADERBOARD` | `SCORE#<padded>#<challengerId>` |
 | Daily leaderboard | `DAILY#<yyyy-mm-dd>` | `SCORE#<padded>#<challengerId>` |
@@ -257,6 +262,8 @@ The table gains one global secondary index, `GSI1` (`gsi1pk`, `gsi1sk`), for a c
 /handshake/<stage>/limits/daily-bounty-budget     decimal string
 /handshake/<stage>/arena/recipient-email          arena recipient sandbox account
 /handshake/<stage>/arena/deal-source              templates (default) or sellers
+/handshake/<stage>/arena/email-from               sender for sign-in codes, on the web domain
+/handshake/<stage>/arena/admin-email              receives requests to join the arena
 ```
 
 ## Phase plan
@@ -336,6 +343,7 @@ Done when an AI-driven deal completes end to end in the deployed app and evals p
 - [x] CDK: add `GSI1` to the table and the `ArenaRun` state machine.
 - [x] `packages/store`: challenger, leaderboard and arena stats repositories; `recordArenaResult` as one transaction, with a test that a concurrent update retries on a version conflict.
 - [x] Handles and sessions: `POST /arena/challengers`, `GET /arena/challengers/me`, hashed session tokens, handle reservation.
+- [x] Email sign-in and approved access: one-time codes by SES, access requests with a reason, `pnpm arena:access` to approve or reject.
 - [ ] WebSocket events `arena.result`, `challenger.progress`, `arena.stats`.
 - [ ] Arena UI: challenger card with rank progress, badge grid (locked badges show how to earn them), open bounties per category, daily challenge, defense counter, rank-up and badge toasts.
   - [x] Everything except the rank-up and badge toasts, which wait for `challenger.progress` events.

@@ -27,8 +27,7 @@ export function HandleForm({ onCreated }: { onCreated: (challenger: Challenger) 
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
       <h2 className="text-xl font-semibold">Pick a handle to start</h2>
       <p className="text-muted text-sm">
-        Your handle shows on the leaderboard. No email or password needed. This browser keeps you
-        signed in.
+        Your access is approved. Your handle shows on the leaderboard instead of your email.
       </p>
       <label className="flex flex-col gap-1 text-sm">
         Handle

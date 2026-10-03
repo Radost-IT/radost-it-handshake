@@ -35,6 +35,9 @@ const rawConfigSchema = z.object({
   arenaRecipientEmail: z.email(),
   // Seeded sellers need Channel3, so the fixed templates are the default until it is set up.
   arenaDealSource: z.enum(['templates', 'sellers']).default('templates'),
+  // Only the arena API reads these, through `loadArenaMailConfig`.
+  arenaEmailFrom: z.email().optional(),
+  arenaAdminEmail: z.email().optional(),
   // Only the web server reads it, through `loadFormSigningSecret`. It is listed
   // here so `pnpm ssm:put` checks it, and the other services do not need it.
   formSigningSecret: formSigningSecretSchema.optional(),

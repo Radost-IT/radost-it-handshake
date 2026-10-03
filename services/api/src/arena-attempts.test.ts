@@ -1,4 +1,3 @@
-import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { SFNClient, StartExecutionCommand } from '@aws-sdk/client-sfn';
 import {
   DynamoDBDocumentClient,
@@ -11,29 +10,24 @@ import { newChallengerProgress } from '@handshake/arena';
 import { mockClient } from 'aws-sdk-client-mock';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { getAttempt, listArenaDeals, submitAttempt } from './arena-attempts';
-import { SESSION_COOKIE, type ArenaApiContext } from './arena-challengers';
 import { hashToken } from './http';
+import {
+  arenaTestContext,
+  mockSignedIn,
+  sessionCookies,
+  testArenaRunArn,
+} from './arena-test-context';
 
 const dynamodb = mockClient(DynamoDBDocumentClient);
 const stepFunctions = mockClient(SFNClient);
 const attemptId = '0b6f3c1e-8a52-4e7c-9a34-2f1d5b7c9e01';
-const arenaRunArn = 'arn:aws:states:eu-west-1:123456789012:stateMachine:Handshake-prod-ArenaRun';
-const context: ArenaApiContext = {
-  table: { client: DynamoDBDocumentClient.from(new DynamoDBClient({})), name: 'T' },
-  now: () => new Date('2026-10-03T12:30:00Z'),
-  newChallengerId: () => 'challenger-1',
-  newSessionToken: () => 'token-1',
-  newAttemptId: () => attemptId,
-  stepFunctions: new SFNClient({}),
-  arenaRunArn,
-  dailyTokenBudget: 1000,
-};
+const arenaRunArn = testArenaRunArn;
+const context = { ...arenaTestContext('2026-10-03T12:30:00Z'), newAttemptId: () => attemptId };
 
-const sessionKey = { pk: `SESSION#${hashToken('token-1')}`, sk: 'META' };
 const budgetKey = { pk: 'BUDGET#2026-10-03', sk: 'TOKENS' };
 const request = (body: unknown) => ({
   body: JSON.stringify(body),
-  cookies: [`${SESSION_COOKIE}=token-1`],
+  cookies: sessionCookies,
   sourceIp: '203.0.113.7',
 });
 const attack = {
@@ -45,18 +39,7 @@ const attack = {
 beforeEach(() => {
   dynamodb.reset();
   stepFunctions.reset();
-  dynamodb
-    .on(GetCommand, { Key: sessionKey })
-    .resolves({ Item: { challengerId: 'challenger-1', ttl: 1_900_000_000 } });
-  dynamodb.on(GetCommand, { Key: { pk: 'CHALLENGER#challenger-1', sk: 'META' } }).resolves({
-    Item: {
-      id: 'challenger-1',
-      handle: 'tester',
-      createdAt: '2026-10-01T09:00:00Z',
-      version: 1,
-      progress: newChallengerProgress,
-    },
-  });
+  mockSignedIn(dynamodb);
   dynamodb.on(GetCommand, { Key: budgetKey }).resolves({ Item: { ...budgetKey, used: 400 } });
   dynamodb.on(UpdateCommand).resolves({});
   dynamodb.on(PutCommand).resolves({});

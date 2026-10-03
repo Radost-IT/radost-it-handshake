@@ -1,6 +1,8 @@
-import { GetCommand } from '@aws-sdk/lib-dynamodb';
-import { attackCategories } from '@handshake/arena';
+import { TransactionCanceledException } from '@aws-sdk/client-dynamodb';
+import { GetCommand, TransactWriteCommand } from '@aws-sdk/lib-dynamodb';
+import { attackCategories, newChallengerProgress } from '@handshake/arena';
 import { z } from 'zod';
+import { accountKey } from './accounts';
 import type { StoreTable } from './table';
 
 export const challengerKey = (challengerId: string) => ({
@@ -45,4 +47,86 @@ export async function getChallenger(
     new GetCommand({ TableName: table.name, Key: challengerKey(challengerId) }),
   );
   return Item ? challengerSchema.parse(Item) : undefined;
+}
+
+export class HandleTakenError extends Error {
+  override name = 'HandleTakenError';
+}
+
+/** The account is not approved yet, or it already has a challenger. */
+export class ChallengerNotAllowedError extends Error {
+  override name = 'ChallengerNotAllowedError';
+}
+
+// Handles that differ only in case would look the same on the leaderboard.
+const handleKey = (handle: string) => ({ pk: `HANDLE#${handle.toLowerCase()}`, sk: 'META' });
+
+export interface NewChallenger {
+  challengerId: string;
+  accountId: string;
+  handle: string;
+  createdAt: Date;
+}
+
+/**
+ * Reserves the handle, creates the challenger and links it to the account in
+ * one transaction. Only an approved account without a challenger gets one.
+ */
+export async function createChallenger(
+  table: StoreTable,
+  input: NewChallenger,
+): Promise<Challenger> {
+  const challenger: Challenger = {
+    id: input.challengerId,
+    handle: input.handle,
+    createdAt: input.createdAt.toISOString(),
+    version: 0,
+    progress: newChallengerProgress,
+  };
+  try {
+    await table.client.send(
+      new TransactWriteCommand({
+        TransactItems: [
+          {
+            Put: {
+              TableName: table.name,
+              Item: { ...handleKey(input.handle), challengerId: input.challengerId },
+              ConditionExpression: 'attribute_not_exists(pk)',
+            },
+          },
+          {
+            Put: {
+              TableName: table.name,
+              Item: { ...challengerKey(input.challengerId), ...challenger },
+              ConditionExpression: 'attribute_not_exists(pk)',
+            },
+          },
+          {
+            Update: {
+              TableName: table.name,
+              Key: accountKey(input.accountId),
+              UpdateExpression: 'SET challengerId = :challengerId',
+              ConditionExpression: '#access = :approved AND attribute_not_exists(challengerId)',
+              ExpressionAttributeNames: { '#access': 'access' },
+              ExpressionAttributeValues: {
+                ':challengerId': input.challengerId,
+                ':approved': 'approved',
+              },
+            },
+          },
+        ],
+      }),
+    );
+  } catch (error) {
+    if (!(error instanceof TransactionCanceledException)) throw error;
+    const [handle, , account] = error.CancellationReasons ?? [];
+    if (account?.Code === 'ConditionalCheckFailed') {
+      throw new ChallengerNotAllowedError(`Account ${input.accountId} may not pick a handle`);
+    }
+    if (handle?.Code === 'ConditionalCheckFailed') {
+      throw new HandleTakenError(`The handle ${input.handle} is taken`);
+    }
+    throw error;
+  }
+  return challenger;
 }

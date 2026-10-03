@@ -224,6 +224,16 @@ The arena pages call the deployed API, which accepts browser calls only from htt
 - [x] Run `pnpm cdk:deploy`. It ships the arena pages, the `GET /arena/deals`, `/arena/stats`, `/arena/leaderboard` and `/arena/challengers/me/attempts` routes, and the ArenaRun step that marks failed attempts.
 - [ ] Open https://handshake.radostit.com/arena, pick a handle, and launch one attack. The attempt page should switch from running to a result within about a minute.
 - [ ] Open https://handshake.radostit.com/arena/leaderboard and check that your handle is listed under All time.
+### [I-22] Turn on email sign-in for the arena
+The arena now asks for an email sign-in and an approved request before anyone can play. The API sends the codes with Amazon SES from the web domain. In the console, logged in as your Identity Center admin:
+- [ ] Open **IAM → Policies → HandshakeWorkloadBoundary → Edit → JSON** and replace it with the current `infra/iam/workload-boundary.json`. It lets the arena API send email from the Handshake domain.
+- [ ] Do the same for **HandshakeCdkExecution** with `infra/iam/cdk-execution-policy.json` (it may create the SES identity and its DKIM records) and **HandshakeDeveloper** with `infra/iam/developer-policy.json` (it lets `pnpm arena:access` read requests and send the answer).
+- [ ] Add `ARENA_EMAIL_FROM=arena@handshake.radostit.com` and `ARENA_ADMIN_EMAIL=<your email>` to `.env`, then run `pnpm ssm:put prod`.
+- [ ] Run `AWS_PROFILE=handshake pnpm cdk:deploy`. It creates the SES domain identity and three DKIM records in the Route 53 zone. **SES → Identities → handshake.radostit.com** should show "Verified" within about an hour.
+- [ ] New SES accounts are in the sandbox and send only to verified addresses. Request production access in **SES → Account dashboard → Request production access** (transactional mail, sign-in codes only). Until it is granted, verify your own address under **SES → Identities** to test.
+- [ ] Open https://handshake.radostit.com/arena, sign in with your email and send a request to join. The request arrives at `ARENA_ADMIN_EMAIL`.
+- [ ] Run `pnpm arena:access <table>` to list pending requests, then `pnpm arena:access <table> approve <email>`. Refresh the arena, pick a handle and play. Handles picked before this change belong to old sessions and can no longer be used.
+
 ---
 
 ## During Phase 5

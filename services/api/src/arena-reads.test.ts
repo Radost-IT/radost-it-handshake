@@ -1,29 +1,11 @@
-import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { SFNClient } from '@aws-sdk/client-sfn';
-import {
-  BatchGetCommand,
-  DynamoDBDocumentClient,
-  GetCommand,
-  QueryCommand,
-} from '@aws-sdk/lib-dynamodb';
-import { newChallengerProgress } from '@handshake/arena';
+import { BatchGetCommand, DynamoDBDocumentClient, QueryCommand } from '@aws-sdk/lib-dynamodb';
 import { mockClient } from 'aws-sdk-client-mock';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { SESSION_COOKIE, type ArenaApiContext } from './arena-challengers';
 import { getLeaderboardPage, getMyAttempts, getStats } from './arena-reads';
-import { hashToken } from './http';
+import { arenaTestContext, mockSignedIn, sessionCookies } from './arena-test-context';
 
 const dynamodb = mockClient(DynamoDBDocumentClient);
-const context: ArenaApiContext = {
-  table: { client: DynamoDBDocumentClient.from(new DynamoDBClient({})), name: 'T' },
-  now: () => new Date('2026-10-03T12:30:00Z'),
-  newChallengerId: () => 'challenger-1',
-  newSessionToken: () => 'token-1',
-  newAttemptId: () => 'attempt-1',
-  stepFunctions: new SFNClient({}),
-  arenaRunArn: 'arn:aws:states:eu-west-1:123456789012:stateMachine:Handshake-prod-ArenaRun',
-  dailyTokenBudget: 1000,
-};
+const context = arenaTestContext('2026-10-03T12:30:00Z');
 
 const body = (response: { body?: string | undefined }) =>
   JSON.parse(response.body ?? '') as unknown;
@@ -114,23 +96,12 @@ describe('getMyAttempts', () => {
   };
 
   it('lists the challenger history with each status', async () => {
-    dynamodb
-      .on(GetCommand, { Key: { pk: `SESSION#${hashToken('token-1')}`, sk: 'META' } })
-      .resolves({ Item: { challengerId: 'challenger-1', ttl: 1_900_000_000 } });
-    dynamodb.on(GetCommand, { Key: { pk: 'CHALLENGER#challenger-1', sk: 'META' } }).resolves({
-      Item: {
-        id: 'challenger-1',
-        handle: 'tester',
-        createdAt: '2026-10-01T09:00:00Z',
-        version: 1,
-        progress: newChallengerProgress,
-      },
-    });
+    mockSignedIn(dynamodb);
     dynamodb.on(QueryCommand).resolves({
       Items: [attempt, { ...attempt, id: 'attempt-0', createdAt: '2026-10-03T10:00:00.000Z' }],
     });
 
-    const response = await getMyAttempts(context, [`${SESSION_COOKIE}=token-1`]);
+    const response = await getMyAttempts(context, sessionCookies);
 
     expect(body(response)).toEqual({
       attempts: [

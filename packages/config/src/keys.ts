@@ -37,6 +37,8 @@ export const configKeys = {
     secret: false,
   },
   arenaDealSource: { env: 'ARENA_DEAL_SOURCE', ssm: 'arena/deal-source', secret: false },
+  arenaEmailFrom: { env: 'ARENA_EMAIL_FROM', ssm: 'arena/email-from', secret: false },
+  arenaAdminEmail: { env: 'ARENA_ADMIN_EMAIL', ssm: 'arena/admin-email', secret: false },
   formSigningSecret: { env: 'FORM_SIGNING_SECRET', ssm: 'web/form-signing-secret', secret: true },
 } as const satisfies Record<string, ConfigKey>;
 

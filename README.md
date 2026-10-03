@@ -23,6 +23,7 @@ pnpm probe:paypal-limits # authorize, capture, void and reauthorize a sandbox ca
 pnpm probe:paypal-payout # pay a 1.00 USD sandbox bounty to the arena recipient
 pnpm ssm:put prod        # copy .env values to SSM under /handshake/prod
 pnpm regressions:export <table>  # write arena regression cases to evals/regressions/
+pnpm arena:access <table> [approve|reject <email>]  # list or decide requests to join the arena
 pnpm seed:sellers <table> [query ...]  # seller agents from Channel3 products
 pnpm eval                # agent evals in evals/scenarios against Bedrock
 ```
@@ -30,6 +31,8 @@ pnpm eval                # agent evals in evals/scenarios against Bedrock
 ## Arena
 
 Visitors play a dishonest seller and try to trick the agents at `/arena`. Each attack runs through the `ArenaRun` state machine; the attempt page at `/arena/attempts/<id>` polls the API every 2 seconds until the judge decides. The leaderboard is at `/arena/leaderboard`.
+
+The arena is open to invited players only, because every attack spends Bedrock tokens. A visitor signs in with a code sent to their email and asks to join with a short reason. Approve or reject requests with `pnpm arena:access`.
 
 The arena pages call the deployed API at https://api-handshake.radostit.com, which accepts browser calls only from the hosted site. They do not work from `pnpm dev`.
 

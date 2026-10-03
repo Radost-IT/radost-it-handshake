@@ -35,8 +35,10 @@ function boundaryActions(): string[] {
   return boundary.Statement.flatMap((statement) => [statement.Action].flat());
 }
 
-function grantedActions(template: Template): string[] {
-  const policies = Object.values(template.findResources('AWS::IAM::Policy')) as {
+function grantedActions(template: Template, policyProperties: object = {}): string[] {
+  const policies = Object.values(
+    template.findResources('AWS::IAM::Policy', { Properties: policyProperties }),
+  ) as {
     Properties: { PolicyDocument: { Statement: { Action: string | string[] }[] } };
   }[];
   return policies.flatMap((policy) =>
@@ -50,6 +52,10 @@ function actionPattern(action: string): RegExp {
 
 describe('HandshakeStack', () => {
   let template: Template;
+  const arenaApiActions = () =>
+    grantedActions(template, {
+      Roles: [{ Ref: Match.stringLikeRegexp('^ArenaApiFunctionServiceRole') }],
+    });
 
   beforeAll(() => {
     const app = new App({ context: { '@aws-cdk/core:bootstrapQualifier': 'handshake' } });
@@ -230,8 +236,15 @@ describe('HandshakeStack', () => {
     });
   });
 
-  it('lets the web app create a challenger and read it back with the session cookie', () => {
-    for (const routeKey of ['POST /arena/challengers', 'GET /arena/challengers/me']) {
+  it('lets a person sign in by email, ask to join and pick a handle', () => {
+    for (const routeKey of [
+      'POST /arena/sign-in',
+      'POST /arena/sign-in/verify',
+      'POST /arena/sign-out',
+      'GET /arena/account',
+      'POST /arena/access-requests',
+      'POST /arena/challengers',
+    ]) {
       template.hasResourceProperties('AWS::ApiGatewayV2::Route', { RouteKey: routeKey });
     }
     template.hasResourceProperties('AWS::ApiGatewayV2::Api', {
@@ -242,18 +255,22 @@ describe('HandshakeStack', () => {
     });
   });
 
-  it('lets the arena API read stats, leaderboards and attempt history', () => {
-    const arenaApiPolicies = Object.values(
-      template.findResources('AWS::IAM::Policy', {
-        Properties: {
-          Roles: [{ Ref: Match.stringLikeRegexp('^ArenaApiFunctionServiceRole') }],
-        },
-      }),
-    ) as { Properties: { PolicyDocument: { Statement: { Action: string | string[] }[] } } }[];
-    const actions = arenaApiPolicies.flatMap((policy) =>
-      policy.Properties.PolicyDocument.Statement.flatMap((statement) => [statement.Action].flat()),
+  it('sends arena email from the web domain with DKIM records in the zone', () => {
+    template.hasResourceProperties('AWS::SES::EmailIdentity', {
+      EmailIdentity: 'test-handshake.radostit.com',
+    });
+    expect(
+      Object.values(
+        template.findResources('AWS::Route53::RecordSet', { Properties: { Type: 'CNAME' } }),
+      ),
+    ).toHaveLength(3);
+    expect(arenaApiActions()).toEqual(expect.arrayContaining(['ses:SendEmail']));
+  });
+
+  it('lets the arena API read stats, leaderboards and attempt history, and end sessions', () => {
+    expect(arenaApiActions()).toEqual(
+      expect.arrayContaining(['dynamodb:BatchGetItem', 'dynamodb:Query', 'dynamodb:DeleteItem']),
     );
-    expect(actions).toEqual(expect.arrayContaining(['dynamodb:BatchGetItem', 'dynamodb:Query']));
   });
 
   it('lets a challenger submit an attempt that starts ArenaRun, and read it back', () => {

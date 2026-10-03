@@ -1,4 +1,10 @@
-import { attackCategories, badges, MAX_ATTACK_LENGTH } from '@handshake/arena';
+import {
+  attackCategories,
+  badges,
+  MAX_ACCESS_REASON_LENGTH,
+  MAX_ATTACK_LENGTH,
+  MIN_ACCESS_REASON_LENGTH,
+} from '@handshake/arena';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ArenaPlay } from './arena-play';
@@ -35,6 +41,8 @@ export default function ArenaPage() {
       <ArenaPlay
         categories={attackCategories}
         maxAttackLength={MAX_ATTACK_LENGTH}
+        minReasonLength={MIN_ACCESS_REASON_LENGTH}
+        maxReasonLength={MAX_ACCESS_REASON_LENGTH}
         badges={badges.map(({ id, name, howToEarn }) => ({ id, name, howToEarn }))}
       />
     </main>

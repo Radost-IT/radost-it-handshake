@@ -9,8 +9,15 @@ import { PolicyStatement } from 'aws-cdk-lib/aws-iam';
 import { Architecture, type IFunction, Runtime } from 'aws-cdk-lib/aws-lambda';
 import { NodejsFunction, OutputFormat } from 'aws-cdk-lib/aws-lambda-nodejs';
 import { LogGroup, RetentionDays } from 'aws-cdk-lib/aws-logs';
-import { AaaaRecord, ARecord, HostedZone, RecordTarget } from 'aws-cdk-lib/aws-route53';
+import {
+  AaaaRecord,
+  ARecord,
+  CfnRecordSet,
+  HostedZone,
+  RecordTarget,
+} from 'aws-cdk-lib/aws-route53';
 import { ApiGatewayv2DomainProperties, CloudFrontTarget } from 'aws-cdk-lib/aws-route53-targets';
+import { EmailIdentity, Identity } from 'aws-cdk-lib/aws-ses';
 import { StringParameter } from 'aws-cdk-lib/aws-ssm';
 import { Nextjs } from 'cdk-nextjs-standalone';
 import type { Construct } from 'constructs';
@@ -107,11 +114,15 @@ export class HandshakeStack extends Stack {
       'dynamodb:Query',
       'dynamodb:PutItem',
       'dynamodb:UpdateItem',
+      'dynamodb:DeleteItem',
     );
 
     const configPath = `/handshake/${props.stage}`;
-    // The arena API refuses attempts once the day's tokens are used, and needs no secrets.
-    this.grantConfigValueRead(arenaApiFunction, `${configPath}/limits/daily-token-budget`);
+    // The arena API refuses attempts once the day's tokens are used, emails sign-in
+    // codes and access requests, and needs no secrets.
+    for (const value of ['limits/daily-token-budget', 'arena/email-from', 'arena/admin-email']) {
+      this.grantConfigValueRead(arenaApiFunction, `${configPath}/${value}`);
+    }
     const paypalWebhookFunction = new NodejsFunction(this, 'PayPalWebhookFunction', {
       entry: serviceSource('webhooks', 'handler.ts'),
       runtime: Runtime.NODEJS_22_X,
@@ -268,27 +279,23 @@ export class HandshakeStack extends Stack {
       integration: new HttpLambdaIntegration('PayPalWebhookIntegration', paypalWebhookFunction),
     });
     const arenaApiIntegration = new HttpLambdaIntegration('ArenaApiIntegration', arenaApiFunction);
-    httpApi.addRoutes({
-      path: '/arena/challengers',
-      methods: [HttpMethod.POST],
-      integration: arenaApiIntegration,
-    });
-    httpApi.addRoutes({
-      path: '/arena/challengers/me',
-      methods: [HttpMethod.GET],
-      integration: arenaApiIntegration,
-    });
-    httpApi.addRoutes({
-      path: '/arena/attempts',
-      methods: [HttpMethod.POST],
-      integration: arenaApiIntegration,
-    });
+    for (const path of [
+      '/arena/sign-in',
+      '/arena/sign-in/verify',
+      '/arena/sign-out',
+      '/arena/access-requests',
+      '/arena/challengers',
+      '/arena/attempts',
+    ]) {
+      httpApi.addRoutes({ path, methods: [HttpMethod.POST], integration: arenaApiIntegration });
+    }
     httpApi.addRoutes({
       path: '/arena/attempts/{attemptId}',
       methods: [HttpMethod.GET],
       integration: arenaApiIntegration,
     });
     for (const path of [
+      '/arena/account',
       '/arena/deals',
       '/arena/stats',
       '/arena/leaderboard',
@@ -350,6 +357,24 @@ export class HandshakeStack extends Stack {
         ),
       ),
     });
+
+    // Sign-in codes and access emails come from the web domain. CDK publishes its
+    // DKIM records, so SES verifies the domain without console steps.
+    const mailIdentity = new EmailIdentity(this, 'MailIdentity', {
+      identity: Identity.domain(props.domains.web),
+    });
+    // The record names are deploy-time tokens that already hold the full domain.
+    // CnameRecord would append the zone name to them, so the L1 record is used.
+    mailIdentity.dkimRecords.forEach(({ name, value }, index) => {
+      new CfnRecordSet(this, `MailDkimRecord${String(index + 1)}`, {
+        hostedZoneId: zone.hostedZoneId,
+        name,
+        type: 'CNAME',
+        resourceRecords: [value],
+        ttl: '1800',
+      });
+    });
+    mailIdentity.grantSendEmail(arenaApiFunction);
 
     new CfnOutput(this, 'ApiUrl', { value: `https://${props.domains.api}` });
     new CfnOutput(this, 'WebUrl', { value: `https://${props.domains.web}` });

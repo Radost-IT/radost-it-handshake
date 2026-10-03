@@ -34,6 +34,27 @@
       ]
     },
     {
+      "Sid": "RunArenaScripts",
+      "Effect": "Allow",
+      "Action": [
+        "dynamodb:BatchWriteItem",
+        "dynamodb:GetItem",
+        "dynamodb:PutItem",
+        "dynamodb:Query",
+        "dynamodb:UpdateItem"
+      ],
+      "Resource": [
+        "arn:aws:dynamodb:eu-west-1:*:table/Handshake-*",
+        "arn:aws:dynamodb:eu-west-1:*:table/Handshake-*/index/*"
+      ]
+    },
+    {
+      "Sid": "SendArenaAccessEmails",
+      "Effect": "Allow",
+      "Action": "ses:SendEmail",
+      "Resource": "arn:aws:ses:eu-west-1:*:identity/handshake.radostit.com"
+    },
+    {
       "Sid": "ReadHandshakeStacksAndLogs",
       "Effect": "Allow",
       "Action": [

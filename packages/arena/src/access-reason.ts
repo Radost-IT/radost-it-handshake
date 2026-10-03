@@ -1,0 +1,2 @@
+export const MIN_ACCESS_REASON_LENGTH = 20;
+export const MAX_ACCESS_REASON_LENGTH = 500;

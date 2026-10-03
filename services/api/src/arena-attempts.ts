@@ -16,7 +16,7 @@ import {
 } from '@handshake/store';
 import type { APIGatewayProxyStructuredResultV2 } from 'aws-lambda';
 import { z } from 'zod';
-import { findSessionChallenger, type ArenaApiContext } from './arena-challengers';
+import { findSessionChallenger, type ArenaApiContext } from './arena-session';
 import { hashToken, json, parseJson } from './http';
 
 // Every attempt costs model calls. Judges may share one IP, so the limit

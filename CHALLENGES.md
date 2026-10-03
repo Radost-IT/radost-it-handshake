@@ -101,3 +101,11 @@ Every function now uses one bundling setting whose banner defines `require` with
 We expected the new `GET /arena/stats` and `GET /arena/leaderboard` routes to work after the deploy, since their store functions passed the unit tests. Both answered `{"message":"Internal Server Error"}` and the arena pages showed "The arena is not answering. Try again soon". The Lambda log said `is not authorized to perform: dynamodb:BatchGetItem on resource: arn:aws:dynamodb:eu-west-1:...:table/Handshake-prod-Table... because no identity-based policy allows the dynamodb:BatchGetItem action`, and the same for `dynamodb:Query`. The unit tests use a fake DynamoDB client, so they never see IAM. The arena API role had only `GetItem`, `PutItem` and `UpdateItem`.
 
 The role now also has `BatchGetItem` and `Query`, which the boundary already allowed. An infra test checks the arena API role's actions, so a missing read grant fails `pnpm test`.
+
+## Route 53 renamed the SES DKIM records
+
+*3 Oct 2026 · Email and DNS*
+
+SES gives three DKIM tokens for the domain, and each needs a CNAME record named `<token>._domainkey.handshake.radostit.com`. We first used the CDK `CnameRecord` construct with the record name from the SES identity. That name is a deploy-time token, and the construct cannot see that it already ends with the zone name, so it appends the zone name again. The records would have been named `<token>._domainkey.handshake.radostit.com.handshake.radostit.com` and DKIM would never verify.
+
+We switched to the low-level `CfnRecordSet`, which takes the name as given. A stack test now checks that the three DKIM records are in the zone.

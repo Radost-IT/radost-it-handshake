@@ -2,7 +2,7 @@ import { rankForXp } from '@handshake/arena';
 import { getArenaStats, getLeaderboard, listChallengerAttempts } from '@handshake/store';
 import type { APIGatewayProxyStructuredResultV2 } from 'aws-lambda';
 import { attemptStatus } from './arena-attempts';
-import { findSessionChallenger, type ArenaApiContext } from './arena-challengers';
+import { findSessionChallenger, type ArenaApiContext } from './arena-session';
 import { json } from './http';
 
 const LEADERBOARD_SIZE = 50;

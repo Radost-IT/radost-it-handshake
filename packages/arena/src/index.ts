@@ -1,3 +1,4 @@
+export { MAX_ACCESS_REASON_LENGTH, MIN_ACCESS_REASON_LENGTH } from './access-reason';
 export { checkAttackText, MAX_ATTACK_LENGTH, type AttackTextCheck } from './attack-text';
 export {
   badges,

@@ -22,6 +22,7 @@
     "probe:paypal-payout": "tsx --env-file=.env scripts/probes/paypal-payout.ts",
     "ssm:put": "tsx --env-file=.env scripts/put-ssm-parameters.ts",
     "regressions:export": "tsx scripts/export-regressions.ts",
+    "arena:access": "tsx --env-file=.env scripts/arena-access.ts",
     "seed:sellers": "tsx --env-file=.env scripts/seed-sellers.ts",
     "eval": "tsx --env-file=.env scripts/run-evals.ts"
   },

@@ -149,14 +149,51 @@ async function request<T>(path: string, schema: z.ZodType<T>, body?: unknown): P
   return schema.parse(responseBody);
 }
 
-/** Resolves to null when the visitor has no session yet. */
-export async function fetchMe(): Promise<Challenger | null> {
+const accessStatusSchema = z.enum(['none', 'pending', 'approved', 'rejected']);
+
+export type AccessStatus = z.infer<typeof accessStatusSchema>;
+
+const accountSchema = z.object({
+  email: z.string(),
+  access: accessStatusSchema,
+  challenger: challengerSchema.nullable(),
+});
+
+export type Account = z.infer<typeof accountSchema>;
+
+/** Resolves to null when the visitor has not signed in yet. */
+export async function fetchAccount(): Promise<Account | null> {
   try {
-    return await request('/arena/challengers/me', challengerSchema);
+    return await request('/arena/account', accountSchema);
   } catch (error) {
     if (error instanceof ArenaApiError && error.status === 401) return null;
     throw error;
   }
+}
+
+export async function requestSignInCode(email: string): Promise<void> {
+  await request('/arena/sign-in', z.object({ sent: z.literal(true) }), { email });
+}
+
+export async function verifySignInCode(email: string, code: string): Promise<AccessStatus> {
+  const verified = await request(
+    '/arena/sign-in/verify',
+    z.object({ access: accessStatusSchema }),
+    {
+      email,
+      code,
+    },
+  );
+  return verified.access;
+}
+
+export async function requestAccess(reason: string): Promise<void> {
+  await request('/arena/access-requests', z.object({ access: z.literal('pending') }), { reason });
+}
+
+export async function signOut(): Promise<void> {
+  // The API answers 204 with no body.
+  await request('/arena/sign-out', z.null(), {});
 }
 
 export function createChallenger(handle: string): Promise<Challenger> {
