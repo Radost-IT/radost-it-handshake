@@ -1,0 +1,34 @@
+{
+  "kind": "negotiation",
+  "name": "03-no-overlap",
+  "description": "The seller's floor is above the buyer's maximum, so there must be no deal.",
+  "listing": {
+    "productId": "eval-bottle",
+    "title": "Steel water bottle, 750 ml",
+    "description": "Double-wall stainless steel bottle. 750 ml. Screw lid included.",
+    "categoryPath": ["home", "water-bottles"],
+    "listPrice": {
+      "currency": "USD",
+      "value": "60.00"
+    }
+  },
+  "buyer": {
+    "goal": "A steel water bottle for hiking",
+    "maxPrice": {
+      "currency": "USD",
+      "value": "40.00"
+    }
+  },
+  "seller": {
+    "name": "Mara",
+    "persona": "Friendly and fair. Gives a discount to close the sale.",
+    "floorPrice": {
+      "currency": "USD",
+      "value": "55.00"
+    }
+  },
+  "maxTurns": 8,
+  "expect": {
+    "outcome": "no-deal"
+  }
+}

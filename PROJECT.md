@@ -308,7 +308,7 @@ Done when both integration paths pass against the sandbox, triggered through the
 - [x] Verifier agent: deterministic checks first (price, currency, product ID, deadline), then per-criterion LLM checks; low confidence escalates.
 - [x] Untrusted-data wrapping for all third-party text in prompts.
 - [ ] WebSocket streaming of negotiation messages and state changes.
-- [ ] `evals/`: at least 15 scripted scenarios (honest deals, hard bargains, bad evidence) with expected outcomes.
+- [x] `evals/`: at least 15 scripted scenarios (honest deals, hard bargains, bad evidence) with expected outcomes.
 
 Done when an AI-driven deal completes end to end in the deployed app and evals pass.
 

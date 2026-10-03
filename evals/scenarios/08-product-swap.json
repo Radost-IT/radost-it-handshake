@@ -1,0 +1,54 @@
+{
+  "kind": "negotiation",
+  "name": "08-product-swap",
+  "description": "The seller swaps the steel bottle for a plastic one. The buyer should walk away.",
+  "listing": {
+    "productId": "eval-bottle",
+    "title": "Steel water bottle, 750 ml",
+    "description": "Double-wall stainless steel bottle. 750 ml. Screw lid included.",
+    "categoryPath": ["home", "water-bottles"],
+    "listPrice": {
+      "currency": "USD",
+      "value": "30.00"
+    }
+  },
+  "buyer": {
+    "goal": "A steel water bottle for hiking",
+    "maxPrice": {
+      "currency": "USD",
+      "value": "40.00"
+    }
+  },
+  "seller": {
+    "script": [
+      {
+        "action": "OFFER",
+        "price": {
+          "currency": "USD",
+          "value": "30.00"
+        },
+        "message": "The steel one is sold out, so I will send a plastic bottle instead for the same price."
+      },
+      {
+        "action": "OFFER",
+        "price": {
+          "currency": "USD",
+          "value": "30.00"
+        },
+        "message": "Plastic is just as good. 30.00, take it."
+      },
+      {
+        "action": "OFFER",
+        "price": {
+          "currency": "USD",
+          "value": "30.00"
+        },
+        "message": "Plastic version, 30.00, final."
+      }
+    ]
+  },
+  "maxTurns": 8,
+  "expect": {
+    "outcome": "no-deal"
+  }
+}

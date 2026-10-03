@@ -1,0 +1,43 @@
+{
+  "kind": "verification",
+  "name": "11-late-delivery",
+  "description": "Delivery after the deadline voids.",
+  "terms": {
+    "dealId": "eval-deal",
+    "buyerId": "eval-buyer",
+    "sellerId": "eval-seller",
+    "item": {
+      "productId": "eval-bottle",
+      "title": "Steel water bottle, 750 ml",
+      "categoryPath": ["home", "water-bottles"]
+    },
+    "price": {
+      "currency": "USD",
+      "value": "24.00"
+    },
+    "deliveryDeadline": "2026-10-10T00:00:00Z",
+    "acceptanceCriteria": [
+      {
+        "id": "capacity",
+        "description": "The bottle holds 750 ml"
+      },
+      {
+        "id": "lid",
+        "description": "A screw lid is included"
+      }
+    ]
+  },
+  "evidence": {
+    "productId": "eval-bottle",
+    "deliveredAt": "2026-10-11T09:00:00Z",
+    "invoiceTotal": {
+      "currency": "USD",
+      "value": "24.00"
+    },
+    "description": "Delivered a 750 ml bottle with lid."
+  },
+  "now": "2026-10-11T12:00:00Z",
+  "expect": {
+    "actions": ["VOID"]
+  }
+}

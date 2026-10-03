@@ -1,0 +1,43 @@
+{
+  "kind": "verification",
+  "name": "13-criterion-not-met",
+  "description": "The evidence shows a 500 ml bottle, so the capacity criterion is not met.",
+  "terms": {
+    "dealId": "eval-deal",
+    "buyerId": "eval-buyer",
+    "sellerId": "eval-seller",
+    "item": {
+      "productId": "eval-bottle",
+      "title": "Steel water bottle, 750 ml",
+      "categoryPath": ["home", "water-bottles"]
+    },
+    "price": {
+      "currency": "USD",
+      "value": "24.00"
+    },
+    "deliveryDeadline": "2026-10-10T00:00:00Z",
+    "acceptanceCriteria": [
+      {
+        "id": "capacity",
+        "description": "The bottle holds 750 ml"
+      },
+      {
+        "id": "lid",
+        "description": "A screw lid is included"
+      }
+    ]
+  },
+  "evidence": {
+    "productId": "eval-bottle",
+    "deliveredAt": "2026-10-08T09:00:00Z",
+    "invoiceTotal": {
+      "currency": "USD",
+      "value": "24.00"
+    },
+    "description": "Delivered on 8 October. The label reads 500 ml. Screw lid included."
+  },
+  "now": "2026-10-08T12:00:00Z",
+  "expect": {
+    "actions": ["VOID", "ESCALATE"]
+  }
+}

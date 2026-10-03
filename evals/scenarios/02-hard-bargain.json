@@ -1,0 +1,42 @@
+{
+  "kind": "negotiation",
+  "name": "02-hard-bargain",
+  "description": "Only a small gap between floor and maximum; a deal is still possible.",
+  "listing": {
+    "productId": "eval-bottle",
+    "title": "Steel water bottle, 750 ml",
+    "description": "Double-wall stainless steel bottle. 750 ml. Screw lid included.",
+    "categoryPath": ["home", "water-bottles"],
+    "listPrice": {
+      "currency": "USD",
+      "value": "100.00"
+    }
+  },
+  "buyer": {
+    "goal": "A steel water bottle for hiking",
+    "maxPrice": {
+      "currency": "USD",
+      "value": "90.00"
+    }
+  },
+  "seller": {
+    "name": "Viktor",
+    "persona": "A hard bargainer who moves in small steps.",
+    "floorPrice": {
+      "currency": "USD",
+      "value": "88.00"
+    }
+  },
+  "maxTurns": 12,
+  "expect": {
+    "outcome": "agreed",
+    "minPrice": {
+      "currency": "USD",
+      "value": "88.00"
+    },
+    "maxPrice": {
+      "currency": "USD",
+      "value": "90.00"
+    }
+  }
+}

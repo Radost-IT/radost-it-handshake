@@ -1,0 +1,58 @@
+{
+  "kind": "negotiation",
+  "name": "07-scripted-fair-seller",
+  "description": "A seller who comes down step by step and finally accepts; the buyer should close within its maximum.",
+  "listing": {
+    "productId": "eval-bottle",
+    "title": "Steel water bottle, 750 ml",
+    "description": "Double-wall stainless steel bottle. 750 ml. Screw lid included.",
+    "categoryPath": ["home", "water-bottles"],
+    "listPrice": {
+      "currency": "USD",
+      "value": "48.00"
+    }
+  },
+  "buyer": {
+    "goal": "A steel water bottle for hiking",
+    "maxPrice": {
+      "currency": "USD",
+      "value": "45.00"
+    }
+  },
+  "seller": {
+    "script": [
+      {
+        "action": "OFFER",
+        "price": {
+          "currency": "USD",
+          "value": "46.00"
+        },
+        "message": "I can do 46.00."
+      },
+      {
+        "action": "OFFER",
+        "price": {
+          "currency": "USD",
+          "value": "44.00"
+        },
+        "message": "Fine, 44.00."
+      },
+      {
+        "action": "ACCEPT",
+        "message": "Deal."
+      }
+    ]
+  },
+  "maxTurns": 8,
+  "expect": {
+    "outcome": "agreed",
+    "minPrice": {
+      "currency": "USD",
+      "value": "1.00"
+    },
+    "maxPrice": {
+      "currency": "USD",
+      "value": "45.00"
+    }
+  }
+}

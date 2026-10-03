@@ -220,6 +220,9 @@ importers:
       '@channel3/sdk':
         specifier: ^4.1.0
         version: 4.1.0
+      '@handshake/agents':
+        specifier: workspace:*
+        version: link:../packages/agents
       '@handshake/arena':
         specifier: workspace:*
         version: link:../packages/arena
