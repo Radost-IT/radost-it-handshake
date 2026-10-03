@@ -20,6 +20,7 @@ import { AttackForm } from './attack-form';
 import { AttemptHistory } from './attempt-history';
 import { ChallengerCard, type BadgeInfo } from './challenger-card';
 import { HandleForm } from './handle-form';
+import { ARENA_TOPIC, useLiveEvents } from './live-events';
 import { SignInForm } from './sign-in-form';
 
 interface ArenaData {
@@ -49,6 +50,21 @@ export function ArenaPlay({
 }: ArenaPlayProps) {
   const [load, setLoad] = useState<LoadState>({ kind: 'loading' });
   const [attempts, setAttempts] = useState<AttemptSummary[]>([]);
+
+  useLiveEvents([ARENA_TOPIC], (event) => {
+    if (event.type !== 'arena.stats') return;
+    setLoad((current) =>
+      current.kind === 'ready'
+        ? {
+            kind: 'ready',
+            data: {
+              ...current.data,
+              stats: { ...current.data.stats, attempts: event.attempts, held: event.held },
+            },
+          }
+        : current,
+    );
+  });
 
   useEffect(() => {
     Promise.all([fetchAccount(), fetchDeals(), fetchStats()])

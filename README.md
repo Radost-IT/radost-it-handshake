@@ -30,7 +30,7 @@ pnpm eval                # agent evals in evals/scenarios against Bedrock
 
 ## Arena
 
-Visitors play a dishonest seller and try to trick the agents at `/arena`. Each attack runs through the `ArenaRun` state machine; the attempt page at `/arena/attempts/<id>` polls the API every 2 seconds until the judge decides. The leaderboard is at `/arena/leaderboard`.
+Visitors play a dishonest seller and try to trick the agents at `/arena`. Each attack runs through the `ArenaRun` state machine; the attempt page at `/arena/attempts/<id>` listens on the WebSocket at wss://ws-handshake.radostit.com and reloads when the judge decides. It also polls every 10 seconds in case a push is lost. The arena page updates its defense counter from the same socket. The leaderboard is at `/arena/leaderboard`.
 
 The arena is open to invited players only, because every attack spends Bedrock tokens. A visitor signs in with a code sent to their email and asks to join with a short reason. Approve or reject requests with `pnpm arena:access`.
 
@@ -42,7 +42,7 @@ The AWS CDK app in `infra/` deploys one production stack, `Handshake-prod`, to e
 
 The web app is a Next.js app. `cdk:synth` and `cdk:deploy` build it with OpenNext first, then the `cdk-nextjs-standalone` construct deploys it behind CloudFront.
 
-The web app runs on https://handshake.radostit.com and the HTTP API on https://api-handshake.radostit.com.
+The web app runs on https://handshake.radostit.com, the HTTP API on https://api-handshake.radostit.com and the WebSocket API on wss://ws-handshake.radostit.com.
 
 The stack reads the `*.radostit.com` certificate ARNs and the Route 53 hosted zone ID from SSM and creates the DNS records; see `INSTRUCTIONS.md` [I-10].
 

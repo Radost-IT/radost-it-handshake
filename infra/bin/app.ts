@@ -11,6 +11,7 @@ new HandshakeStack(app, 'Handshake-prod', {
     zone: 'radostit.com',
     web: 'handshake.radostit.com',
     api: 'api-handshake.radostit.com',
+    live: 'ws-handshake.radostit.com',
   },
   env: { account: process.env.CDK_DEFAULT_ACCOUNT, region: 'eu-west-1' },
 });

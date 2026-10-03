@@ -5,6 +5,7 @@ import {
   Condition,
   DefinitionBody,
   Fail,
+  type IChainable,
   JsonPath,
   StateMachine,
   Succeed,
@@ -20,13 +21,30 @@ const ATTEMPT_TIMEOUT = Duration.minutes(30);
  * The ArenaRun state machine: run the arena deal, judge it, and for a
  * loophole save the regression case and pay the bounty. Each step stores its
  * work before returning, so a retried step picks up where it stopped. A step
- * that still fails marks the attempt failed.
+ * that still fails marks the attempt failed. Once the attempt is judged or
+ * failed, an Announce step pushes the news to the browsers watching it.
  * Started with `{ "attemptId": "..." }` once the attempt is stored.
  */
 export function createArenaRun(scope: Construct, arenaFunction: IFunction): StateMachine {
   const arena = new Construct(scope, 'ArenaRun');
   const attemptId = JsonPath.stringAt('$.attemptId');
 
+  // The pages poll as well, so a failed announcement must not fail the attempt.
+  const announce = (stateName: string, next: IChainable) =>
+    new LambdaInvoke(arena, stateName, {
+      lambdaFunction: arenaFunction,
+      payload: TaskInput.fromObject({ task: 'Announce', attemptId }),
+      payloadResponseOnly: true,
+      resultPath: JsonPath.DISCARD,
+    })
+      .addRetry({ interval: Duration.seconds(1), maxAttempts: 2 })
+      .addCatch(next, { resultPath: JsonPath.DISCARD })
+      .next(next);
+
+  const attemptFailed = new Fail(arena, 'AttemptFailed', {
+    errorPath: '$.error.Error',
+    causePath: '$.error.Cause',
+  });
   // Without this, an attempt whose run stopped would show as running forever.
   const markFailed = new LambdaInvoke(arena, 'MarkFailed', {
     lambdaFunction: arenaFunction,
@@ -37,9 +55,7 @@ export function createArenaRun(scope: Construct, arenaFunction: IFunction): Stat
     }),
     payloadResponseOnly: true,
     resultPath: JsonPath.DISCARD,
-  }).next(
-    new Fail(arena, 'AttemptFailed', { errorPath: '$.error.Error', causePath: '$.error.Cause' }),
-  );
+  }).next(announce('AnnounceFailure', attemptFailed));
 
   const step = (task: string, retryOn: string[]) =>
     new LambdaInvoke(arena, task, {
@@ -69,7 +85,7 @@ export function createArenaRun(scope: Construct, arenaFunction: IFunction): Stat
 
   const definition = step('RunDeal', modelErrors)
     .next(step('Judge', [...modelErrors, 'ConcurrentArenaUpdateError']))
-    .next(judged);
+    .next(announce('AnnounceResult', judged));
 
   return new StateMachine(arena, 'StateMachine', {
     stateMachineName: `${Stack.of(scope).stackName}-ArenaRun`,

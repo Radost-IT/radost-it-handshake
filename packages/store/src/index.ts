@@ -43,6 +43,16 @@ export { saveCheckout, type Checkout } from './checkout';
 export { grantDealAccess, hasDealAccess } from './deal-access';
 export { ConcurrentDealUpdateError, getDeal, saveDeal } from './deals';
 export { getLeaderboard, type LeaderboardEntry, type LeaderboardScope } from './leaderboard';
+export {
+  ARENA_TOPIC,
+  attemptTopic,
+  closeLiveConnection,
+  listLiveConnections,
+  liveTopicSchema,
+  MAX_TOPICS_PER_CONNECTION,
+  openLiveConnection,
+  type LiveConnection,
+} from './live-connections';
 export { takeRateLimitSlot, type RateLimitWindow } from './rate-limits';
 export { listRegressionCases, saveRegressionCase } from './regressions';
 export { closeSession, findSessionAccountId, openSession, type NewSession } from './sessions';

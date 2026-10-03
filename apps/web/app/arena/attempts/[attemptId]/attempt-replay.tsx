@@ -2,12 +2,15 @@
 
 import Link from 'next/link';
 import { useEffect, useState, type ReactNode } from 'react';
-import { fetchAttempt, messageOf, type Attempt } from '../../api';
+import { fetchAccount, fetchAttempt, messageOf, type Attempt } from '../../api';
+import type { BadgeInfo } from '../../challenger-card';
 import { categoryName, channelName } from '../../labels';
+import { attemptTopic, useLiveEvents, type LiveEvent } from '../../live-events';
 import { pillStateFor, StatusPill } from '../../status-pill';
+import { ToastStack, useToasts } from '../../toasts';
 
-// No push channel yet, so the page asks again until the judge has decided.
-const POLL_INTERVAL_MS = 2000;
+// The socket reports the result as soon as it is in. Polling covers a push that never arrives.
+const FALLBACK_POLL_INTERVAL_MS = 10_000;
 
 const failureMessages = {
   budget: 'The arena ran out of its AI budget for today before this attempt finished.',
@@ -17,8 +20,37 @@ const failureMessages = {
 type ReplayState =
   { kind: 'loading' } | { kind: 'failed'; message: string } | { kind: 'ready'; attempt: Attempt };
 
-export function AttemptReplay({ attemptId }: { attemptId: string }) {
+interface AttemptReplayProps {
+  attemptId: string;
+  badges: BadgeInfo[];
+}
+
+export function AttemptReplay({ attemptId, badges }: AttemptReplayProps) {
   const [state, setState] = useState<ReplayState>({ kind: 'loading' });
+  const [resultPushes, setResultPushes] = useState(0);
+  const [viewerChallengerId, setViewerChallengerId] = useState<string | null>(null);
+  const { toasts, showToast, dismissToast } = useToasts();
+
+  useEffect(() => {
+    fetchAccount()
+      .then((account) => {
+        setViewerChallengerId(account?.challenger?.id ?? null);
+      })
+      .catch(() => {
+        // Without the account the page only skips the rank and badge toasts.
+        setViewerChallengerId(null);
+      });
+  }, []);
+
+  useLiveEvents([attemptTopic(attemptId)], (event: LiveEvent) => {
+    if (event.type === 'arena.result') setResultPushes((count) => count + 1);
+    if (event.type !== 'challenger.progress' || event.challengerId !== viewerChallengerId) return;
+    if (event.rankUp) showToast('Rank up', `You are now ${event.rank}.`);
+    for (const badgeId of event.newBadges) {
+      const badge = badges.find(({ id }) => id === badgeId);
+      if (badge) showToast(`Badge: ${badge.name}`, badge.howToEarn);
+    }
+  });
 
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout> | undefined;
@@ -28,7 +60,7 @@ export function AttemptReplay({ attemptId }: { attemptId: string }) {
         .then((attempt) => {
           if (!isActive) return;
           setState({ kind: 'ready', attempt });
-          if (attempt.status === 'running') timer = setTimeout(poll, POLL_INTERVAL_MS);
+          if (attempt.status === 'running') timer = setTimeout(poll, FALLBACK_POLL_INTERVAL_MS);
         })
         .catch((error: unknown) => {
           if (isActive) setState({ kind: 'failed', message: messageOf(error) });
@@ -39,7 +71,7 @@ export function AttemptReplay({ attemptId }: { attemptId: string }) {
       isActive = false;
       clearTimeout(timer);
     };
-  }, [attemptId]);
+  }, [attemptId, resultPushes]);
 
   if (state.kind === 'loading') return <p className="text-muted">Loading the attempt...</p>;
   if (state.kind === 'failed') return <p className="text-refused">{state.message}</p>;
@@ -48,6 +80,7 @@ export function AttemptReplay({ attemptId }: { attemptId: string }) {
   const { result, run } = attempt;
   return (
     <article className="flex flex-col gap-8">
+      <ToastStack toasts={toasts} onDismiss={dismissToast} />
       <header>
         <Link href="/arena" className="text-muted hover:text-ink text-sm transition-colors">
           Back to the arena

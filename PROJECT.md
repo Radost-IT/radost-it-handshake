@@ -181,8 +181,7 @@ Cost guards: API Gateway throttling, Lambda reserved concurrency on public endpo
 
 ```
 apps/web                 Next.js app (App Router)
-services/api             REST Lambda handlers
-services/ws              WebSocket Lambda handlers
+services/api             REST and WebSocket Lambda handlers
 services/workflows       Step Functions task handlers
 services/webhooks        PayPal webhook ingest and event handlers
 packages/config          loads and validates config from SSM or process env
@@ -237,7 +236,8 @@ Terminal states: `SETTLED`, `REFUSED`, `CANCELLED`, `ABANDONED`. Every transitio
 | Hall of fame | `HALL_OF_FAME` | `CASE#<ts>#<attemptId>` |
 | Bounty ledger (reserved or paid, per UTC day) | `BOUNTIES#<yyyy-mm-dd>` | `ATTEMPT#<attemptId>` |
 | Channel3 cache | `C3#<queryHash>` | `RESULT` (TTL) |
-| WebSocket connection | `WS#<connectionId>` | `META` (TTL) |
+| WebSocket connection (its topics) | `LIVE#<connectionId>` | `META` (TTL) |
+| WebSocket topic subscriber | `TOPIC#<topic>` | `LIVE#<connectionId>` (TTL) |
 | Idempotency | `IDEMP#<key>` | `META` (TTL) |
 | Token budget | `BUDGET#<yyyy-mm-dd>` | `TOKENS` |
 | Attempt rate limit (per hashed IP, per UTC hour) | `RATE#<ipHash>` | `WINDOW#<yyyy-mm-ddThh>` (TTL) |
@@ -344,9 +344,8 @@ Done when an AI-driven deal completes end to end in the deployed app and evals p
 - [x] `packages/store`: challenger, leaderboard and arena stats repositories; `recordArenaResult` as one transaction, with a test that a concurrent update retries on a version conflict.
 - [x] Handles and sessions: `POST /arena/challengers`, `GET /arena/challengers/me`, hashed session tokens, handle reservation.
 - [x] Email sign-in and approved access: one-time codes by SES, access requests with a reason, `pnpm arena:access` to approve or reject.
-- [ ] WebSocket events `arena.result`, `challenger.progress`, `arena.stats`.
-- [ ] Arena UI: challenger card with rank progress, badge grid (locked badges show how to earn them), open bounties per category, daily challenge, defense counter, rank-up and badge toasts.
-  - [x] Everything except the rank-up and badge toasts, which wait for `challenger.progress` events.
+- [x] WebSocket events `arena.result`, `challenger.progress`, `arena.stats`.
+- [x] Arena UI: challenger card with rank progress, badge grid (locked badges show how to earn them), open bounties per category, daily challenge, defense counter, rank-up and badge toasts.
 - [ ] Hall of fame: regression case pages credit the challenger and show attempt, fix, and the rerun that holds.
 - [ ] Share images for loopholes and badges with `next/og`.
 - [x] UI copy check: every arena screen uses "challenger" and "loophole found", suitable for any age.

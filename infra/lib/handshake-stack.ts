@@ -1,6 +1,16 @@
 import { CfnOutput, Duration, PermissionsBoundary, Stack, type StackProps } from 'aws-cdk-lib';
-import { CorsHttpMethod, DomainName, HttpApi, HttpMethod } from 'aws-cdk-lib/aws-apigatewayv2';
-import { HttpLambdaIntegration } from 'aws-cdk-lib/aws-apigatewayv2-integrations';
+import {
+  CorsHttpMethod,
+  DomainName,
+  HttpApi,
+  HttpMethod,
+  WebSocketApi,
+  WebSocketStage,
+} from 'aws-cdk-lib/aws-apigatewayv2';
+import {
+  HttpLambdaIntegration,
+  WebSocketLambdaIntegration,
+} from 'aws-cdk-lib/aws-apigatewayv2-integrations';
 import { Certificate } from 'aws-cdk-lib/aws-certificatemanager';
 import { AttributeType, Billing, TableV2 } from 'aws-cdk-lib/aws-dynamodb';
 import { EventBus, Rule } from 'aws-cdk-lib/aws-events';
@@ -31,7 +41,7 @@ export interface HandshakeStackProps extends StackProps {
   /** A Next.js app already built with `open-next build`. */
   webAppPath: string;
   /** The Route 53 zone and the hostnames in it covered by its wildcard certificates. */
-  domains: { zone: string; web: string; api: string };
+  domains: { zone: string; web: string; api: string; live: string };
 }
 
 // The IDs live in SSM rather than in the repo, and CloudFormation reads them at deploy time.
@@ -196,6 +206,24 @@ export class HandshakeStack extends Stack {
     arenaApiFunction.addEnvironment('ARENA_RUN_ARN', arenaRun.stateMachineArn);
     arenaRun.grantStartExecution(arenaApiFunction);
 
+    const liveFunction = new NodejsFunction(this, 'LiveFunction', {
+      entry: serviceSource('api', 'live-handler.ts'),
+      runtime: Runtime.NODEJS_22_X,
+      architecture: Architecture.ARM_64,
+      memorySize: 256,
+      timeout: Duration.seconds(5),
+      logGroup: new LogGroup(this, 'LiveFunctionLogs', { retention: RetentionDays.ONE_MONTH }),
+      bundling: esmBundling,
+      environment: { TABLE_NAME: table.tableName },
+    });
+    table.grant(liveFunction, 'dynamodb:GetItem', 'dynamodb:PutItem', 'dynamodb:DeleteItem');
+    const liveIntegration = new WebSocketLambdaIntegration('LiveIntegration', liveFunction);
+    // Browsers only listen; ArenaRun pushes through the management API.
+    const liveApi = new WebSocketApi(this, 'LiveApi', {
+      connectRouteOptions: { integration: liveIntegration },
+      disconnectRouteOptions: { integration: liveIntegration },
+    });
+
     const paypalEventsFunction = new NodejsFunction(this, 'PayPalEventsFunction', {
       entry: serviceSource('workflows', 'paypal-events-handler.ts'),
       runtime: Runtime.NODEJS_22_X,
@@ -278,6 +306,20 @@ export class HandshakeStack extends Stack {
       methods: [HttpMethod.POST],
       integration: new HttpLambdaIntegration('PayPalWebhookIntegration', paypalWebhookFunction),
     });
+    const liveDomain = new DomainName(this, 'LiveDomain', {
+      domainName: props.domains.live,
+      certificate: certificateFromParameter('LiveCertificate', certificateParameters.regional),
+    });
+    const liveStage = new WebSocketStage(this, 'LiveStage', {
+      webSocketApi: liveApi,
+      stageName: 'live',
+      autoDeploy: true,
+      domainMapping: { domainName: liveDomain },
+      throttle: apiThrottle,
+    });
+    arenaRunFunction.addEnvironment('LIVE_CALLBACK_URL', liveStage.callbackUrl);
+    liveApi.grantManageConnections(arenaRunFunction);
+
     const arenaApiIntegration = new HttpLambdaIntegration('ArenaApiIntegration', arenaApiFunction);
     for (const path of [
       '/arena/sign-in',
@@ -358,6 +400,17 @@ export class HandshakeStack extends Stack {
       ),
     });
 
+    new ARecord(this, 'LiveRecord', {
+      zone,
+      recordName: props.domains.live,
+      target: RecordTarget.fromAlias(
+        new ApiGatewayv2DomainProperties(
+          liveDomain.regionalDomainName,
+          liveDomain.regionalHostedZoneId,
+        ),
+      ),
+    });
+
     // Sign-in codes and access emails come from the web domain. CDK publishes its
     // DKIM records, so SES verifies the domain without console steps.
     const mailIdentity = new EmailIdentity(this, 'MailIdentity', {
@@ -377,6 +430,7 @@ export class HandshakeStack extends Stack {
     mailIdentity.grantSendEmail(arenaApiFunction);
 
     new CfnOutput(this, 'ApiUrl', { value: `https://${props.domains.api}` });
+    new CfnOutput(this, 'LiveUrl', { value: `wss://${props.domains.live}` });
     new CfnOutput(this, 'WebUrl', { value: `https://${props.domains.web}` });
     new CfnOutput(this, 'TableName', { value: table.tableName });
     new CfnOutput(this, 'DealLifecycleArn', { value: dealLifecycle.stateMachineArn });

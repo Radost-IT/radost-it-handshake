@@ -66,6 +66,7 @@ describe('HandshakeStack', () => {
         zone: 'radostit.com',
         web: 'test-handshake.radostit.com',
         api: 'api-test-handshake.radostit.com',
+        live: 'ws-test-handshake.radostit.com',
       },
       env: { region: 'eu-west-1' },
     });
@@ -186,6 +187,8 @@ describe('HandshakeStack', () => {
     for (const state of [
       'RunDeal',
       'Judge',
+      'AnnounceResult',
+      'AnnounceFailure',
       'FoundLoophole',
       'SaveRegression',
       'PayBounty',
@@ -384,14 +387,14 @@ describe('HandshakeStack', () => {
     template.hasResourceProperties('AWS::ApiGatewayV2::DomainName', {
       DomainName: 'api-test-handshake.radostit.com',
     });
-    template.resourceCountIs('AWS::ApiGatewayV2::ApiMapping', 1);
+    template.resourceCountIs('AWS::ApiGatewayV2::ApiMapping', 2);
     template.hasParameter('*', { Default: '/handshake/certificates/us-east-1' });
     template.hasParameter('*', { Default: '/handshake/certificates/eu-west-1' });
   });
 
   it('points the web and API hostnames at CloudFront and API Gateway in the Route 53 zone', () => {
     template.hasParameter('*', { Default: '/handshake/dns/hosted-zone-id' });
-    template.resourcePropertiesCountIs('AWS::Route53::RecordSet', { Type: 'A' }, 2);
+    template.resourcePropertiesCountIs('AWS::Route53::RecordSet', { Type: 'A' }, 3);
     template.hasResourceProperties('AWS::Route53::RecordSet', {
       Name: 'test-handshake.radostit.com.',
       Type: 'AAAA',
@@ -406,6 +409,24 @@ describe('HandshakeStack', () => {
         DNSName: { 'Fn::GetAtt': [Match.stringLikeRegexp('^ApiDomain'), 'RegionalDomainName'] },
       }),
     });
+  });
+
+  it('opens a WebSocket API on its own hostname and lets ArenaRun push to it', () => {
+    template.hasResourceProperties('AWS::ApiGatewayV2::Api', { ProtocolType: 'WEBSOCKET' });
+    template.hasResourceProperties('AWS::ApiGatewayV2::Route', { RouteKey: '$connect' });
+    template.hasResourceProperties('AWS::ApiGatewayV2::Route', { RouteKey: '$disconnect' });
+    template.hasResourceProperties('AWS::ApiGatewayV2::DomainName', {
+      DomainName: 'ws-test-handshake.radostit.com',
+    });
+    template.hasResourceProperties('AWS::Route53::RecordSet', {
+      Name: 'ws-test-handshake.radostit.com.',
+      Type: 'A',
+    });
+    template.hasResourceProperties('AWS::Lambda::Function', {
+      Environment: { Variables: Match.objectLike({ LIVE_CALLBACK_URL: Match.anyValue() }) },
+    });
+    template.hasOutput('LiveUrl', { Value: 'wss://ws-test-handshake.radostit.com' });
+    expect(grantedActions(template)).toContain('execute-api:ManageConnections');
   });
 
   it('runs Lambdas on Node 22 with a managed log group', () => {

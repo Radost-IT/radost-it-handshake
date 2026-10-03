@@ -1,3 +1,4 @@
+import { badges } from '@handshake/arena';
 import type { Metadata } from 'next';
 import { AttemptReplay } from './attempt-replay';
 
@@ -11,7 +12,10 @@ export default async function AttemptPage({ params }: { params: Promise<{ attemp
   const { attemptId } = await params;
   return (
     <main data-accent="heat" className="mx-auto w-full max-w-4xl flex-1 px-6 pt-24 pb-32 sm:pt-32">
-      <AttemptReplay attemptId={attemptId} />
+      <AttemptReplay
+        attemptId={attemptId}
+        badges={badges.map(({ id, name, howToEarn }) => ({ id, name, howToEarn }))}
+      />
     </main>
   );
 }

@@ -186,6 +186,7 @@
           "route53:ChangeResourceRecordSetsNormalizedRecordNames": [
             "handshake.radostit.com",
             "api-handshake.radostit.com",
+            "ws-handshake.radostit.com",
             "*._domainkey.handshake.radostit.com"
           ]
         }

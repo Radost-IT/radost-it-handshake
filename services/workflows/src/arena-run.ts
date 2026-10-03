@@ -1,11 +1,14 @@
 import { judgeArenaAttempt, type LlmProvider } from '@handshake/agents';
-import { buildRegressionCase, scoreAttempt } from '@handshake/arena';
+import { buildRegressionCase, newlyUnlocked, rankForXp, scoreAttempt } from '@handshake/arena';
 import { type BountyLimits } from '@handshake/core';
 import type { PayPalClient } from '@handshake/paypal';
 import { payBounty } from '@handshake/settlement';
 import {
+  ARENA_TOPIC,
   ArenaRecordNotFoundError,
+  attemptTopic,
   getArenaAttempt,
+  getArenaStats,
   getChallenger,
   listRegressionCases,
   markArenaAttemptFailed,
@@ -21,6 +24,7 @@ import {
 import { z } from 'zod';
 import { runArenaAttack } from './arena-attack';
 import { pickArenaDeal, type ArenaDealSource } from './arena-deal';
+import type { PublishLiveEvent } from './live-events';
 import { TOKEN_BUDGET_EXHAUSTED } from './token-budget';
 
 export interface ArenaRunContext {
@@ -30,6 +34,7 @@ export interface ArenaRunContext {
   dealSource: ArenaDealSource;
   negotiationMaxTurns: number;
   bountyLimits: BountyLimits;
+  publishLive: PublishLiveEvent;
   now: () => string;
 }
 
@@ -39,6 +44,7 @@ const attemptId = z.string().min(1);
 export const arenaTaskSchema = z.discriminatedUnion('task', [
   z.object({ task: z.literal('RunDeal'), attemptId }),
   z.object({ task: z.literal('Judge'), attemptId }),
+  z.object({ task: z.literal('Announce'), attemptId }),
   z.object({ task: z.literal('SaveRegression'), attemptId }),
   z.object({ task: z.literal('PayBounty'), attemptId }),
   // Step Functions passes the name of the error that stopped the run.
@@ -50,6 +56,7 @@ export type ArenaTask = z.infer<typeof arenaTaskSchema>;
 export type ArenaTaskResult =
   | { task: 'RunDeal' }
   | { task: 'Judge'; loophole: boolean }
+  | { task: 'Announce' }
   | { task: 'SaveRegression'; saved: boolean }
   | { task: 'PayBounty'; bounty: 'none' | 'paid' | 'refused'; reason?: string }
   | { task: 'MarkFailed'; marked: boolean };
@@ -76,6 +83,9 @@ export async function runArenaTask(
       return { task: 'RunDeal' };
     case 'Judge':
       return { task: 'Judge', loophole: await judge(context, attempt) };
+    case 'Announce':
+      await announce(context, attempt);
+      return { task: 'Announce' };
     case 'SaveRegression':
       return { task: 'SaveRegression', saved: await saveRegression(context, attempt) };
     case 'PayBounty':
@@ -134,6 +144,42 @@ async function judge(context: ArenaRunContext, attempt: StoredAttempt): Promise<
     recordedAt: context.now(),
   });
   return verdict.outcome.result === 'loophole';
+}
+
+/**
+ * Tells the browsers watching this attempt how it ended, and everyone on the
+ * arena page the new defense count. Pages also poll, so a lost event only
+ * delays what they show.
+ */
+async function announce(context: ArenaRunContext, attempt: StoredAttempt): Promise<void> {
+  const topic = attemptTopic(attempt.id);
+  if (attempt.failure) {
+    await context.publishLive(topic, {
+      type: 'arena.result',
+      attemptId: attempt.id,
+      status: 'failed',
+    });
+    return;
+  }
+  const { before, after, xpGained } = judgedResult(attempt);
+  const stats = await getArenaStats(context.table);
+  await Promise.all([
+    context.publishLive(topic, { type: 'arena.result', attemptId: attempt.id, status: 'judged' }),
+    context.publishLive(topic, {
+      type: 'challenger.progress',
+      challengerId: attempt.challengerId,
+      xp: after.xp,
+      xpGained,
+      rank: rankForXp(after.xp),
+      rankUp: rankForXp(after.xp) !== rankForXp(before.xp),
+      newBadges: newlyUnlocked(before.stats, after.stats),
+    }),
+    context.publishLive(ARENA_TOPIC, {
+      type: 'arena.stats',
+      attempts: stats.attempts,
+      held: stats.held,
+    }),
+  ]);
 }
 
 function judgedResult(attempt: StoredAttempt) {

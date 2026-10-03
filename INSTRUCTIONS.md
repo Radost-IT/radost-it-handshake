@@ -234,6 +234,13 @@ The arena now asks for an email sign-in and an approved request before anyone ca
 - [ ] Open https://handshake.radostit.com/arena, sign in with your email and send a request to join. The request arrives at `ARENA_ADMIN_EMAIL`.
 - [ ] Run `pnpm arena:access <table>` to list pending requests, then `pnpm arena:access <table> approve <email>`. Refresh the arena, pick a handle and play. Handles picked before this change belong to old sessions and can no longer be used.
 
+### [I-23] Turn on live arena updates
+The arena now pushes results over a WebSocket API at `ws-handshake.radostit.com`. In the console, logged in as your Identity Center admin:
+- [ ] Open **IAM → Policies → HandshakeWorkloadBoundary → Edit → JSON** and replace it with the current `infra/iam/workload-boundary.json`. It lets the arena workflow push messages to open connections.
+- [ ] Do the same for **HandshakeCdkExecution** with `infra/iam/cdk-execution-policy.json`. It may create the DNS record for the new hostname.
+- [ ] Run `AWS_PROFILE=handshake pnpm cdk:deploy`. The `LiveUrl` output should read `wss://ws-handshake.radostit.com`.
+- [ ] Open an attempt page and launch an attack in another tab. The page should switch to the result without a reload, and the defense counter on `/arena` should go up by one.
+
 ---
 
 ## During Phase 5

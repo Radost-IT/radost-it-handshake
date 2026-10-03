@@ -1,5 +1,6 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import {
+  BatchGetCommand,
   DeleteCommand,
   DynamoDBDocumentClient,
   GetCommand,
@@ -14,6 +15,7 @@ import { stubPayPalClient, type StubResponse } from '@handshake/paypal/testing';
 import { mockClient } from 'aws-sdk-client-mock';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { ArenaStepOrderError, runArenaTask, type ArenaTask } from './arena-run';
+import type { LiveEvent } from './live-events';
 import { scriptedModel } from './test-model';
 
 const dynamodb = mockClient(DynamoDBDocumentClient);
@@ -73,6 +75,7 @@ async function runTask(
   paypalResponses: StubResponse[] = [],
 ) {
   const { client, sent } = stubPayPalClient(paypalResponses);
+  const published: { topic: string; event: LiveEvent }[] = [];
   const result = await runArenaTask(
     {
       table,
@@ -81,11 +84,15 @@ async function runTask(
       dealSource: 'templates',
       negotiationMaxTurns: 8,
       bountyLimits: limits,
+      publishLive: (topic, event) => {
+        published.push({ topic, event });
+        return Promise.resolve();
+      },
       now: () => now,
     },
     task,
   );
-  return { result, sent };
+  return { result, sent, published };
 }
 
 beforeEach(() => {
@@ -169,6 +176,59 @@ describe('Judge', () => {
     storeAttempt();
 
     await expect(runTask({ task: 'Judge', attemptId: 'attempt-1' })).rejects.toThrow(
+      ArenaStepOrderError,
+    );
+  });
+});
+
+describe('Announce', () => {
+  it('tells the attempt page the result and progress, and the arena page the new count', async () => {
+    storeAttempt({ run, result: loophole });
+    dynamodb.on(BatchGetCommand).resolves({
+      Responses: { T: [{ pk: 'STATS', sk: 'GLOBAL', attempts: 12, held: 11 }] },
+    });
+
+    const { result, published } = await runTask({ task: 'Announce', attemptId: 'attempt-1' });
+
+    expect(result).toEqual({ task: 'Announce' });
+    expect(published).toEqual([
+      {
+        topic: 'attempt:attempt-1',
+        event: { type: 'arena.result', attemptId: 'attempt-1', status: 'judged' },
+      },
+      {
+        topic: 'attempt:attempt-1',
+        event: {
+          type: 'challenger.progress',
+          challengerId: 'challenger-1',
+          xp: 200,
+          xpGained: 200,
+          rank: 'Investigator',
+          rankUp: true,
+          newBadges: ['eureka', 'trailblazer'],
+        },
+      },
+      { topic: 'arena', event: { type: 'arena.stats', attempts: 12, held: 11 } },
+    ]);
+  });
+
+  it('tells the attempt page only that a failed attempt stopped', async () => {
+    storeAttempt({ failure: { reason: 'error', failedAt: now } });
+
+    const { published } = await runTask({ task: 'Announce', attemptId: 'attempt-1' });
+
+    expect(published).toEqual([
+      {
+        topic: 'attempt:attempt-1',
+        event: { type: 'arena.result', attemptId: 'attempt-1', status: 'failed' },
+      },
+    ]);
+  });
+
+  it('refuses to announce an attempt that is still running', async () => {
+    storeAttempt({ run });
+
+    await expect(runTask({ task: 'Announce', attemptId: 'attempt-1' })).rejects.toThrow(
       ArenaStepOrderError,
     );
   });

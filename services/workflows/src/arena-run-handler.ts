@@ -1,3 +1,4 @@
+import { ApiGatewayManagementApiClient } from '@aws-sdk/client-apigatewaymanagementapi';
 import { BedrockRuntimeClient } from '@aws-sdk/client-bedrock-runtime';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
@@ -12,9 +13,12 @@ import {
   type ArenaRunContext,
   type ArenaTaskResult,
 } from './arena-run';
+import { publishLiveEvent, type LivePublisher } from './live-events';
 import { withDailyTokenBudget } from './token-budget';
 
-const environment = z.object({ TABLE_NAME: z.string().min(1) }).parse(process.env);
+const environment = z
+  .object({ TABLE_NAME: z.string().min(1), LIVE_CALLBACK_URL: z.url() })
+  .parse(process.env);
 
 const config = await loadConfig();
 
@@ -23,6 +27,12 @@ const table = {
   name: environment.TABLE_NAME,
 };
 const now = () => new Date().toISOString();
+
+const livePublisher: LivePublisher = {
+  table,
+  connections: new ApiGatewayManagementApiClient({ endpoint: environment.LIVE_CALLBACK_URL }),
+  now: () => new Date(),
+};
 
 const bedrock = createBedrockLlmProvider(
   new BedrockRuntimeClient({ region: config.bedrock.region }),
@@ -44,6 +54,7 @@ const context: ArenaRunContext = {
     dailyBudget: money(config.limits.dailyBountyBudget, 'USD'),
     recipientEmail: config.arena.recipientEmail,
   },
+  publishLive: (topic, event) => publishLiveEvent(livePublisher, topic, event),
   now,
 };
 
