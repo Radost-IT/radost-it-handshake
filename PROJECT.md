@@ -229,6 +229,7 @@ Terminal states: `SETTLED`, `REFUSED`, `CANCELLED`, `ABANDONED`. Every transitio
 | Global stats (attempts, held) | `STATS` | `GLOBAL` |
 | Daily stats (for the win rate chart) | `STATS` | `DAY#<yyyy-mm-dd>` |
 | Hall of fame | `HALL_OF_FAME` | `CASE#<ts>#<attemptId>` |
+| Bounty ledger (reserved or paid, per UTC day) | `BOUNTIES#<yyyy-mm-dd>` | `ATTEMPT#<attemptId>` |
 | Channel3 cache | `C3#<queryHash>` | `RESULT` (TTL) |
 | WebSocket connection | `WS#<connectionId>` | `META` (TTL) |
 | Idempotency | `IDEMP#<key>` | `META` (TTL) |

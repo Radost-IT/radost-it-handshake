@@ -13,6 +13,7 @@ export {
   type ArenaVerdict,
 } from './arena-results';
 export { getArenaStats, type ArenaStats, type CategoryStats } from './arena-stats';
+export { markBountyPaid, releaseBounty, reserveBounty, type BountyReservation } from './bounties';
 export { getChallenger, type Challenger } from './challengers';
 export { saveCheckout, type Checkout } from './checkout';
 export { grantDealAccess, hasDealAccess } from './deal-access';
