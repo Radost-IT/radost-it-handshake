@@ -46,7 +46,21 @@
       ],
       "Resource": [
         "arn:aws:cloudformation:eu-west-1:*:stack/Handshake-*/*",
-        "arn:aws:logs:eu-west-1:*:log-group:/aws/lambda/Handshake-*"
+        "arn:aws:logs:eu-west-1:*:log-group:/aws/lambda/Handshake-*",
+        "arn:aws:logs:eu-west-1:*:log-group:Handshake-*"
+      ]
+    },
+    {
+      "Sid": "ReadHandshakeWorkflowRuns",
+      "Effect": "Allow",
+      "Action": [
+        "states:ListExecutions",
+        "states:DescribeExecution",
+        "states:GetExecutionHistory"
+      ],
+      "Resource": [
+        "arn:aws:states:eu-west-1:*:stateMachine:Handshake-*",
+        "arn:aws:states:eu-west-1:*:execution:Handshake-*:*"
       ]
     },
     {

@@ -77,3 +77,11 @@ Handshake sets only functional cookies and Seven uses none, so the notice needs 
 *3 Oct 2026 · PayPal SDK*
 
 We expected to pay arena bounties through the PayPal Server SDK, like the escrow calls. Version 2.5.0 has controllers for orders, payments, vault, subscriptions and transaction search, but none for Payouts. We call `POST /v1/payments/payouts` through the SDK's authenticated request builder instead, the same way we verify webhooks. The call keeps the shared OAuth token, retries and typed errors, and sends a `PayPal-Request-Id` like every other money call. The sandbox probe paid 1.00 USD and returned batch status `PENDING`.
+
+## Submitting an arena attempt returned 500
+
+*3 Oct 2026 · IAM*
+
+We expected `POST /arena/attempts` to start the ArenaRun state machine, because CDK granted the API role `states:StartExecution`. The API answered `{"message":"Internal Server Error"}`. Every Handshake role carries the `HandshakeWorkloadBoundary` permissions boundary, and AWS allows only actions that both the role policy and the boundary allow. The boundary listed the Step Functions task callbacks but not `StartExecution`, so the call was denied at run time even though the deploy succeeded.
+
+The boundary now allows `states:StartExecution` on `Handshake-*` state machines. An infra test compares every action the stack grants with the boundary and fails when one is missing, so the next gap shows up in `pnpm test` instead of in production. The developer policy also gained read access to the `Handshake-*` log groups and to ArenaRun executions, so failures like this can be read from the terminal.

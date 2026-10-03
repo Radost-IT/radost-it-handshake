@@ -1,6 +1,6 @@
 import { App } from 'aws-cdk-lib';
 import { Match, Template } from 'aws-cdk-lib/assertions';
-import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { beforeAll, describe, expect, it } from 'vitest';
@@ -24,6 +24,28 @@ function createBuiltWebApp(): string {
     writeFileSync(join(outputPath, 'index.mjs'), 'export {};');
   }
   return appPath;
+}
+
+// IAM evaluates the boundary and the role policy together, so a grant the
+// boundary lacks deploys fine and then fails at run time with AccessDenied.
+function boundaryActions(): string[] {
+  const boundary = JSON.parse(
+    readFileSync(new URL('../iam/workload-boundary.json', import.meta.url), 'utf8'),
+  ) as { Statement: { Action: string | string[] }[] };
+  return boundary.Statement.flatMap((statement) => [statement.Action].flat());
+}
+
+function grantedActions(template: Template): string[] {
+  const policies = Object.values(template.findResources('AWS::IAM::Policy')) as {
+    Properties: { PolicyDocument: { Statement: { Action: string | string[] }[] } };
+  }[];
+  return policies.flatMap((policy) =>
+    policy.Properties.PolicyDocument.Statement.flatMap((statement) => [statement.Action].flat()),
+  );
+}
+
+function actionPattern(action: string): RegExp {
+  return new RegExp(`^${action.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*')}$`);
 }
 
 describe('HandshakeStack', () => {
@@ -255,6 +277,17 @@ describe('HandshakeStack', () => {
         'Fn::Join': ['', Match.arrayWith([':policy/HandshakeWorkloadBoundary'])],
       },
     });
+  });
+
+  it('grants roles only actions the workload boundary allows', () => {
+    const allowed = boundaryActions();
+    // A wildcard grant such as s3:Abort* works when the boundary allows any action it covers.
+    const isAllowed = (granted: string) =>
+      allowed.some(
+        (action) => actionPattern(action).test(granted) || actionPattern(granted).test(action),
+      );
+    const blocked = [...new Set(grantedActions(template))].filter((action) => !isAllowed(action));
+    expect(blocked).toEqual([]);
   });
 
   it('serves the Next.js app through CloudFront from a private bucket and a Lambda URL', () => {

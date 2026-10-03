@@ -210,6 +210,11 @@ The webhook endpoint is built in Phase 2. After the first deploy that includes i
 - [x] Claude Code ran `pnpm probe:paypal-payout` on 3 Oct 2026 (batch `ZSCGUYEYN43GS`, 1.00 USD). Log in to the arena recipient sandbox account at https://www.sandbox.paypal.com and confirm the payment arrived. You can run the probe again yourself; each run pays another 1.00 USD.
 - [x] If Payouts fails with a permissions error, check the app's features in the dashboard and ask on Discord.
 
+### [I-20] Let the arena API start ArenaRun
+`POST /arena/attempts` starts the ArenaRun state machine. The workload boundary did not allow `states:StartExecution`, so the call failed with 500. In the console, logged in as your Identity Center admin:
+- [ ] Open **IAM → Policies → HandshakeWorkloadBoundary → Edit → JSON** and replace it with the current `infra/iam/workload-boundary.json`. No deploy is needed; the change applies within seconds.
+- [ ] Open **IAM → Policies → HandshakeDeveloper → Edit → JSON** and replace it with the current `infra/iam/developer-policy.json`. The `handshake` profile can then read the Lambda log groups and the ArenaRun executions.
+
 ### [I-19] Choose where arena deals come from
 - [x] Add `ARENA_DEAL_SOURCE=templates` to `.env` and run `pnpm ssm:put prod`. Arena attempts then play one of the fixed deal templates. Without the key, the app also uses the templates.
 - [ ] Once Channel3 works ([I-5]), run `pnpm seed:sellers <table>`, set `ARENA_DEAL_SOURCE=sellers`, and run `pnpm ssm:put prod` again. Arena attempts then play against the seeded sellers. Running Lambdas read the new value on their next cold start.
