@@ -7,6 +7,7 @@
   },
   "dependencies": {
     "@aws-sdk/client-bedrock-runtime": "^3.1145.0",
+    "@handshake/arena": "workspace:*",
     "@handshake/core": "workspace:*",
     "zod": "^4.6.5"
   },

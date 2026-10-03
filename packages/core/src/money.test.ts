@@ -8,6 +8,7 @@ import {
   money,
   moneyEquals,
   moneySchema,
+  percentOfMoney,
 } from './money';
 
 describe('money', () => {
@@ -46,6 +47,17 @@ describe('money', () => {
     expect(addMoney(money('0.10', 'USD'), money('0.20', 'USD'))).toEqual(money('0.30', 'USD'));
     expect(addMoney(money('999', 'JPY'), money('1', 'JPY'))).toEqual(money('1000', 'JPY'));
     expect(() => addMoney(money('1', 'USD'), money('1', 'EUR'))).toThrow(CurrencyMismatchError);
+  });
+
+  it('takes a percent of an amount, rounding down to the smallest unit', () => {
+    expect(percentOfMoney(money('5.00', 'USD'), 35)).toEqual(money('1.75', 'USD'));
+    expect(percentOfMoney(money('0.99', 'USD'), 50)).toEqual(money('0.49', 'USD'));
+    expect(percentOfMoney(money('999', 'JPY'), 10)).toEqual(money('99', 'JPY'));
+  });
+
+  it('refuses percents outside 0 to 100 or with decimals', () => {
+    expect(() => percentOfMoney(money('5.00', 'USD'), 101)).toThrow(InvalidMoneyError);
+    expect(() => percentOfMoney(money('5.00', 'USD'), 12.5)).toThrow(InvalidMoneyError);
   });
 
   it('refuses to compare different currencies', () => {

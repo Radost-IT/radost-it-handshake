@@ -40,6 +40,7 @@ export {
   money,
   moneyEquals,
   moneySchema,
+  percentOfMoney,
   type CurrencyCode,
   type Money,
 } from './money';

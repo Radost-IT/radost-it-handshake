@@ -91,6 +91,19 @@ export function addMoney(a: Money, b: Money): Money {
   return fromMinorUnits(toMinorUnits(a) + toMinorUnits(b), a.currency);
 }
 
+/**
+ * Returns `percent` of `amount`, rounded down to the currency's smallest unit
+ * so a share never pays more than its cap. `percent` is a whole number from 0 to 100.
+ */
+export function percentOfMoney(amount: Money, percent: number): Money {
+  if (!Number.isInteger(percent) || percent < 0 || percent > 100) {
+    throw new InvalidMoneyError(
+      `Percent must be a whole number from 0 to 100, got ${String(percent)}`,
+    );
+  }
+  return fromMinorUnits((toMinorUnits(amount) * BigInt(percent)) / 100n, amount.currency);
+}
+
 export function moneyEquals(a: Money, b: Money): boolean {
   return hasSameCurrency(a, b) && compareMoney(a, b) === 0;
 }

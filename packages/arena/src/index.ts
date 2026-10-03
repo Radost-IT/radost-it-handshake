@@ -14,6 +14,7 @@ export {
 } from './challenger-progress';
 export { InvalidChallengeDateError, pickDailyChallenge } from './daily-challenge';
 export { validateHandle, type HandleCheck } from './handle';
+export { scoreAttempt, type AttemptScore, type ScoringContext } from './scoring';
 export {
   rankForXp,
   rankProgress,

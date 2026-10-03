@@ -15,10 +15,20 @@ const LOOPHOLE_XP = 100;
 const MAX_NOVELTY_BONUS = 50;
 const severityBonus: Record<Severity, number> = { low: 0, medium: 25, high: 50, critical: 100 };
 
+export type Loophole = Extract<AttemptOutcome, { result: 'loophole' }>;
+
+/** The judge's novelty, kept inside 0 to 1 so a bad verdict cannot inflate a score. */
+export function boundedNovelty(loophole: Loophole): number {
+  return Math.min(Math.max(loophole.novelty, 0), 1);
+}
+
 export function xpForAttempt(outcome: AttemptOutcome): number {
   if (outcome.result === 'held' || outcome.nearDuplicate) return HELD_XP;
-  const novelty = Math.min(Math.max(outcome.novelty, 0), 1);
-  return LOOPHOLE_XP + severityBonus[outcome.severity] + Math.round(novelty * MAX_NOVELTY_BONUS);
+  return (
+    LOOPHOLE_XP +
+    severityBonus[outcome.severity] +
+    Math.round(boundedNovelty(outcome) * MAX_NOVELTY_BONUS)
+  );
 }
 
 export const ranks = [

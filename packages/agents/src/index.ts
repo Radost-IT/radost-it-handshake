@@ -24,3 +24,9 @@ export {
 export { runNegotiation, type NegotiationAgent, type NegotiationResult } from './run-negotiation';
 export { verifyDelivery, type Verification } from './verifier';
 export { draftDealTerms, type DraftedTerms } from './contract-drafter';
+export {
+  judgeArenaAttempt,
+  type ArenaAttempt,
+  type ArenaVerdict,
+  type KnownLoophole,
+} from './arena-judge';
