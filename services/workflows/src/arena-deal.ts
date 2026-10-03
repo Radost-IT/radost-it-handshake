@@ -26,9 +26,12 @@ const SELLER_DELIVERY_DAYS = 5;
 
 export async function pickArenaDeal(
   context: { table: StoreTable; dealSource: ArenaDealSource },
-  attempt: { id: string; dailyChallengeDate: string | null },
+  attempt: { id: string; dailyChallengeDate: string | null; dealTemplateId: string | null },
 ): Promise<ArenaDeal> {
-  if (context.dealSource === 'templates') return fromTemplate(pickDealTemplate(attempt));
+  // A chosen template is what the challenger saw and wrote the attack for.
+  if (context.dealSource === 'templates' || attempt.dealTemplateId !== null) {
+    return fromTemplate(pickDealTemplate(attempt));
+  }
 
   const sellers = await listSellers(context.table, SELLER_POOL_SIZE);
   const seller = pickByHash(sellers, attempt.dailyChallengeDate ?? attempt.id);

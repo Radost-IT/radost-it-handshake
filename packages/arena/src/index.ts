@@ -9,7 +9,9 @@ export {
 export {
   attackCategories,
   dealTemplates,
+  findDealTemplate,
   pickDealTemplate,
+  UnknownDealTemplateError,
   type AttackCategory,
   type AttackChannel,
   type DealTemplate,

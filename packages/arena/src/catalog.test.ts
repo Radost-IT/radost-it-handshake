@@ -1,6 +1,6 @@
 import { compareMoney, hasSameCurrency } from '@handshake/core';
 import { describe, expect, it } from 'vitest';
-import { dealTemplates, pickDealTemplate } from './catalog';
+import { dealTemplates, pickDealTemplate, UnknownDealTemplateError } from './catalog';
 import { pickDailyChallenge } from './daily-challenge';
 
 describe('dealTemplates', () => {
@@ -25,24 +25,40 @@ describe('pickDealTemplate', () => {
   it('gives every daily challenge attempt the template of the day', () => {
     const date = '2026-10-03';
 
-    expect(pickDealTemplate({ id: 'a1', dailyChallengeDate: date })).toBe(
-      pickDailyChallenge(date, dealTemplates),
-    );
-    expect(pickDealTemplate({ id: 'a2', dailyChallengeDate: date })).toBe(
-      pickDailyChallenge(date, dealTemplates),
-    );
+    expect(
+      pickDealTemplate({ id: 'a1', dailyChallengeDate: date, dealTemplateId: 'keyboard' }),
+    ).toBe(pickDailyChallenge(date, dealTemplates));
+    expect(
+      pickDealTemplate({ id: 'a2', dailyChallengeDate: date, dealTemplateId: 'keyboard' }),
+    ).toBe(pickDailyChallenge(date, dealTemplates));
+  });
+
+  it('plays the template the challenger chose', () => {
+    expect(
+      pickDealTemplate({ id: 'a1', dailyChallengeDate: null, dealTemplateId: 'backpack' }).id,
+    ).toBe('backpack');
+  });
+
+  it('refuses a template that does not exist', () => {
+    expect(() =>
+      pickDealTemplate({ id: 'a1', dailyChallengeDate: null, dealTemplateId: 'yacht' }),
+    ).toThrow(UnknownDealTemplateError);
   });
 
   it('keeps the same attempt on the same template', () => {
-    expect(pickDealTemplate({ id: 'attempt-7', dailyChallengeDate: null })).toBe(
-      pickDealTemplate({ id: 'attempt-7', dailyChallengeDate: null }),
-    );
+    expect(
+      pickDealTemplate({ id: 'attempt-7', dailyChallengeDate: null, dealTemplateId: null }),
+    ).toBe(pickDealTemplate({ id: 'attempt-7', dailyChallengeDate: null, dealTemplateId: null }));
   });
 
   it('spreads other attempts over the templates', () => {
     const picks = new Set(
       Array.from({ length: 50 }, (_, index) =>
-        pickDealTemplate({ id: `attempt-${String(index)}`, dailyChallengeDate: null }),
+        pickDealTemplate({
+          id: `attempt-${String(index)}`,
+          dailyChallengeDate: null,
+          dealTemplateId: null,
+        }),
       ),
     );
 

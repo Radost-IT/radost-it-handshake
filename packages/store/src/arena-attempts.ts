@@ -59,6 +59,8 @@ export const storedAttemptSchema = z.object({
   channel: z.enum(['listing', 'message', 'evidence']),
   attackText: z.string().min(1),
   dailyChallengeDate: z.iso.date().nullable(),
+  // Attempts stored before challengers could choose a deal have no template ID.
+  dealTemplateId: z.string().min(1).nullable().default(null),
   createdAt: z.iso.datetime({ offset: true }),
   run: arenaRunSchema.optional(),
   result: arenaResultSchema.optional(),
@@ -74,6 +76,7 @@ export interface NewArenaAttempt {
   channel: AttackChannel;
   attackText: string;
   dailyChallengeDate: string | null;
+  dealTemplateId: string | null;
   createdAt: string;
 }
 

@@ -5,7 +5,7 @@ import { loadDailyTokenBudget } from '@handshake/config';
 import type { APIGatewayProxyEventV2, APIGatewayProxyStructuredResultV2 } from 'aws-lambda';
 import { randomBytes, randomUUID } from 'node:crypto';
 import { z } from 'zod';
-import { getAttempt, submitAttempt } from './arena-attempts';
+import { getAttempt, listArenaDeals, submitAttempt } from './arena-attempts';
 import {
   createChallengerFromRequest,
   getChallengerFromSession,
@@ -43,6 +43,8 @@ export function handler(event: APIGatewayProxyEventV2): Promise<APIGatewayProxyS
         cookies: event.cookies ?? [],
         sourceIp: event.requestContext.http.sourceIp,
       });
+    case 'GET /arena/deals':
+      return Promise.resolve(listArenaDeals(context));
     case 'GET /arena/attempts/{attemptId}':
       return getAttempt(context, event.pathParameters?.attemptId);
     default:

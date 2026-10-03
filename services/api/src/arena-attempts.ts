@@ -1,5 +1,12 @@
 import { StartExecutionCommand } from '@aws-sdk/client-sfn';
-import { attackCategories, checkAttackText, MAX_ATTACK_LENGTH } from '@handshake/arena';
+import {
+  attackCategories,
+  checkAttackText,
+  dealTemplates,
+  findDealTemplate,
+  MAX_ATTACK_LENGTH,
+  pickDailyChallenge,
+} from '@handshake/arena';
 import {
   createArenaAttempt,
   getArenaAttempt,
@@ -26,6 +33,8 @@ const attemptBodySchema = z.object({
   // The real limit is checked after trimming; this only keeps huge bodies out.
   attackText: z.string().max(MAX_ATTACK_LENGTH * 2),
   dailyChallenge: z.boolean().default(false),
+  // The daily challenge plays the day's deal, so a chosen deal applies only outside it.
+  dealId: z.string().max(64).nullable().default(null),
 });
 
 export interface AttemptRequest {
@@ -48,6 +57,10 @@ export async function submitAttempt(
   }
   const check = checkAttackText(parsed.data.attackText);
   if (!check.valid) return json(400, { error: check.reason });
+  const { dealId, dailyChallenge } = parsed.data;
+  if (dealId !== null && !findDealTemplate(dealId)) {
+    return json(400, { error: 'There is no arena deal with this ID' });
+  }
 
   const now = context.now();
   const hour = now.toISOString().slice(0, 13);
@@ -73,7 +86,8 @@ export async function submitAttempt(
     category: parsed.data.category,
     channel: parsed.data.channel,
     attackText: check.text,
-    dailyChallengeDate: parsed.data.dailyChallenge ? today : null,
+    dailyChallengeDate: dailyChallenge ? today : null,
+    dealTemplateId: dailyChallenge ? null : dealId,
     createdAt: now.toISOString(),
   });
   // The execution is named after the attempt, so the same attempt never runs twice.
@@ -85,6 +99,29 @@ export async function submitAttempt(
     }),
   );
   return json(202, { attemptId, status: 'running' });
+}
+
+/**
+ * The deals a challenger can attack. The seller's floor and the buyer's
+ * maximum stay hidden: finding a way past them is the game.
+ */
+export function listArenaDeals(context: ArenaApiContext): APIGatewayProxyStructuredResultV2 {
+  const today = context.now().toISOString().slice(0, 10);
+  return json(200, {
+    dailyDealId: pickDailyChallenge(today, dealTemplates).id,
+    deals: dealTemplates.map((template) => ({
+      id: template.id,
+      seller: { name: template.seller.name, persona: template.seller.persona },
+      listing: {
+        title: template.listing.title,
+        description: template.listing.description,
+        listPrice: template.listing.listPrice,
+      },
+      buyerGoal: template.buyer.goal,
+      acceptanceCriteria: template.acceptanceCriteria,
+      deliveryDays: template.deliveryDays,
+    })),
+  });
 }
 
 /** Attempts are public, so anyone with the link can watch the result and share it. */
@@ -115,6 +152,7 @@ function publicAttempt(attempt: StoredAttempt, now: Date) {
     channel: attempt.channel,
     attackText: attempt.attackText,
     dailyChallengeDate: attempt.dailyChallengeDate,
+    dealId: attempt.dealTemplateId,
     createdAt: attempt.createdAt,
     status: result ? 'judged' : failure ? 'failed' : 'running',
     failureReason: failure,

@@ -162,17 +162,32 @@ export const dealTemplates: readonly [DealTemplate, ...DealTemplate[]] = [
   },
 ];
 
+export class UnknownDealTemplateError extends Error {
+  override name = 'UnknownDealTemplateError';
+}
+
+export function findDealTemplate(id: string): DealTemplate | undefined {
+  return dealTemplates.find((template) => template.id === id);
+}
+
 /**
  * A daily challenge attempt plays the day's template, so every challenger
- * faces the same deal. Other attempts get a template picked from their ID,
- * which keeps a retried run on the same deal.
+ * faces the same deal. Otherwise the challenger's chosen template wins. An
+ * attempt without either gets a template picked from its ID, which keeps a
+ * retried run on the same deal.
  */
 export function pickDealTemplate(attempt: {
   id: string;
   dailyChallengeDate: string | null;
+  dealTemplateId: string | null;
 }): DealTemplate {
   if (attempt.dailyChallengeDate !== null) {
     return pickDailyChallenge(attempt.dailyChallengeDate, dealTemplates);
+  }
+  if (attempt.dealTemplateId !== null) {
+    const chosen = findDealTemplate(attempt.dealTemplateId);
+    if (!chosen) throw new UnknownDealTemplateError(`No deal template ${attempt.dealTemplateId}`);
+    return chosen;
   }
   const index =
     createHash('sha256').update(attempt.id).digest().readUInt32BE(0) % dealTemplates.length;

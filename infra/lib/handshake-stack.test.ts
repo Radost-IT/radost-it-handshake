@@ -243,7 +243,11 @@ describe('HandshakeStack', () => {
   });
 
   it('lets a challenger submit an attempt that starts ArenaRun, and read it back', () => {
-    for (const routeKey of ['POST /arena/attempts', 'GET /arena/attempts/{attemptId}']) {
+    for (const routeKey of [
+      'POST /arena/attempts',
+      'GET /arena/attempts/{attemptId}',
+      'GET /arena/deals',
+    ]) {
       template.hasResourceProperties('AWS::ApiGatewayV2::Route', { RouteKey: routeKey });
     }
     template.hasResourceProperties('AWS::Lambda::Function', {

@@ -9,7 +9,7 @@ import { NoSeededSellersError, pickArenaDeal } from './arena-deal';
 
 const dynamodb = mockClient(DynamoDBDocumentClient);
 const table = { client: DynamoDBDocumentClient.from(new DynamoDBClient({})), name: 'T' };
-const attempt = { id: 'attempt-1', dailyChallengeDate: null };
+const attempt = { id: 'attempt-1', dailyChallengeDate: null, dealTemplateId: null };
 
 const seller: Seller = {
   sellerId: 'seller-1',
@@ -55,6 +55,16 @@ describe('pickArenaDeal', () => {
       buyer: { goal: 'Steel bottle', maxPrice: money('25.00', 'USD') },
       acceptanceCriteria: null,
     });
+  });
+
+  it('plays the chosen template even when the source is sellers', async () => {
+    const deal = await pickArenaDeal(
+      { table, dealSource: 'sellers' },
+      { ...attempt, dealTemplateId: 'backpack' },
+    );
+
+    expect(deal.sellerId).toBe('arena-backpack');
+    expect(dynamodb.commandCalls(QueryCommand)).toHaveLength(0);
   });
 
   it('fails clearly when no sellers are seeded', async () => {
