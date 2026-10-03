@@ -124,7 +124,7 @@ apps/web/app/arena                /arena, /arena/leaderboard, /arena/hall-of-fam
 5. If a step still fails after its retries, `MarkFailed` stores why (`budget` when the daily token budget ran out, `error` otherwise) and `GET /arena/attempts/{id}` shows the attempt as `failed`. An attempt older than the 30-minute run timeout without a result also counts as failed.
 6. The WebSocket pushes `arena.result` (verdict, policy reason), `challenger.progress` (XP gained, rank change, new badges) and `arena.stats` (defense counter) to connected clients.
 
-**Read endpoints:** `POST /arena/challengers` (create handle, set cookie), `GET /arena/challengers/me`, `GET /arena/deals` (the deals a challenger can pick, without private prices, and today's daily deal), `GET /arena/leaderboard?scope=all|daily`, `GET /arena/categories`, `GET /arena/stats`, `GET /arena/hall-of-fame`, `GET /arena/attempts/{id}`.
+**Read endpoints:** `POST /arena/challengers` (create handle, set cookie), `GET /arena/challengers/me`, `GET /arena/deals` (the deals a challenger can pick, without private prices, and today's daily deal), `GET /arena/challengers/me/attempts` (the challenger's history), `GET /arena/leaderboard?scope=all|daily`, `GET /arena/stats` (defense counter and loopholes per category, which drives the open bounties), `GET /arena/hall-of-fame`, `GET /arena/attempts/{id}`.
 
 ## Look and feel
 

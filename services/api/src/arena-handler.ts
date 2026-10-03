@@ -11,6 +11,7 @@ import {
   getChallengerFromSession,
   type ArenaApiContext,
 } from './arena-challengers';
+import { getLeaderboardPage, getMyAttempts, getStats } from './arena-reads';
 import { readBody } from './http';
 
 const environment = z
@@ -37,6 +38,12 @@ export function handler(event: APIGatewayProxyEventV2): Promise<APIGatewayProxyS
       return createChallengerFromRequest(context, readBody(event));
     case 'GET /arena/challengers/me':
       return getChallengerFromSession(context, event.cookies ?? []);
+    case 'GET /arena/challengers/me/attempts':
+      return getMyAttempts(context, event.cookies ?? []);
+    case 'GET /arena/stats':
+      return getStats(context);
+    case 'GET /arena/leaderboard':
+      return getLeaderboardPage(context, event.queryStringParameters?.scope);
     case 'POST /arena/attempts':
       return submitAttempt(context, {
         body: readBody(event),

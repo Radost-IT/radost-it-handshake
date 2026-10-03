@@ -281,11 +281,14 @@ export class HandshakeStack extends Stack {
       methods: [HttpMethod.GET],
       integration: arenaApiIntegration,
     });
-    httpApi.addRoutes({
-      path: '/arena/deals',
-      methods: [HttpMethod.GET],
-      integration: arenaApiIntegration,
-    });
+    for (const path of [
+      '/arena/deals',
+      '/arena/stats',
+      '/arena/leaderboard',
+      '/arena/challengers/me/attempts',
+    ]) {
+      httpApi.addRoutes({ path, methods: [HttpMethod.GET], integration: arenaApiIntegration });
+    }
     const dealApiIntegration = new HttpLambdaIntegration('DealApiIntegration', dealApiFunction);
     for (const decision of ['purchase-approval', 'human-decision']) {
       httpApi.addRoutes({

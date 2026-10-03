@@ -136,15 +136,19 @@ export async function getAttempt(
   return json(200, publicAttempt(attempt, context.now()));
 }
 
-function failureReason(attempt: StoredAttempt, now: Date): 'budget' | 'error' | null {
+export function failureReason(attempt: StoredAttempt, now: Date): 'budget' | 'error' | null {
   if (attempt.result) return null;
   if (attempt.failure) return attempt.failure.reason;
   return now.getTime() - Date.parse(attempt.createdAt) > RUN_DEADLINE_MS ? 'error' : null;
 }
 
+export function attemptStatus(attempt: StoredAttempt, now: Date): 'judged' | 'failed' | 'running' {
+  if (attempt.result) return 'judged';
+  return failureReason(attempt, now) ? 'failed' : 'running';
+}
+
 function publicAttempt(attempt: StoredAttempt, now: Date) {
   const { result } = attempt;
-  const failure = failureReason(attempt, now);
   return {
     id: attempt.id,
     challengerId: attempt.challengerId,
@@ -154,8 +158,8 @@ function publicAttempt(attempt: StoredAttempt, now: Date) {
     dailyChallengeDate: attempt.dailyChallengeDate,
     dealId: attempt.dealTemplateId,
     createdAt: attempt.createdAt,
-    status: result ? 'judged' : failure ? 'failed' : 'running',
-    failureReason: failure,
+    status: attemptStatus(attempt, now),
+    failureReason: failureReason(attempt, now),
     run: attempt.run ?? null,
     result: result
       ? {
