@@ -209,6 +209,10 @@ The webhook endpoint is built in Phase 2. After the first deploy that includes i
 ### [I-12] Check Payouts in sandbox
 - [ ] Claude Code ran `pnpm probe:paypal-payout` on 3 Oct 2026 (batch `ZSCGUYEYN43GS`, 1.00 USD). Log in to the arena recipient sandbox account at https://www.sandbox.paypal.com and confirm the payment arrived. You can run the probe again yourself; each run pays another 1.00 USD.
 - [ ] If Payouts fails with a permissions error, check the app's features in the dashboard and ask on Discord.
+
+### [I-19] Choose where arena deals come from
+- [ ] Add `ARENA_DEAL_SOURCE=templates` to `.env` and run `pnpm ssm:put prod`. Arena attempts then play one of the fixed deal templates. Without the key, the app also uses the templates.
+- [ ] Once Channel3 works ([I-5]), run `pnpm seed:sellers <table>`, set `ARENA_DEAL_SOURCE=sellers`, and run `pnpm ssm:put prod` again. Arena attempts then play against the seeded sellers. Running Lambdas read the new value on their next cold start.
 ---
 
 ## During Phase 5

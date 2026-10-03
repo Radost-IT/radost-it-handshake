@@ -31,6 +31,8 @@ const rawConfigSchema = z.object({
   maxBounty: positiveUsdAmount,
   dailyBountyBudget: positiveUsdAmount,
   arenaRecipientEmail: z.email(),
+  // Seeded sellers need Channel3, so the fixed templates are the default until it is set up.
+  arenaDealSource: z.enum(['templates', 'sellers']).default('templates'),
   // Only the web server reads it, through `loadFormSigningSecret`. It is listed
   // here so `pnpm ssm:put` checks it, and the other services do not need it.
   formSigningSecret: formSigningSecretSchema.optional(),
@@ -54,7 +56,11 @@ export interface Config {
     maxBounty: string;
     dailyBountyBudget: string;
   };
-  arena: { recipientEmail: string };
+  arena: {
+    recipientEmail: string;
+    /** Where arena deals come from: the fixed templates or the sellers seeded from Channel3. */
+    dealSource: 'templates' | 'sellers';
+  };
 }
 
 export class ConfigError extends Error {
@@ -86,7 +92,7 @@ export function parseConfig(raw: RawConfig, source: (key: ConfigKeyName) => stri
       maxBounty: values.maxBounty,
       dailyBountyBudget: values.dailyBountyBudget,
     },
-    arena: { recipientEmail: values.arenaRecipientEmail },
+    arena: { recipientEmail: values.arenaRecipientEmail, dealSource: values.arenaDealSource },
   };
 }
 

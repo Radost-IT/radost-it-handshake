@@ -34,6 +34,17 @@ describe('loadConfig from environment variables', () => {
     expect(config.arena.recipientEmail).toBe('arena@personal.example.com');
   });
 
+  it('uses the fixed deal templates unless seeded sellers are chosen', async () => {
+    const byDefault = await loadConfig(validEnv);
+    const sellers = await loadConfig({ ...validEnv, ARENA_DEAL_SOURCE: 'sellers' });
+
+    expect(byDefault.arena.dealSource).toBe('templates');
+    expect(sellers.arena.dealSource).toBe('sellers');
+    await expect(loadConfig({ ...validEnv, ARENA_DEAL_SOURCE: 'channel3' })).rejects.toThrow(
+      'ARENA_DEAL_SOURCE is invalid',
+    );
+  });
+
   it('allows the webhook ID to be absent before the webhook is registered', async () => {
     const config = await loadConfig(validEnv);
 

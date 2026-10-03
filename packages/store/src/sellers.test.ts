@@ -1,9 +1,15 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { BatchWriteCommand, DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
+import { BatchWriteCommand, DynamoDBDocumentClient, QueryCommand } from '@aws-sdk/lib-dynamodb';
 import { money } from '@handshake/core';
 import { mockClient } from 'aws-sdk-client-mock';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { saveSellers, sellerSchema, UnprocessedSellersError, type Seller } from './sellers';
+import {
+  listSellers,
+  saveSellers,
+  sellerSchema,
+  UnprocessedSellersError,
+  type Seller,
+} from './sellers';
 
 const dynamodb = mockClient(DynamoDBDocumentClient);
 const table = { client: DynamoDBDocumentClient.from(new DynamoDBClient({})), name: 'T' };
@@ -48,6 +54,8 @@ describe('saveSellers', () => {
     expect(batches[0]?.RequestItems?.T?.[0]?.PutRequest?.Item).toMatchObject({
       pk: 'SELLER#seller-0',
       sk: 'META',
+      gsi1pk: 'SELLERS',
+      gsi1sk: 'seller-0',
       name: 'Ada',
     });
   });
@@ -72,4 +80,19 @@ describe('saveSellers', () => {
 
     await expect(saveSellers(table, [seller(0)])).rejects.toThrow(UnprocessedSellersError);
   }, 10_000);
+});
+
+describe('listSellers', () => {
+  it('reads the seeded sellers from GSI1', async () => {
+    dynamodb.on(QueryCommand).resolves({ Items: [{ pk: 'SELLER#seller-1', ...seller(1) }] });
+
+    const sellers = await listSellers(table, 50);
+
+    expect(sellers).toEqual([seller(1)]);
+    expect(dynamodb.commandCalls(QueryCommand)[0]?.args[0].input).toMatchObject({
+      IndexName: 'GSI1',
+      ExpressionAttributeValues: { ':pk': 'SELLERS' },
+      Limit: 50,
+    });
+  });
 });

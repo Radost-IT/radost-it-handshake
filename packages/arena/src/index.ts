@@ -5,7 +5,14 @@ export {
   type BadgeId,
   type ChallengerStats,
 } from './badges';
-export { attackCategories, type AttackCategory, type AttackChannel } from './catalog';
+export {
+  attackCategories,
+  dealTemplates,
+  pickDealTemplate,
+  type AttackCategory,
+  type AttackChannel,
+  type DealTemplate,
+} from './catalog';
 export {
   applyAttempt,
   newChallengerProgress,

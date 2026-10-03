@@ -324,6 +324,9 @@ importers:
       '@aws-sdk/lib-dynamodb':
         specifier: ^3.1146.0
         version: 3.1146.0(@aws-sdk/client-dynamodb@3.1146.0)
+      '@handshake/arena':
+        specifier: workspace:*
+        version: link:../../packages/arena
       '@handshake/config':
         specifier: workspace:*
         version: link:../../packages/config

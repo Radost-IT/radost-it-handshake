@@ -218,7 +218,7 @@ Terminal states: `SETTLED`, `REFUSED`, `CANCELLED`, `ABANDONED`. Every transitio
 | Deal event | `DEAL#<id>` | `EVT#<ts>#<seq>` |
 | Negotiation message | `DEAL#<id>` | `MSG#<ts>#<seq>` |
 | Deal access (buyer token) | `DEAL#<id>` | `ACCESS#<sha256(token)>` |
-| Seller | `SELLER#<id>` | `META` |
+| Seller | `SELLER#<id>` | `META` (GSI1: `SELLERS` / `<id>`) |
 | Arena attempt | `ATTEMPT#<id>` | `META` (GSI1: `CHALLENGER#<id>` / `ATTEMPT#<ts>#<id>`) |
 | Challenger (handle, XP, stats, version) | `CHALLENGER#<id>` | `META` |
 | Challenger session | `SESSION#<sha256(token)>` | `META` (TTL) |
@@ -234,7 +234,7 @@ Terminal states: `SETTLED`, `REFUSED`, `CANCELLED`, `ABANDONED`. Every transitio
 | Idempotency | `IDEMP#<key>` | `META` (TTL) |
 | Token budget | `BUDGET#<yyyy-mm-dd>` | `TOKENS` |
 
-The table gains one global secondary index, `GSI1` (`gsi1pk`, `gsi1sk`), for a challenger's attempt history. Everything else is a direct key lookup or a query on one partition. The session token is random and never stored in plain text; the public challenger ID is a separate random ID, so leaderboard keys reveal nothing that grants access. Badges are not stored; they are computed from the challenger's stats.
+The table gains one global secondary index, `GSI1` (`gsi1pk`, `gsi1sk`), for a challenger's attempt history and the list of seeded sellers. Everything else is a direct key lookup or a query on one partition. The session token is random and never stored in plain text; the public challenger ID is a separate random ID, so leaderboard keys reveal nothing that grants access. Badges are not stored; they are computed from the challenger's stats.
 
 ### SSM parameters (stage = `prod`)
 
@@ -253,6 +253,7 @@ The table gains one global secondary index, `GSI1` (`gsi1pk`, `gsi1sk`), for a c
 /handshake/<stage>/limits/max-bounty              decimal string, e.g. 5.00
 /handshake/<stage>/limits/daily-bounty-budget     decimal string
 /handshake/<stage>/arena/recipient-email          arena recipient sandbox account
+/handshake/<stage>/arena/deal-source              templates (default) or sellers
 ```
 
 ## Phase plan

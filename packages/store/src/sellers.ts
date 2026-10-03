@@ -1,5 +1,9 @@
 import { setTimeout as sleep } from 'node:timers/promises';
-import { BatchWriteCommand, type BatchWriteCommandInput } from '@aws-sdk/lib-dynamodb';
+import {
+  BatchWriteCommand,
+  QueryCommand,
+  type BatchWriteCommandInput,
+} from '@aws-sdk/lib-dynamodb';
 import { compareMoney, hasSameCurrency, moneySchema } from '@handshake/core';
 import { z } from 'zod';
 import type { StoreTable } from './table';
@@ -34,6 +38,9 @@ const RETRY_BASE_DELAY_MS = 100;
 
 type WriteRequests = NonNullable<BatchWriteCommandInput['RequestItems']>[string];
 
+// GSI1 lists every seeded seller under one partition, so the arena can pick one without a scan.
+const SELLERS = 'SELLERS';
+
 export class UnprocessedSellersError extends Error {
   override name = 'UnprocessedSellersError';
 }
@@ -49,7 +56,15 @@ export async function saveSellers(table: StoreTable, sellers: Seller[]): Promise
 
 async function writeBatch(table: StoreTable, sellers: Seller[]): Promise<void> {
   let requests: WriteRequests = sellers.map((seller) => ({
-    PutRequest: { Item: { pk: `SELLER#${seller.sellerId}`, sk: 'META', ...seller } },
+    PutRequest: {
+      Item: {
+        pk: `SELLER#${seller.sellerId}`,
+        sk: 'META',
+        gsi1pk: SELLERS,
+        gsi1sk: seller.sellerId,
+        ...seller,
+      },
+    },
   }));
   for (let attempt = 1; ; attempt++) {
     const result = await table.client.send(
@@ -64,4 +79,18 @@ async function writeBatch(table: StoreTable, sellers: Seller[]): Promise<void> {
   throw new UnprocessedSellersError(
     `DynamoDB left ${String(requests.length)} sellers unwritten after ${String(MAX_BATCH_ATTEMPTS)} attempts`,
   );
+}
+
+/** Up to `limit` seeded sellers, ordered by seller ID. */
+export async function listSellers(table: StoreTable, limit: number): Promise<Seller[]> {
+  const { Items = [] } = await table.client.send(
+    new QueryCommand({
+      TableName: table.name,
+      IndexName: 'GSI1',
+      KeyConditionExpression: 'gsi1pk = :pk',
+      ExpressionAttributeValues: { ':pk': SELLERS },
+      Limit: limit,
+    }),
+  );
+  return Items.map((item) => sellerSchema.parse(item));
 }
