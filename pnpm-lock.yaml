@@ -271,6 +271,9 @@ importers:
       '@handshake/arena':
         specifier: workspace:*
         version: link:../../packages/arena
+      '@handshake/config':
+        specifier: workspace:*
+        version: link:../../packages/config
       '@handshake/core':
         specifier: workspace:*
         version: link:../../packages/core

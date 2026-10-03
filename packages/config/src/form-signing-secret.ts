@@ -1,7 +1,7 @@
-import { GetParameterCommand, SSMClient } from '@aws-sdk/client-ssm';
-import { configKeys } from './keys';
-import { ssmPathForStage, type Env } from './load';
+import { SSMClient } from '@aws-sdk/client-ssm';
+import type { Env } from './load';
 import { ConfigError, formSigningSecretSchema } from './parse';
+import { readConfigValue } from './single-value';
 
 /**
  * Loads the secret that signs the web forms' spam challenges and attempt
@@ -12,20 +12,8 @@ export async function loadFormSigningSecret(
   env: Env = process.env,
   client: SSMClient = new SSMClient({}),
 ): Promise<string> {
-  const { env: envName, ssm } = configKeys.formSigningSecret;
-  const stage = env.HANDSHAKE_STAGE;
-
-  if (stage === undefined) return parseSecret(env[envName], envName);
-
-  const name = `${ssmPathForStage(stage)}/${ssm}`;
-  const response = await client.send(new GetParameterCommand({ Name: name, WithDecryption: true }));
-  return parseSecret(response.Parameter?.Value, `SSM parameter ${name}`);
-}
-
-function parseSecret(value: string | undefined, source: string): string {
-  if (value === undefined || value === '') {
-    throw new ConfigError(`Invalid configuration: ${source} is missing`);
-  }
+  const { value, source } = await readConfigValue('formSigningSecret', env, client);
+  if (value === undefined) throw new ConfigError(`Invalid configuration: ${source} is missing`);
   if (!formSigningSecretSchema.safeParse(value).success) {
     throw new ConfigError(`Invalid configuration: ${source} must be 64 hex characters`);
   }

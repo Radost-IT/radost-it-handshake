@@ -1,3 +1,5 @@
+import { offensiveWords } from './offensive-words';
+
 export type HandleCheck = { valid: true; handle: string } | { valid: false; reason: string };
 
 const MIN_LENGTH = 3;
@@ -5,8 +7,6 @@ const MAX_LENGTH = 20;
 
 // Names that could pass for the platform or its staff.
 const reservedWords = ['admin', 'handshake', 'moderator', 'paypal', 'radost', 'support', 'system'];
-// A short list keeps false positives rare. Moderation can remove anything that slips through.
-const offensiveWords = ['fuck', 'shit', 'cunt', 'bitch', 'nazi', 'porn', 'whore', 'slut'];
 
 const lookalikes: Record<string, string> = {
   '0': 'o',

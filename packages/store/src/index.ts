@@ -22,6 +22,7 @@ export { saveCheckout, type Checkout } from './checkout';
 export { grantDealAccess, hasDealAccess } from './deal-access';
 export { ConcurrentDealUpdateError, getDeal, saveDeal } from './deals';
 export { getLeaderboard, type LeaderboardEntry, type LeaderboardScope } from './leaderboard';
+export { takeRateLimitSlot, type RateLimitWindow } from './rate-limits';
 export { listRegressionCases, saveRegressionCase } from './regressions';
 export {
   createChallenger,

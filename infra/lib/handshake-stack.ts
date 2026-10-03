@@ -88,11 +88,13 @@ export class HandshakeStack extends Stack {
       timeout: Duration.seconds(10),
       logGroup: new LogGroup(this, 'ArenaApiFunctionLogs', { retention: RetentionDays.ONE_MONTH }),
       bundling: { format: OutputFormat.ESM, minify: true, sourceMap: true },
-      environment: { TABLE_NAME: table.tableName },
+      environment: { HANDSHAKE_STAGE: props.stage, TABLE_NAME: table.tableName },
     });
-    table.grant(arenaApiFunction, 'dynamodb:GetItem', 'dynamodb:PutItem');
+    table.grant(arenaApiFunction, 'dynamodb:GetItem', 'dynamodb:PutItem', 'dynamodb:UpdateItem');
 
     const configPath = `/handshake/${props.stage}`;
+    // The arena API refuses attempts once the day's tokens are used, and needs no secrets.
+    this.grantConfigValueRead(arenaApiFunction, `${configPath}/limits/daily-token-budget`);
     const paypalWebhookFunction = new NodejsFunction(this, 'PayPalWebhookFunction', {
       entry: serviceSource('webhooks', 'handler.ts'),
       runtime: Runtime.NODEJS_22_X,
@@ -163,6 +165,8 @@ export class HandshakeStack extends Stack {
     this.grantConfigRead(arenaRunFunction, configPath);
     this.grantAnthropicModels(arenaRunFunction);
     const arenaRun = createArenaRun(this, arenaRunFunction);
+    arenaApiFunction.addEnvironment('ARENA_RUN_ARN', arenaRun.stateMachineArn);
+    arenaRun.grantStartExecution(arenaApiFunction);
 
     const paypalEventsFunction = new NodejsFunction(this, 'PayPalEventsFunction', {
       entry: serviceSource('workflows', 'paypal-events-handler.ts'),
@@ -257,6 +261,16 @@ export class HandshakeStack extends Stack {
       methods: [HttpMethod.GET],
       integration: arenaApiIntegration,
     });
+    httpApi.addRoutes({
+      path: '/arena/attempts',
+      methods: [HttpMethod.POST],
+      integration: arenaApiIntegration,
+    });
+    httpApi.addRoutes({
+      path: '/arena/attempts/{attemptId}',
+      methods: [HttpMethod.GET],
+      integration: arenaApiIntegration,
+    });
     const dealApiIntegration = new HttpLambdaIntegration('DealApiIntegration', dealApiFunction);
     for (const decision of ['purchase-approval', 'human-decision']) {
       httpApi.addRoutes({
@@ -288,19 +302,7 @@ export class HandshakeStack extends Stack {
     });
     // The web server signs its form spam checks and must not see the PayPal or Channel3 keys.
     const webServer = web.serverFunction.lambdaFunction;
-    webServer.addToRolePolicy(
-      new PolicyStatement({
-        actions: ['ssm:GetParameter'],
-        resources: [
-          this.formatArn({
-            service: 'ssm',
-            resource: 'parameter',
-            resourceName: `${configPath.slice(1)}/web/form-signing-secret`,
-          }),
-        ],
-      }),
-    );
-    this.grantSsmDecrypt(webServer);
+    this.grantConfigValueRead(webServer, `${configPath}/web/form-signing-secret`);
 
     const zone = HostedZone.fromHostedZoneAttributes(this, 'Zone', {
       zoneName: props.domains.zone,
@@ -342,6 +344,23 @@ export class HandshakeStack extends Stack {
             service: 'ssm',
             resource: 'parameter',
             resourceName: configPath.slice(1),
+          }),
+        ],
+      }),
+    );
+    this.grantSsmDecrypt(fn);
+  }
+
+  // For functions that need one config value and must not see the other secrets.
+  private grantConfigValueRead(fn: IFunction, parameterName: string): void {
+    fn.addToRolePolicy(
+      new PolicyStatement({
+        actions: ['ssm:GetParameter'],
+        resources: [
+          this.formatArn({
+            service: 'ssm',
+            resource: 'parameter',
+            resourceName: parameterName.slice(1),
           }),
         ],
       }),

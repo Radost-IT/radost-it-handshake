@@ -211,6 +211,36 @@ describe('HandshakeStack', () => {
     });
   });
 
+  it('lets a challenger submit an attempt that starts ArenaRun, and read it back', () => {
+    for (const routeKey of ['POST /arena/attempts', 'GET /arena/attempts/{attemptId}']) {
+      template.hasResourceProperties('AWS::ApiGatewayV2::Route', { RouteKey: routeKey });
+    }
+    template.hasResourceProperties('AWS::Lambda::Function', {
+      Environment: {
+        Variables: Match.objectLike({
+          HANDSHAKE_STAGE: 'test',
+          ARENA_RUN_ARN: Match.anyValue(),
+        }),
+      },
+    });
+    template.hasResourceProperties('AWS::IAM::Policy', {
+      PolicyDocument: {
+        Statement: Match.arrayWith([
+          Match.objectLike({
+            Action: 'ssm:GetParameter',
+            Resource: {
+              'Fn::Join': [
+                '',
+                Match.arrayWith([':parameter/handshake/test/limits/daily-token-budget']),
+              ],
+            },
+          }),
+          Match.objectLike({ Action: 'states:StartExecution' }),
+        ]),
+      },
+    });
+  });
+
   it('throttles the API and serves it only on the custom domain', () => {
     template.hasResourceProperties('AWS::ApiGatewayV2::Api', { DisableExecuteApiEndpoint: true });
     template.hasResourceProperties('AWS::ApiGatewayV2::Stage', {

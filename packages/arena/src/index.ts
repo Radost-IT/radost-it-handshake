@@ -1,3 +1,4 @@
+export { checkAttackText, MAX_ATTACK_LENGTH, type AttackTextCheck } from './attack-text';
 export {
   badges,
   newlyUnlocked,

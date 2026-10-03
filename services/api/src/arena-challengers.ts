@@ -7,6 +7,7 @@ import {
   type Challenger,
   type StoreTable,
 } from '@handshake/store';
+import type { SFNClient } from '@aws-sdk/client-sfn';
 import type { APIGatewayProxyStructuredResultV2 } from 'aws-lambda';
 import { z } from 'zod';
 import { hashToken, json, parseJson } from './http';
@@ -17,6 +18,11 @@ export interface ArenaApiContext {
   newChallengerId: () => string;
   /** A random, unguessable token. Only its hash is stored. */
   newSessionToken: () => string;
+  newAttemptId: () => string;
+  stepFunctions: SFNClient;
+  arenaRunArn: string;
+  /** LLM tokens allowed per UTC day; new attempts are refused once they are used. */
+  dailyTokenBudget: number;
 }
 
 // The __Host- prefix makes browsers refuse the cookie unless it is Secure,
@@ -57,21 +63,38 @@ export async function createChallengerFromRequest(
   }
 }
 
+export type SessionLookup =
+  | { found: true; challenger: Challenger }
+  | { found: false; response: APIGatewayProxyStructuredResultV2 };
+
 /** API Gateway passes cookies as `name=value` strings. */
-export async function getChallengerFromSession(
+export async function findSessionChallenger(
   context: ArenaApiContext,
   cookies: readonly string[],
-): Promise<APIGatewayProxyStructuredResultV2> {
+): Promise<SessionLookup> {
   const token = readCookie(cookies, SESSION_COOKIE);
-  if (!token) return json(401, { error: 'Pick a handle first' });
+  if (!token) return { found: false, response: json(401, { error: 'Pick a handle first' }) };
   const challengerId = await findSessionChallengerId(
     context.table,
     hashToken(token),
     context.now(),
   );
   const challenger = challengerId ? await getChallenger(context.table, challengerId) : undefined;
-  if (!challenger) return json(401, { error: 'Your session has ended. Pick a handle again' });
-  return json(200, publicChallenger(challenger));
+  if (!challenger) {
+    return {
+      found: false,
+      response: json(401, { error: 'Your session has ended. Pick a handle again' }),
+    };
+  }
+  return { found: true, challenger };
+}
+
+export async function getChallengerFromSession(
+  context: ArenaApiContext,
+  cookies: readonly string[],
+): Promise<APIGatewayProxyStructuredResultV2> {
+  const session = await findSessionChallenger(context, cookies);
+  return session.found ? json(200, publicChallenger(session.challenger)) : session.response;
 }
 
 function publicChallenger(challenger: Challenger) {

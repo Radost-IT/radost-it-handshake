@@ -1,4 +1,5 @@
 import { DynamoDBClient, TransactionCanceledException } from '@aws-sdk/client-dynamodb';
+import { SFNClient } from '@aws-sdk/client-sfn';
 import { DynamoDBDocumentClient, GetCommand, TransactWriteCommand } from '@aws-sdk/lib-dynamodb';
 import { newChallengerProgress } from '@handshake/arena';
 import { mockClient } from 'aws-sdk-client-mock';
@@ -17,6 +18,10 @@ const context: ArenaApiContext = {
   now: () => new Date('2026-10-02T12:00:00Z'),
   newChallengerId: () => 'challenger-1',
   newSessionToken: () => 'token-1',
+  newAttemptId: () => 'attempt-1',
+  stepFunctions: new SFNClient({}),
+  arenaRunArn: 'arn:aws:states:eu-west-1:123456789012:stateMachine:Handshake-prod-ArenaRun',
+  dailyTokenBudget: 1000,
 };
 
 beforeEach(() => dynamodb.reset());

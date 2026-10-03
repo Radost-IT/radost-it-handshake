@@ -1,0 +1,121 @@
+import { StartExecutionCommand } from '@aws-sdk/client-sfn';
+import { attackCategories, checkAttackText, MAX_ATTACK_LENGTH } from '@handshake/arena';
+import {
+  createArenaAttempt,
+  getArenaAttempt,
+  getTokensUsed,
+  takeRateLimitSlot,
+  type StoredAttempt,
+} from '@handshake/store';
+import type { APIGatewayProxyStructuredResultV2 } from 'aws-lambda';
+import { z } from 'zod';
+import { findSessionChallenger, type ArenaApiContext } from './arena-challengers';
+import { hashToken, json, parseJson } from './http';
+
+// Every attempt costs model calls. Judges may share one IP, so the limit
+// leaves room for several of them testing at once.
+const ATTEMPTS_PER_IP_PER_HOUR = 30;
+const HOUR_MS = 60 * 60 * 1000;
+
+const attemptBodySchema = z.object({
+  category: z.enum(attackCategories),
+  channel: z.enum(['listing', 'message', 'evidence']),
+  // The real limit is checked after trimming; this only keeps huge bodies out.
+  attackText: z.string().max(MAX_ATTACK_LENGTH * 2),
+  dailyChallenge: z.boolean().default(false),
+});
+
+export interface AttemptRequest {
+  body: string;
+  cookies: readonly string[];
+  sourceIp: string;
+}
+
+/** Stores the challenger's attack and starts the ArenaRun state machine for it. */
+export async function submitAttempt(
+  context: ArenaApiContext,
+  request: AttemptRequest,
+): Promise<APIGatewayProxyStructuredResultV2> {
+  const session = await findSessionChallenger(context, request.cookies);
+  if (!session.found) return session.response;
+
+  const parsed = attemptBodySchema.safeParse(parseJson(request.body));
+  if (!parsed.success) {
+    return json(400, { error: 'Send a JSON body with a category, a channel and attackText' });
+  }
+  const check = checkAttackText(parsed.data.attackText);
+  if (!check.valid) return json(400, { error: check.reason });
+
+  const now = context.now();
+  const hour = now.toISOString().slice(0, 13);
+  const allowed = await takeRateLimitSlot(context.table, {
+    subject: hashToken(request.sourceIp),
+    window: hour,
+    limit: ATTEMPTS_PER_IP_PER_HOUR,
+    expiresAt: new Date(Date.parse(`${hour}:00:00Z`) + 2 * HOUR_MS),
+  });
+  if (!allowed) {
+    return json(429, { error: 'Too many attempts from your network. Try again next hour' });
+  }
+
+  const today = now.toISOString().slice(0, 10);
+  if ((await getTokensUsed(context.table, today)) >= context.dailyTokenBudget) {
+    return json(503, { error: 'The arena has used its AI budget for today. Come back tomorrow' });
+  }
+
+  const attemptId = context.newAttemptId();
+  await createArenaAttempt(context.table, {
+    id: attemptId,
+    challengerId: session.challenger.id,
+    category: parsed.data.category,
+    channel: parsed.data.channel,
+    attackText: check.text,
+    dailyChallengeDate: parsed.data.dailyChallenge ? today : null,
+    createdAt: now.toISOString(),
+  });
+  // The execution is named after the attempt, so the same attempt never runs twice.
+  await context.stepFunctions.send(
+    new StartExecutionCommand({
+      stateMachineArn: context.arenaRunArn,
+      name: attemptId,
+      input: JSON.stringify({ attemptId }),
+    }),
+  );
+  return json(202, { attemptId, status: 'running' });
+}
+
+/** Attempts are public, so anyone with the link can watch the result and share it. */
+export async function getAttempt(
+  context: ArenaApiContext,
+  attemptId: string | undefined,
+): Promise<APIGatewayProxyStructuredResultV2> {
+  const attempt = z.uuid().safeParse(attemptId).success
+    ? await getArenaAttempt(context.table, attemptId ?? '')
+    : undefined;
+  if (!attempt) return json(404, { error: 'There is no attempt with this ID' });
+  return json(200, publicAttempt(attempt));
+}
+
+function publicAttempt(attempt: StoredAttempt) {
+  const { result } = attempt;
+  return {
+    id: attempt.id,
+    challengerId: attempt.challengerId,
+    category: attempt.category,
+    channel: attempt.channel,
+    attackText: attempt.attackText,
+    dailyChallengeDate: attempt.dailyChallengeDate,
+    createdAt: attempt.createdAt,
+    status: result ? 'judged' : 'running',
+    run: attempt.run ?? null,
+    result: result
+      ? {
+          outcome: result.outcome,
+          xpGained: result.xpGained,
+          rationale: result.rationale,
+          nearDuplicateOf: result.nearDuplicateOf,
+          recordedAt: result.recordedAt,
+        }
+      : null,
+  };
+}

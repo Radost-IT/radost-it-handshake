@@ -234,6 +234,7 @@ Terminal states: `SETTLED`, `REFUSED`, `CANCELLED`, `ABANDONED`. Every transitio
 | WebSocket connection | `WS#<connectionId>` | `META` (TTL) |
 | Idempotency | `IDEMP#<key>` | `META` (TTL) |
 | Token budget | `BUDGET#<yyyy-mm-dd>` | `TOKENS` |
+| Attempt rate limit (per hashed IP, per UTC hour) | `RATE#<ipHash>` | `WINDOW#<yyyy-mm-ddThh>` (TTL) |
 
 The table gains one global secondary index, `GSI1` (`gsi1pk`, `gsi1sk`), for a challenger's attempt history and the list of seeded sellers. Everything else is a direct key lookup or a query on one partition. The session token is random and never stored in plain text; the public challenger ID is a separate random ID, so leaderboard keys reveal nothing that grants access. Badges are not stored; they are computed from the challenger's stats.
 
@@ -319,6 +320,8 @@ Done when an AI-driven deal completes end to end in the deployed app and evals p
 ### Phase 4 — Arena (Oct 27–Nov 2)
 
 - [ ] Attack builder UI and API, with input length limits, a basic abuse filter, and per-IP rate limiting.
+  - [x] API: `POST /arena/attempts` starts ArenaRun, `GET /arena/attempts/{attemptId}` returns the result.
+  - [ ] UI.
 - [x] Arena judge agent and scoring (severity × novelty, near-duplicates score less).
 - [ ] Sandbox Payouts for successful exploits, to sandbox personal accounts only; human verifies **[I-12]**.
 - [x] Regression generator: a successful attack becomes a JSON case in `evals/regressions/` and in DynamoDB.
