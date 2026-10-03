@@ -61,3 +61,9 @@ To measure authorization limits without a browser login, the probe pays with a P
 We expected to reuse the cookie bar from radost-it-forge, which posts each consent to `https://stats.radostit.com/cookies/new`. That host does not resolve: `dig +short stats.radostit.com` prints nothing and `curl` ends with code `000`. Forge catches the error and drops it, so the failure was invisible there.
 
 Handshake sets only functional cookies and Seven uses none, so the notice needs no consent record. The bar stores the acknowledgment in the browser and sends nothing.
+
+## The PayPal Server SDK has no Payouts
+
+*3 Oct 2026 · PayPal SDK*
+
+We expected to pay arena bounties through the PayPal Server SDK, like the escrow calls. Version 2.5.0 has controllers for orders, payments, vault, subscriptions and transaction search, but none for Payouts. We call `POST /v1/payments/payouts` through the SDK's authenticated request builder instead, the same way we verify webhooks. The call keeps the shared OAuth token, retries and typed errors, and sends a `PayPal-Request-Id` like every other money call. The sandbox probe paid 1.00 USD and returned batch status `PENDING`.

@@ -207,7 +207,7 @@ The webhook endpoint is built in Phase 2. After the first deploy that includes i
 ## During Phase 4
 
 ### [I-12] Check Payouts in sandbox
-- [ ] When Claude Code runs the Payouts probe, log in to the arena recipient sandbox account at https://www.sandbox.paypal.com and confirm the payment arrived.
+- [ ] Claude Code ran `pnpm probe:paypal-payout` on 3 Oct 2026 (batch `ZSCGUYEYN43GS`, 1.00 USD). Log in to the arena recipient sandbox account at https://www.sandbox.paypal.com and confirm the payment arrived. You can run the probe again yourself; each run pays another 1.00 USD.
 - [ ] If Payouts fails with a permissions error, check the app's features in the dashboard and ask on Discord.
 ---
 

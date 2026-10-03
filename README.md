@@ -20,6 +20,7 @@ pnpm probe:paypal        # get a PayPal sandbox token (never printed)
 pnpm probe:channel3      # one Channel3 product search
 pnpm probe:bedrock       # one Converse call per configured model
 pnpm probe:paypal-limits # authorize, capture, void and reauthorize a sandbox card payment
+pnpm probe:paypal-payout # pay a 1.00 USD sandbox bounty to the arena recipient
 pnpm ssm:put prod        # copy .env values to SSM under /handshake/prod
 pnpm regressions:export <table>  # write arena regression cases to evals/regressions/
 pnpm seed:sellers <table> [query ...]  # seller agents from Channel3 products

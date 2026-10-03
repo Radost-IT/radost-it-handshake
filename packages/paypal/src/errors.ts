@@ -9,6 +9,7 @@ export type PayPalOperation =
   | 'capture'
   | 'void'
   | 'reauthorize'
+  | 'payout'
   | 'verify-webhook';
 
 /** PayPal answered with a non-2xx status. `debugId` is what PayPal support asks for. */

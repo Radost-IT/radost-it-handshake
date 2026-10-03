@@ -244,6 +244,9 @@ importers:
       '@handshake/paypal':
         specifier: workspace:*
         version: link:../packages/paypal
+      '@handshake/settlement':
+        specifier: workspace:*
+        version: link:../packages/settlement
       '@handshake/store':
         specifier: workspace:*
         version: link:../packages/store

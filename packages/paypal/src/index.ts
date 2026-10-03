@@ -14,6 +14,12 @@ export {
   type AuthorizeOrderRequest,
   type PayPalOrder,
 } from './orders';
+export {
+  createPayout,
+  type PayoutBatch,
+  type PayoutBatchStatus,
+  type PayoutRequest,
+} from './payouts';
 export type {
   PayPalAuthorization,
   PayPalAuthorizationStatus,

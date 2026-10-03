@@ -19,6 +19,7 @@
     "probe:channel3": "tsx --env-file=.env scripts/probes/channel3-search.ts",
     "probe:bedrock": "tsx --env-file=.env scripts/probes/bedrock-hello.ts",
     "probe:paypal-limits": "tsx --env-file=.env scripts/probes/paypal-authorization-limits.ts",
+    "probe:paypal-payout": "tsx --env-file=.env scripts/probes/paypal-payout.ts",
     "ssm:put": "tsx --env-file=.env scripts/put-ssm-parameters.ts",
     "regressions:export": "tsx scripts/export-regressions.ts",
     "seed:sellers": "tsx --env-file=.env scripts/seed-sellers.ts",
