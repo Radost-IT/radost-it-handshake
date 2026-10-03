@@ -19,3 +19,4 @@ export {
 } from './sessions';
 export type { StoreTable } from './table';
 export { saveWait, takeWait, type WaitSignal } from './waits';
+export { saveSellers, sellerSchema, UnprocessedSellersError, type Seller } from './sellers';

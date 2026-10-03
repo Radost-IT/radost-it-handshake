@@ -300,7 +300,7 @@ Done when both integration paths pass against the sandbox, triggered through the
 
 - [x] `LlmProvider` interface with a Bedrock implementation (Converse, tool use, JSON output, token accounting).
 - [x] Buyer agent with Channel3 search and product detail tools; results cached in DynamoDB.
-- [ ] `scripts/seed-sellers.ts`: create seller agents from Channel3 products with floor prices and personas.
+- [x] `scripts/seed-sellers.ts`: create seller agents from Channel3 products with floor prices and personas.
 - [x] Seller agent with persona and floor price; negotiation loop with a turn cap.
 - [x] Deal contract generation and signing; human approval step.
   - Signatures from `packages/core/contract` are plain digests that anyone can compute. Create them only on the server after checking who the party is, never accept one from a client or seller agent, or switch to an HMAC with a server-held key.

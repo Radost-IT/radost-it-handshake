@@ -223,6 +223,9 @@ importers:
       '@handshake/arena':
         specifier: workspace:*
         version: link:../packages/arena
+      '@handshake/channel3':
+        specifier: workspace:*
+        version: link:../packages/channel3
       '@handshake/config':
         specifier: workspace:*
         version: link:../packages/config

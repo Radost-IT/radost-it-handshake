@@ -20,7 +20,8 @@
     "probe:bedrock": "tsx --env-file=.env scripts/probes/bedrock-hello.ts",
     "probe:paypal-limits": "tsx --env-file=.env scripts/probes/paypal-authorization-limits.ts",
     "ssm:put": "tsx --env-file=.env scripts/put-ssm-parameters.ts",
-    "regressions:export": "tsx scripts/export-regressions.ts"
+    "regressions:export": "tsx scripts/export-regressions.ts",
+    "seed:sellers": "tsx --env-file=.env scripts/seed-sellers.ts"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

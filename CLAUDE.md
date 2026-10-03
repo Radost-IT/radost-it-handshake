@@ -79,7 +79,7 @@ pnpm test:integration    # real PayPal sandbox and Channel3 calls
 pnpm eval                # agent evals and arena regression suite
 pnpm probe:paypal       # also probe:paypal-limits, probe:channel3, probe:bedrock; read .env
 pnpm ssm:put <stage>     # copy .env values to SSM; secrets as SecureString
-pnpm seed:sellers
+pnpm seed:sellers <table> [query ...]  # seller agents from Channel3 products; reads .env
 pnpm regressions:export <table>  # write hall of fame cases to evals/regressions/
 pnpm demo:reset
 pnpm cdk:synth
