@@ -47,7 +47,7 @@ Last checked: 2 Oct 2026. Console menus change often; if a label differs, look f
 - [x] For each account, open **View/Edit account** and note the email and password in your password manager.
 - [x] The default Business account is the merchant behind your app. Check that it has a sandbox balance, because Payouts are paid from it.
 - [x] Later, the demo buyer login goes into the README for judges. These are sandbox-only credentials, so sharing them is fine.
-- [ ] Add the arena recipient account's email to `.env` as `ARENA_RECIPIENT_EMAIL`, copy `MAX_BOUNTY` and `DAILY_BOUNTY_BUDGET` from `.env.example`, then run `pnpm ssm:put prod`. Bounty policy refuses any other recipient.
+- [x] Add the arena recipient account's email to `.env` as `ARENA_RECIPIENT_EMAIL`, copy `MAX_BOUNTY` and `DAILY_BOUNTY_BUDGET` from `.env.example`, then run `pnpm ssm:put prod`. Bounty policy refuses any other recipient.
 
 ### [I-5] Channel3 API key
 - [x] Sign up at https://trychannel3.com/developers (no credit card).
@@ -163,25 +163,7 @@ aws ssm put-parameter --name /handshake/$STAGE/paypal/honor-period-hours --type 
   2. Open **IAM → Policies → HandshakeCdkExecution → Edit → JSON** and replace it with the current `infra/iam/cdk-execution-policy.json`.
   3. Deploy: `AWS_PROFILE=handshake pnpm cdk:deploy`. Every existing role gets the boundary in place; nothing is replaced.
   - When a later phase uses a new AWS service from a Lambda (Step Functions, EventBridge, WebSocket API), Claude Code updates `workload-boundary.json` and this step comes back: paste the new JSON into `HandshakeWorkloadBoundary` before deploying.
-- [ ] The first boundary did not let the web deploy write to the CDK assets bucket, so the 2 Oct prod deploy failed and its rollback stopped in `UPDATE_ROLLBACK_FAILED`. The rollback tried to remove the boundary from each role, which the execution policy rightly forbids. To recover:
-  1. Open **IAM → Policies → HandshakeWorkloadBoundary → Edit → JSON** and replace it with the current `infra/iam/workload-boundary.json`.
-  2. Finish the rollback and leave the boundary on the roles. The next deploy keeps it there anyway. Run this in **AWS CloudShell** in eu-west-1, logged in as your Identity Center admin; `handshake-dev` may not continue a rollback.
-     ```bash
-     aws cloudformation continue-update-rollback --region eu-west-1 \
-       --stack-name Handshake-prod --resources-to-skip \
-       AWS679f53fac002430cb0da5b7982bd2287ServiceRoleC1EA0FF2 \
-       CustomS3AutoDeleteObjectsCustomResourceProviderRole3B1BD092 \
-       HealthFunctionServiceRole04552894 \
-       WebImageServiceRoleA2E834DC \
-       WebRevalidationDynamoDBProviderFnServiceRoleE92296D9 \
-       WebRevalidationDynamoDBProviderframeworkonEventServiceRoleBB8A66C5 \
-       WebRevalidationQueueFnServiceRoleFA4E4393 \
-       WebServerBucketDeploymentFnServiceRoleA87AD52C \
-       WebStaticAssetsBucketDeploymentFnServiceRole097FD807
-     aws cloudformation wait stack-rollback-complete --region eu-west-1 --stack-name Handshake-prod
-     ```
-  3. Deploy again: `AWS_PROFILE=handshake pnpm cdk:deploy`.
-- [ ] The webhook ID parameter is added in [I-11].
+- [x] The webhook ID parameter is added in [I-11].
 
 ### [I-10b] Create the logo
 - [x] Generate the logo with an image model, using the Forge logo as a style reference and the prompt below.
@@ -190,16 +172,16 @@ aws ssm put-parameter --name /handshake/$STAGE/paypal/honor-period-hours --type 
 
 ### [I-10c] Register the site in Seven
 The web app loads the Seven script with `data-domain-id="handshake.radostit.com"`. Seven rejects page views from domains it does not know.
-- [ ] In Seven by Radost IT, add the domain `handshake.radostit.com` with an active subscription, so it is in the edge KeyValueStore.
-- [ ] After the next deploy, open https://handshake.radostit.com and check that a visit appears in Seven. The script records nothing on `localhost`, because it needs HTTPS and a matching host.
+- [x] In Seven by Radost IT, add the domain `handshake.radostit.com` with an active subscription, so it is in the edge KeyValueStore.
+- [x] After the next deploy, open https://handshake.radostit.com and check that a visit appears in Seven. The script records nothing on `localhost`, because it needs HTTPS and a matching host.
 
 ### [I-10d] Turn on the contact and newsletter forms
 The web forms post to the shared Radost IT contact Lambda with the website key `handshake.radostit.com`. The web server signs a spam challenge with its own secret.
-- [ ] Generate the secret into `.env`: `echo "FORM_SIGNING_SECRET=$(openssl rand -hex 32)" >> .env`.
-- [ ] Copy it to SSM: `AWS_PROFILE=handshake AWS_REGION=eu-west-1 pnpm ssm:put prod`.
-- [ ] In `radostit-app-lambdas`, commit and deploy the contact Lambda with `handshake.radostit.com` in `lambdas/contact/src/constants/websites.ts`. The Lambda rejects unknown website keys.
-- [ ] Deploy Handshake: `AWS_PROFILE=handshake pnpm cdk:deploy`.
-- [ ] Send a test message from https://handshake.radostit.com/contact and subscribe from the footer.
+- [x] Generate the secret into `.env`: `echo "FORM_SIGNING_SECRET=$(openssl rand -hex 32)" >> .env`.
+- [x] Copy it to SSM: `AWS_PROFILE=handshake AWS_REGION=eu-west-1 pnpm ssm:put prod`.
+- [x] In `radostit-app-lambdas`, commit and deploy the contact Lambda with `handshake.radostit.com` in `lambdas/contact/src/constants/websites.ts`. The Lambda rejects unknown website keys.
+- [x] Deploy Handshake: `AWS_PROFILE=handshake pnpm cdk:deploy`.
+- [x] Send a test message from https://handshake.radostit.com/contact and subscribe from the footer.
 
 ---
 
@@ -227,7 +209,6 @@ The webhook endpoint is built in Phase 2. After the first deploy that includes i
 ### [I-12] Check Payouts in sandbox
 - [ ] When Claude Code runs the Payouts probe, log in to the arena recipient sandbox account at https://www.sandbox.paypal.com and confirm the payment arrived.
 - [ ] If Payouts fails with a permissions error, check the app's features in the dashboard and ask on Discord.
-
 ---
 
 ## During Phase 5
