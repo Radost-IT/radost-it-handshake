@@ -6,6 +6,7 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
-    "@handshake/core": "workspace:*"
+    "@handshake/core": "workspace:*",
+    "zod": "^4.6.5"
   }
 }

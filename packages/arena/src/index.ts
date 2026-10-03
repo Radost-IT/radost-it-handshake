@@ -14,6 +14,13 @@ export {
 } from './challenger-progress';
 export { InvalidChallengeDateError, pickDailyChallenge } from './daily-challenge';
 export { validateHandle, type HandleCheck } from './handle';
+export {
+  buildRegressionCase,
+  NotARegressionError,
+  regressionCaseSchema,
+  regressionFileName,
+  type RegressionCase,
+} from './regression';
 export { scoreAttempt, type AttemptScore, type ScoringContext } from './scoring';
 export {
   rankForXp,
@@ -21,6 +28,7 @@ export {
   ranks,
   xpForAttempt,
   type AttemptOutcome,
+  type Loophole,
   type Rank,
   type RankProgress,
   type Severity,

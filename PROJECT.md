@@ -316,7 +316,7 @@ Done when an AI-driven deal completes end to end in the deployed app and evals p
 - [ ] Attack builder UI and API, with input length limits, a basic abuse filter, and per-IP rate limiting.
 - [x] Arena judge agent and scoring (severity × novelty, near-duplicates score less).
 - [ ] Sandbox Payouts for successful exploits, to sandbox personal accounts only; human verifies **[I-12]**.
-- [ ] Regression generator: a successful attack becomes a JSON case in `evals/regressions/` and in DynamoDB.
+- [x] Regression generator: a successful attack becomes a JSON case in `evals/regressions/` and in DynamoDB.
 - [ ] Leaderboard (AG Grid) and defense win rate over time and attacks by category (AG Charts).
 - [ ] Arena attack history in AG Grid: result, blocked action and reason, link to the regression case.
 - [x] `packages/arena`: `progression.ts`, `badges.ts`, `daily-challenge.ts`, `handle.ts`, with unit tests for every rank and badge boundary.

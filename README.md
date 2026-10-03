@@ -21,6 +21,7 @@ pnpm probe:channel3      # one Channel3 product search
 pnpm probe:bedrock       # one Converse call per configured model
 pnpm probe:paypal-limits # authorize, capture, void and reauthorize a sandbox card payment
 pnpm ssm:put prod        # copy .env values to SSM under /handshake/prod
+pnpm regressions:export <table>  # write arena regression cases to evals/regressions/
 ```
 
 ## Deploy

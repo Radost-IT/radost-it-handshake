@@ -80,6 +80,7 @@ pnpm eval                # agent evals and arena regression suite
 pnpm probe:paypal       # also probe:paypal-limits, probe:channel3, probe:bedrock; read .env
 pnpm ssm:put <stage>     # copy .env values to SSM; secrets as SecureString
 pnpm seed:sellers
+pnpm regressions:export <table>  # write hall of fame cases to evals/regressions/
 pnpm demo:reset
 pnpm cdk:synth
 pnpm cdk:deploy
