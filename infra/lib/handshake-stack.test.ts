@@ -242,6 +242,20 @@ describe('HandshakeStack', () => {
     });
   });
 
+  it('lets the arena API read stats, leaderboards and attempt history', () => {
+    const arenaApiPolicies = Object.values(
+      template.findResources('AWS::IAM::Policy', {
+        Properties: {
+          Roles: [{ Ref: Match.stringLikeRegexp('^ArenaApiFunctionServiceRole') }],
+        },
+      }),
+    ) as { Properties: { PolicyDocument: { Statement: { Action: string | string[] }[] } } }[];
+    const actions = arenaApiPolicies.flatMap((policy) =>
+      policy.Properties.PolicyDocument.Statement.flatMap((statement) => [statement.Action].flat()),
+    );
+    expect(actions).toEqual(expect.arrayContaining(['dynamodb:BatchGetItem', 'dynamodb:Query']));
+  });
+
   it('lets a challenger submit an attempt that starts ArenaRun, and read it back', () => {
     for (const routeKey of [
       'POST /arena/attempts',

@@ -100,7 +100,14 @@ export class HandshakeStack extends Stack {
       bundling: esmBundling,
       environment: { HANDSHAKE_STAGE: props.stage, TABLE_NAME: table.tableName },
     });
-    table.grant(arenaApiFunction, 'dynamodb:GetItem', 'dynamodb:PutItem', 'dynamodb:UpdateItem');
+    table.grant(
+      arenaApiFunction,
+      'dynamodb:GetItem',
+      'dynamodb:BatchGetItem',
+      'dynamodb:Query',
+      'dynamodb:PutItem',
+      'dynamodb:UpdateItem',
+    );
 
     const configPath = `/handshake/${props.stage}`;
     // The arena API refuses attempts once the day's tokens are used, and needs no secrets.

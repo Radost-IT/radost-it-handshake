@@ -221,7 +221,7 @@ The webhook endpoint is built in Phase 2. After the first deploy that includes i
 
 ### [I-21] Try the arena pages
 The arena pages call the deployed API, which accepts browser calls only from https://handshake.radostit.com. They do not work from `pnpm dev` on localhost.
-- [ ] Run `pnpm cdk:deploy`. It ships the arena pages, the `GET /arena/deals`, `/arena/stats`, `/arena/leaderboard` and `/arena/challengers/me/attempts` routes, and the ArenaRun step that marks failed attempts.
+- [x] Run `pnpm cdk:deploy`. It ships the arena pages, the `GET /arena/deals`, `/arena/stats`, `/arena/leaderboard` and `/arena/challengers/me/attempts` routes, and the ArenaRun step that marks failed attempts.
 - [ ] Open https://handshake.radostit.com/arena, pick a handle, and launch one attack. The attempt page should switch from running to a result within about a minute.
 - [ ] Open https://handshake.radostit.com/arena/leaderboard and check that your handle is listed under All time.
 ---

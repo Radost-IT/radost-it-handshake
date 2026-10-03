@@ -93,3 +93,11 @@ The boundary now allows `states:StartExecution` on `Handshake-*` state machines.
 We expected the first ArenaRun execution to reach the model calls. The Lambda failed while loading with `Error: Dynamic require of "util" is not supported`. The functions are bundled as ES modules, and the PayPal Server SDK pulls in CommonJS packages that call `require` for Node built-ins such as `util`, `http` and `zlib`. An ES module has no `require`, so esbuild's fallback throws. The deal workflows and the PayPal webhook bundles had the same calls; no real deal had reached them yet.
 
 Every function now uses one bundling setting whose banner defines `require` with `createRequire(import.meta.url)`. A local esbuild bundle of the SDK threw the same error without the banner and loaded with it.
+
+## Arena stats and leaderboard returned 500
+
+*3 Oct 2026 · IAM*
+
+We expected the new `GET /arena/stats` and `GET /arena/leaderboard` routes to work after the deploy, since their store functions passed the unit tests. Both answered `{"message":"Internal Server Error"}` and the arena pages showed "The arena is not answering. Try again soon". The Lambda log said `is not authorized to perform: dynamodb:BatchGetItem on resource: arn:aws:dynamodb:eu-west-1:...:table/Handshake-prod-Table... because no identity-based policy allows the dynamodb:BatchGetItem action`, and the same for `dynamodb:Query`. The unit tests use a fake DynamoDB client, so they never see IAM. The arena API role had only `GetItem`, `PutItem` and `UpdateItem`.
+
+The role now also has `BatchGetItem` and `Query`, which the boundary already allowed. An infra test checks the arena API role's actions, so a missing read grant fails `pnpm test`.
