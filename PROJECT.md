@@ -320,14 +320,17 @@ Done when an AI-driven deal completes end to end in the deployed app and evals p
 
 ### Phase 4 — Arena (Oct 27–Nov 2)
 
-- [ ] Attack builder UI and API, with input length limits, a basic abuse filter, and per-IP rate limiting.
+- [x] Attack builder UI and API, with input length limits, a basic abuse filter, and per-IP rate limiting.
   - [x] API: `POST /arena/attempts` starts ArenaRun, `GET /arena/attempts/{attemptId}` returns the result.
-  - [ ] UI.
+  - [x] UI: `/arena` (deal, category and channel pickers, attack text) and `/arena/attempts/{attemptId}`, which polls every 2 seconds until the attempt is judged or failed.
 - [x] Arena judge agent and scoring (severity × novelty, near-duplicates score less).
 - [ ] Sandbox Payouts for successful exploits, to sandbox personal accounts only; human verifies **[I-12]**.
 - [x] Regression generator: a successful attack becomes a JSON case in `evals/regressions/` and in DynamoDB.
 - [ ] Leaderboard (AG Grid) and defense win rate over time and attacks by category (AG Charts).
+  - [x] `/arena/leaderboard`: all-time and daily boards in AG Grid Community, themed from the site tokens.
+  - [ ] Charts.
 - [ ] Arena attack history in AG Grid: result, blocked action and reason, link to the regression case.
+  - [x] The challenger's own attempts list on `/arena`, linking to each replay. Not in AG Grid yet, and no regression link.
 - [x] `packages/arena`: `progression.ts`, `badges.ts`, `daily-challenge.ts`, `handle.ts`, with unit tests for every rank and badge boundary.
 - [x] `checkBountyProposal` in `packages/core/policy` with tests; `limits/max-bounty` and `limits/daily-bounty-budget` in SSM and `.env.example`.
 - [x] CDK: add `GSI1` to the table and the `ArenaRun` state machine.
@@ -335,9 +338,10 @@ Done when an AI-driven deal completes end to end in the deployed app and evals p
 - [x] Handles and sessions: `POST /arena/challengers`, `GET /arena/challengers/me`, hashed session tokens, handle reservation.
 - [ ] WebSocket events `arena.result`, `challenger.progress`, `arena.stats`.
 - [ ] Arena UI: challenger card with rank progress, badge grid (locked badges show how to earn them), open bounties per category, daily challenge, defense counter, rank-up and badge toasts.
+  - [x] Everything except the rank-up and badge toasts, which wait for `challenger.progress` events.
 - [ ] Hall of fame: regression case pages credit the challenger and show attempt, fix, and the rerun that holds.
 - [ ] Share images for loopholes and badges with `next/og`.
-- [ ] UI copy check: every arena screen uses "challenger" and "loophole found", suitable for any age.
+- [x] UI copy check: every arena screen uses "challenger" and "loophole found", suitable for any age.
 - [ ] Run every catalog attack ourselves, fix what breaks, keep at least one realistic success for the demo story.
 
 Done when a successful attack produces a payout and a regression case, and the patched system then blocks it.

@@ -35,7 +35,18 @@ export function Navbar() {
             </span>
           </span>
         </Link>
-        <ThemeToggle />
+        <div className="flex items-center gap-5">
+          <Link href="/arena" className="text-muted hover:text-ink text-sm font-semibold">
+            Arena
+          </Link>
+          <Link
+            href="/arena/leaderboard"
+            className="text-muted hover:text-ink text-sm font-semibold"
+          >
+            Leaderboard
+          </Link>
+          <ThemeToggle />
+        </div>
       </nav>
     </header>
   );

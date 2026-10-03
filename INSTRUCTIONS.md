@@ -212,12 +212,18 @@ The webhook endpoint is built in Phase 2. After the first deploy that includes i
 
 ### [I-20] Let the arena API start ArenaRun
 `POST /arena/attempts` starts the ArenaRun state machine. The workload boundary did not allow `states:StartExecution`, so the call failed with 500. In the console, logged in as your Identity Center admin:
-- [ ] Open **IAM → Policies → HandshakeWorkloadBoundary → Edit → JSON** and replace it with the current `infra/iam/workload-boundary.json`. No deploy is needed; the change applies within seconds.
-- [ ] Open **IAM → Policies → HandshakeDeveloper → Edit → JSON** and replace it with the current `infra/iam/developer-policy.json`. The `handshake` profile can then read the Lambda log groups and the ArenaRun executions.
+- [x] Open **IAM → Policies → HandshakeWorkloadBoundary → Edit → JSON** and replace it with the current `infra/iam/workload-boundary.json`. No deploy is needed; the change applies within seconds.
+- [x] Open **IAM → Policies → HandshakeDeveloper → Edit → JSON** and replace it with the current `infra/iam/developer-policy.json`. The `handshake` profile can then read the Lambda log groups and the ArenaRun executions.
 
 ### [I-19] Choose where arena deals come from
 - [x] Add `ARENA_DEAL_SOURCE=templates` to `.env` and run `pnpm ssm:put prod`. Arena attempts then play one of the fixed deal templates. Without the key, the app also uses the templates.
 - [ ] Once Channel3 works ([I-5]), run `pnpm seed:sellers <table>`, set `ARENA_DEAL_SOURCE=sellers`, and run `pnpm ssm:put prod` again. Arena attempts then play against the seeded sellers. Running Lambdas read the new value on their next cold start.
+
+### [I-21] Try the arena pages
+The arena pages call the deployed API, which accepts browser calls only from https://handshake.radostit.com. They do not work from `pnpm dev` on localhost.
+- [ ] Run `pnpm cdk:deploy`. It ships the arena pages, the `GET /arena/deals`, `/arena/stats`, `/arena/leaderboard` and `/arena/challengers/me/attempts` routes, and the ArenaRun step that marks failed attempts.
+- [ ] Open https://handshake.radostit.com/arena, pick a handle, and launch one attack. The attempt page should switch from running to a result within about a minute.
+- [ ] Open https://handshake.radostit.com/arena/leaderboard and check that your handle is listed under All time.
 ---
 
 ## During Phase 5
