@@ -1,10 +1,10 @@
 import { Channel3 } from '@channel3/sdk';
-import { loadConfig } from '@handshake/config';
+import { loadConfig, requireChannel3ApiKey } from '@handshake/config';
 
 const query = process.argv[2] ?? 'stainless steel water bottle';
 
 const config = await loadConfig();
-const client = new Channel3({ apiKey: config.channel3.apiKey });
+const client = new Channel3({ apiKey: requireChannel3ApiKey(config) });
 
 const page = await client.products.search({ query, limit: 5 });
 const products = page.response.products;

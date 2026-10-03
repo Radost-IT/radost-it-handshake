@@ -1,7 +1,7 @@
 import { GetParametersByPathCommand, SSMClient } from '@aws-sdk/client-ssm';
 import { describe, expect, it, vi } from 'vitest';
 import { loadConfig, readConfigFromSsm } from './load';
-import { ConfigError } from './parse';
+import { ConfigError, requireChannel3ApiKey } from './parse';
 
 const validEnv = {
   PAYPAL_CLIENT_ID: 'client-id',
@@ -52,11 +52,21 @@ describe('loadConfig from environment variables', () => {
   });
 
   it('names every missing key and treats empty values as missing', async () => {
-    const env = { ...validEnv, PAYPAL_CLIENT_SECRET: '', CHANNEL3_API_KEY: undefined };
+    const env = { ...validEnv, PAYPAL_CLIENT_SECRET: '', BEDROCK_REGION: undefined };
 
     await expect(loadConfig(env)).rejects.toThrow(
-      'Invalid configuration: PAYPAL_CLIENT_SECRET is missing; CHANNEL3_API_KEY is missing',
+      'Invalid configuration: PAYPAL_CLIENT_SECRET is missing; BEDROCK_REGION is missing',
     );
+  });
+
+  it('loads without the Channel3 key and fails only where Channel3 is searched', async () => {
+    const config = await loadConfig({ ...validEnv, CHANNEL3_API_KEY: undefined });
+
+    expect(config.channel3.apiKey).toBeUndefined();
+    expect(() => requireChannel3ApiKey(config)).toThrow(
+      'Invalid configuration: CHANNEL3_API_KEY is missing',
+    );
+    expect(requireChannel3ApiKey(await loadConfig(validEnv))).toBe('channel3-key-value');
   });
 
   it('rejects any PayPal base URL other than the sandbox', async () => {

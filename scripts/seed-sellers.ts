@@ -2,7 +2,7 @@ import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
 import { Channel3 } from '@channel3/sdk';
 import { searchProducts } from '@handshake/channel3';
-import { loadConfig } from '@handshake/config';
+import { loadConfig, requireChannel3ApiKey } from '@handshake/config';
 import { saveSellers } from '@handshake/store';
 import { sellersFromProducts } from './sellers';
 
@@ -17,7 +17,7 @@ const defaultQueries = ['stainless steel water bottle', 'wireless headphones', '
 const config = await loadConfig();
 const table = { client: DynamoDBDocumentClient.from(new DynamoDBClient({})), name: tableName };
 const context = {
-  products: new Channel3({ apiKey: config.channel3.apiKey }).products,
+  products: new Channel3({ apiKey: requireChannel3ApiKey(config) }).products,
   table,
   now: () => new Date(),
 };

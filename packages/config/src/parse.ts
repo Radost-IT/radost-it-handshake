@@ -22,7 +22,9 @@ const rawConfigSchema = z.object({
   // Optional because the webhook can only be registered after the first deploy.
   paypalWebhookId: nonEmpty.optional(),
   paypalHonorPeriodHours: positiveInteger,
-  channel3ApiKey: nonEmpty,
+  // Optional because only Channel3 product search needs it, and the arena runs
+  // on fixed deal templates until the Channel3 account is ready.
+  channel3ApiKey: nonEmpty.optional(),
   bedrockRegion: nonEmpty,
   bedrockModelFast: nonEmpty,
   bedrockModelSmart: nonEmpty,
@@ -47,7 +49,7 @@ export interface Config {
     /** How long a new authorization is guaranteed. The hold is renewed after it. */
     honorPeriodHours: number;
   };
-  channel3: { apiKey: string };
+  channel3: { apiKey: string | undefined };
   bedrock: { region: string; modelFast: string; modelSmart: string };
   limits: {
     dailyTokenBudget: number;
@@ -65,6 +67,14 @@ export interface Config {
 
 export class ConfigError extends Error {
   override name = 'ConfigError';
+}
+
+/** For the code paths that search Channel3; everything else runs without the key. */
+export function requireChannel3ApiKey(config: Config): string {
+  if (config.channel3.apiKey === undefined) {
+    throw new ConfigError('Invalid configuration: CHANNEL3_API_KEY is missing');
+  }
+  return config.channel3.apiKey;
 }
 
 export function parseConfig(raw: RawConfig, source: (key: ConfigKeyName) => string): Config {
