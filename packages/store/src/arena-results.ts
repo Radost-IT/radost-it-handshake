@@ -1,14 +1,15 @@
 import { TransactionCanceledException } from '@aws-sdk/client-dynamodb';
 import { GetCommand, TransactWriteCommand } from '@aws-sdk/lib-dynamodb';
+import { applyAttempt, type AttemptOutcome, type ChallengerProgress } from '@handshake/arena';
+import type { z } from 'zod';
 import {
-  applyAttempt,
-  attackCategories,
-  type AttemptOutcome,
-  type ChallengerProgress,
-} from '@handshake/arena';
-import { z } from 'zod';
+  arenaResultSchema,
+  attemptKey,
+  storedAttemptSchema,
+  type StoredAttempt,
+} from './arena-attempts';
 import { categoryKey, categoryStatsSchema, dailyStatsKey, globalStatsKey } from './arena-stats';
-import { challengerKey, challengerProgressSchema, challengerSchema } from './challengers';
+import { challengerKey, challengerSchema } from './challengers';
 import { leaderboardKey } from './leaderboard';
 import type { StoreTable } from './table';
 
@@ -20,37 +21,6 @@ export class ArenaRecordNotFoundError extends Error {
 export class ConcurrentArenaUpdateError extends Error {
   override name = 'ConcurrentArenaUpdateError';
 }
-
-export const attemptKey = (attemptId: string) => ({ pk: `ATTEMPT#${attemptId}`, sk: 'META' });
-
-const attemptOutcomeSchema = z.discriminatedUnion('result', [
-  z.object({ result: z.literal('held') }),
-  z.object({
-    result: z.literal('loophole'),
-    severity: z.enum(['low', 'medium', 'high', 'critical']),
-    novelty: z.number().min(0).max(1),
-    nearDuplicate: z.boolean(),
-  }),
-]);
-
-const arenaResultSchema = z.object({
-  outcome: attemptOutcomeSchema,
-  xpGained: z.number().int().nonnegative(),
-  before: challengerProgressSchema,
-  after: challengerProgressSchema,
-  recordedAt: z.iso.datetime({ offset: true }),
-});
-
-const storedAttemptSchema = z.object({
-  challengerId: z.string().min(1),
-  category: z.enum(attackCategories),
-  channel: z.enum(['listing', 'message', 'evidence']),
-  dailyChallengeDate: z.iso.date().nullable(),
-  createdAt: z.iso.datetime({ offset: true }),
-  result: arenaResultSchema.optional(),
-});
-
-type StoredAttempt = z.infer<typeof storedAttemptSchema>;
 
 export interface ArenaResult {
   xpGained: number;

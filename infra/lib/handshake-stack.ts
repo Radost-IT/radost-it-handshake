@@ -58,6 +58,13 @@ export class HandshakeStack extends Stack {
       timeToLiveAttribute: 'ttl',
       billing: Billing.onDemand(),
       pointInTimeRecoverySpecification: { pointInTimeRecoveryEnabled: true },
+      globalSecondaryIndexes: [
+        {
+          indexName: 'GSI1',
+          partitionKey: { name: 'gsi1pk', type: AttributeType.STRING },
+          sortKey: { name: 'gsi1sk', type: AttributeType.STRING },
+        },
+      ],
     });
 
     const eventBus = new EventBus(this, 'EventBus', { eventBusName: `${this.stackName}-events` });

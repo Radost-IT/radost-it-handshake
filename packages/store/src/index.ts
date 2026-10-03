@@ -1,4 +1,11 @@
 export {
+  AttemptExistsError,
+  createArenaAttempt,
+  listChallengerAttempts,
+  type NewArenaAttempt,
+  type StoredAttempt,
+} from './arena-attempts';
+export {
   ArenaRecordNotFoundError,
   ConcurrentArenaUpdateError,
   recordArenaResult,

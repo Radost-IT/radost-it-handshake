@@ -218,7 +218,7 @@ Terminal states: `SETTLED`, `REFUSED`, `CANCELLED`, `ABANDONED`. Every transitio
 | Deal event | `DEAL#<id>` | `EVT#<ts>#<seq>` |
 | Negotiation message | `DEAL#<id>` | `MSG#<ts>#<seq>` |
 | Seller | `SELLER#<id>` | `META` |
-| Arena attempt | `ATTEMPT#<id>` | `META` (GSI1: `CHALLENGER#<id>` / `ATTEMPT#<ts>`) |
+| Arena attempt | `ATTEMPT#<id>` | `META` (GSI1: `CHALLENGER#<id>` / `ATTEMPT#<ts>#<id>`) |
 | Challenger (handle, XP, stats, version) | `CHALLENGER#<id>` | `META` |
 | Challenger session | `SESSION#<sha256(token)>` | `META` (TTL) |
 | Handle reservation | `HANDLE#<lowercase handle>` | `META` |

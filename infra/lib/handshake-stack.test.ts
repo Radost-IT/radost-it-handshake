@@ -60,6 +60,21 @@ describe('HandshakeStack', () => {
     });
   });
 
+  it('indexes attempts by challenger in GSI1', () => {
+    template.hasResourceProperties('AWS::DynamoDB::GlobalTable', {
+      GlobalSecondaryIndexes: [
+        {
+          IndexName: 'GSI1',
+          KeySchema: [
+            { AttributeName: 'gsi1pk', KeyType: 'HASH' },
+            { AttributeName: 'gsi1sk', KeyType: 'RANGE' },
+          ],
+          Projection: { ProjectionType: 'ALL' },
+        },
+      ],
+    });
+  });
+
   it('exposes GET /health on the HTTP API', () => {
     template.hasResourceProperties('AWS::ApiGatewayV2::Route', { RouteKey: 'GET /health' });
   });
