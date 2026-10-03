@@ -196,7 +196,7 @@ The webhook endpoint is built in Phase 2. After the first deploy that includes i
   ```bash
   aws ssm put-parameter --name /handshake/$STAGE/paypal/webhook-id --type String --value "<webhook-id>" --overwrite
   ```
-- [ ] Deploy the webhook endpoint and the deal lifecycle. They publish to an EventBridge bus and resume Step Functions executions, which the boundary did not allow before:
+- [x] Deploy the webhook endpoint and the deal lifecycle. They publish to an EventBridge bus and resume Step Functions executions, which the boundary did not allow before:
   1. Open **IAM → Policies → HandshakeWorkloadBoundary → Edit → JSON** and replace it with the current `infra/iam/workload-boundary.json`.
   2. Add `PAYPAL_HONOR_PERIOD_HOURS=72` to `.env`, then run `pnpm ssm:put prod`. The webhook Lambda loads the whole config when it starts and fails with a `ConfigError` naming any missing key. `CHANNEL3_API_KEY` may stay empty until [I-5] is done; only Channel3 searches need it.
   3. Deploy: `AWS_PROFILE=handshake pnpm cdk:deploy`. The output `WebhookUrl` must match the URL you registered above.
@@ -207,11 +207,11 @@ The webhook endpoint is built in Phase 2. After the first deploy that includes i
 ## During Phase 4
 
 ### [I-12] Check Payouts in sandbox
-- [ ] Claude Code ran `pnpm probe:paypal-payout` on 3 Oct 2026 (batch `ZSCGUYEYN43GS`, 1.00 USD). Log in to the arena recipient sandbox account at https://www.sandbox.paypal.com and confirm the payment arrived. You can run the probe again yourself; each run pays another 1.00 USD.
-- [ ] If Payouts fails with a permissions error, check the app's features in the dashboard and ask on Discord.
+- [x] Claude Code ran `pnpm probe:paypal-payout` on 3 Oct 2026 (batch `ZSCGUYEYN43GS`, 1.00 USD). Log in to the arena recipient sandbox account at https://www.sandbox.paypal.com and confirm the payment arrived. You can run the probe again yourself; each run pays another 1.00 USD.
+- [x] If Payouts fails with a permissions error, check the app's features in the dashboard and ask on Discord.
 
 ### [I-19] Choose where arena deals come from
-- [ ] Add `ARENA_DEAL_SOURCE=templates` to `.env` and run `pnpm ssm:put prod`. Arena attempts then play one of the fixed deal templates. Without the key, the app also uses the templates.
+- [x] Add `ARENA_DEAL_SOURCE=templates` to `.env` and run `pnpm ssm:put prod`. Arena attempts then play one of the fixed deal templates. Without the key, the app also uses the templates.
 - [ ] Once Channel3 works ([I-5]), run `pnpm seed:sellers <table>`, set `ARENA_DEAL_SOURCE=sellers`, and run `pnpm ssm:put prod` again. Arena attempts then play against the seeded sellers. Running Lambdas read the new value on their next cold start.
 ---
 
