@@ -7,6 +7,7 @@ import {
   InvalidMoneyError,
   money,
   moneyEquals,
+  moneyFromNumber,
   moneySchema,
   percentOfMoney,
 } from './money';
@@ -47,6 +48,19 @@ describe('money', () => {
     expect(addMoney(money('0.10', 'USD'), money('0.20', 'USD'))).toEqual(money('0.30', 'USD'));
     expect(addMoney(money('999', 'JPY'), money('1', 'JPY'))).toEqual(money('1000', 'JPY'));
     expect(() => addMoney(money('1', 'USD'), money('1', 'EUR'))).toThrow(CurrencyMismatchError);
+  });
+
+  it('builds money from an exact JSON number', () => {
+    expect(moneyFromNumber(19.99, 'USD')).toEqual(money('19.99', 'USD'));
+    expect(moneyFromNumber(20, 'USD')).toEqual(money('20.00', 'USD'));
+    expect(moneyFromNumber(1500, 'JPY')).toEqual(money('1500', 'JPY'));
+  });
+
+  it('refuses numbers that would need rounding, negatives and non-finite values', () => {
+    expect(() => moneyFromNumber(19.999, 'USD')).toThrow(InvalidMoneyError);
+    expect(() => moneyFromNumber(1500.5, 'JPY')).toThrow(InvalidMoneyError);
+    expect(() => moneyFromNumber(-1, 'USD')).toThrow(InvalidMoneyError);
+    expect(() => moneyFromNumber(Number.NaN, 'USD')).toThrow(InvalidMoneyError);
   });
 
   it('takes a percent of an amount, rounding down to the smallest unit', () => {

@@ -1,0 +1,19 @@
+{
+  "name": "@handshake/channel3",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@aws-sdk/lib-dynamodb": "^3.1146.0",
+    "@channel3/sdk": "^4.1.0",
+    "@handshake/core": "workspace:*",
+    "@handshake/store": "workspace:*",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@aws-sdk/client-dynamodb": "^3.1146.0",
+    "aws-sdk-client-mock": "^4.1.0"
+  }
+}

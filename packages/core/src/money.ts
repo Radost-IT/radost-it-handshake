@@ -45,6 +45,19 @@ export function money(value: string, currency: CurrencyCode): Money {
   return fromMinorUnits(toMinorUnits({ currency, value }), currency);
 }
 
+/**
+ * Builds a Money value from a JSON number, for third-party APIs that send
+ * prices that way. Throws `InvalidMoneyError` unless the number is exact at
+ * the currency's decimals, so a float is never rounded into a price.
+ */
+export function moneyFromNumber(value: number, currency: CurrencyCode): Money {
+  const decimal = Number.isFinite(value) ? value.toFixed(currencyExponents[currency]) : '';
+  if (value < 0 || Number(decimal) !== value) {
+    throw new InvalidMoneyError(`Invalid ${currency} amount`);
+  }
+  return money(decimal, currency);
+}
+
 export const moneySchema = z
   .object({ currency: z.enum(currencyCodes), value: z.string() })
   .refine((candidate) => amountPattern(candidate.currency).test(candidate.value), {
