@@ -8,6 +8,7 @@ import {
   getChallengerFromSession,
   type ArenaApiContext,
 } from './arena-challengers';
+import { readBody } from './http';
 
 const environment = z.object({ TABLE_NAME: z.string().min(1) }).parse(process.env);
 
@@ -23,12 +24,8 @@ const context: ArenaApiContext = {
 
 export function handler(event: APIGatewayProxyEventV2): Promise<APIGatewayProxyStructuredResultV2> {
   switch (event.routeKey) {
-    case 'POST /arena/challengers': {
-      const body = event.isBase64Encoded
-        ? Buffer.from(event.body ?? '', 'base64').toString('utf8')
-        : (event.body ?? '');
-      return createChallengerFromRequest(context, body);
-    }
+    case 'POST /arena/challengers':
+      return createChallengerFromRequest(context, readBody(event));
     case 'GET /arena/challengers/me':
       return getChallengerFromSession(context, event.cookies ?? []);
     default:

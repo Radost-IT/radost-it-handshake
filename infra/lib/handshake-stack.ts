@@ -167,6 +167,19 @@ export class HandshakeStack extends Stack {
       targets: [new LambdaFunction(paypalEventsFunction)],
     });
 
+    const dealApiFunction = new NodejsFunction(this, 'DealApiFunction', {
+      entry: serviceSource('api', 'deal-handler.ts'),
+      runtime: Runtime.NODEJS_22_X,
+      architecture: Architecture.ARM_64,
+      memorySize: 256,
+      timeout: Duration.seconds(10),
+      logGroup: new LogGroup(this, 'DealApiFunctionLogs', { retention: RetentionDays.ONE_MONTH }),
+      bundling: { format: OutputFormat.ESM, minify: true, sourceMap: true },
+      environment: { TABLE_NAME: table.tableName },
+    });
+    table.grant(dealApiFunction, 'dynamodb:GetItem', 'dynamodb:PutItem', 'dynamodb:DeleteItem');
+    dealLifecycle.grantTaskResponse(dealApiFunction);
+
     const certificateFromParameter = (id: string, parameterName: string) =>
       Certificate.fromCertificateArn(
         this,
@@ -187,7 +200,7 @@ export class HandshakeStack extends Stack {
       corsPreflight: {
         allowOrigins: [`https://${props.domains.web}`],
         allowMethods: [CorsHttpMethod.GET, CorsHttpMethod.POST],
-        allowHeaders: ['content-type'],
+        allowHeaders: ['authorization', 'content-type'],
         allowCredentials: true,
         maxAge: Duration.hours(1),
       },
@@ -220,6 +233,14 @@ export class HandshakeStack extends Stack {
       methods: [HttpMethod.GET],
       integration: arenaApiIntegration,
     });
+    const dealApiIntegration = new HttpLambdaIntegration('DealApiIntegration', dealApiFunction);
+    for (const decision of ['purchase-approval', 'human-decision']) {
+      httpApi.addRoutes({
+        path: `/deals/{dealId}/${decision}`,
+        methods: [HttpMethod.POST],
+        integration: dealApiIntegration,
+      });
+    }
 
     // Building here would run a full Next.js build on every synth and in every
     // test, so the root scripts run `open-next build` first instead.

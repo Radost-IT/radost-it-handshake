@@ -1,17 +1,7 @@
-import {
-  SendTaskSuccessCommand,
-  TaskDoesNotExist,
-  TaskTimedOut,
-  type SFNClient,
-} from '@aws-sdk/client-sfn';
-import { saveWait, takeWait, type StoreTable, type WaitSignal } from '@handshake/store';
 import { z } from 'zod';
+import { resumeLifecycle, type ResumeContext } from './resume-lifecycle';
 
-export interface PayPalEventContext {
-  table: StoreTable;
-  stepFunctions: SFNClient;
-  now: () => string;
-}
+export type PayPalEventContext = ResumeContext;
 
 // The webhook endpoint verified the signature before it published the event.
 const paypalEventSchema = z.object({
@@ -41,36 +31,15 @@ export async function resumeLifecycleFromPayPal(
     case 'CHECKOUT.ORDER.APPROVED': {
       const order = approvedOrderSchema.parse(event.detail.resource);
       const dealId = order.purchase_units[0]?.custom_id;
-      if (dealId) await resume(context, dealId, 'checkout', { orderId: order.id });
+      if (dealId) await resumeLifecycle(context, dealId, 'checkout', { orderId: order.id });
       return;
     }
     case 'PAYMENT.CAPTURE.COMPLETED':
     case 'PAYMENT.CAPTURE.DENIED': {
       const { custom_id: dealId } = captureSchema.parse(event.detail.resource);
       // The lifecycle checks the capture itself, so it gets the whole resource.
-      if (dealId) await resume(context, dealId, 'capture', event.detail.resource);
+      if (dealId) await resumeLifecycle(context, dealId, 'capture', event.detail.resource);
       return;
     }
-  }
-}
-
-async function resume(
-  context: PayPalEventContext,
-  dealId: string,
-  signal: WaitSignal,
-  output: unknown,
-): Promise<void> {
-  const taskToken = await takeWait(context.table, dealId, signal);
-  if (!taskToken) return;
-  try {
-    await context.stepFunctions.send(
-      new SendTaskSuccessCommand({ taskToken, output: JSON.stringify(output) }),
-    );
-  } catch (error) {
-    // The wait already ended, for example when the checkout timed out.
-    if (error instanceof TaskTimedOut || error instanceof TaskDoesNotExist) return;
-    // Put the token back so the retried event can still resume the execution.
-    await saveWait(context.table, dealId, signal, taskToken, new Date(context.now()));
-    throw error;
   }
 }

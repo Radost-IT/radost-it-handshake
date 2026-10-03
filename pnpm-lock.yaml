@@ -262,15 +262,24 @@ importers:
       '@aws-sdk/client-dynamodb':
         specifier: ^3.1146.0
         version: 3.1146.0
+      '@aws-sdk/client-sfn':
+        specifier: ^3.1146.0
+        version: 3.1146.0
       '@aws-sdk/lib-dynamodb':
         specifier: ^3.1146.0
         version: 3.1146.0(@aws-sdk/client-dynamodb@3.1146.0)
       '@handshake/arena':
         specifier: workspace:*
         version: link:../../packages/arena
+      '@handshake/core':
+        specifier: workspace:*
+        version: link:../../packages/core
       '@handshake/store':
         specifier: workspace:*
         version: link:../../packages/store
+      '@handshake/workflows':
+        specifier: workspace:*
+        version: link:../workflows
       zod:
         specifier: ^4.6.5
         version: 4.6.5

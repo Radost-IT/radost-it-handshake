@@ -15,6 +15,7 @@ export {
 export { getArenaStats, type ArenaStats, type CategoryStats } from './arena-stats';
 export { getChallenger, type Challenger } from './challengers';
 export { saveCheckout, type Checkout } from './checkout';
+export { grantDealAccess, hasDealAccess } from './deal-access';
 export { ConcurrentDealUpdateError, getDeal, saveDeal } from './deals';
 export { getLeaderboard, type LeaderboardEntry, type LeaderboardScope } from './leaderboard';
 export { listRegressionCases, saveRegressionCase } from './regressions';

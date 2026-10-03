@@ -6,10 +6,10 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import {
   createChallengerFromRequest,
   getChallengerFromSession,
-  hashSessionToken,
   SESSION_COOKIE,
   type ArenaApiContext,
 } from './arena-challengers';
+import { hashToken } from './http';
 
 const dynamodb = mockClient(DynamoDBDocumentClient);
 const context: ArenaApiContext = {
@@ -39,7 +39,7 @@ describe('createChallengerFromRequest', () => {
       new RegExp(`^${SESSION_COOKIE}=token-1; Max-Age=7776000; Path=/; Secure; HttpOnly`),
     );
     const writes = dynamodb.commandCalls(TransactWriteCommand)[0]?.args[0].input.TransactItems;
-    expect(writes?.[2]?.Put?.Item?.pk).toBe(`SESSION#${hashSessionToken('token-1')}`);
+    expect(writes?.[2]?.Put?.Item?.pk).toBe(`SESSION#${hashToken('token-1')}`);
     expect(JSON.stringify(writes)).not.toContain('token-1');
   });
 
@@ -71,7 +71,7 @@ describe('createChallengerFromRequest', () => {
 });
 
 describe('getChallengerFromSession', () => {
-  const sessionKey = { pk: `SESSION#${hashSessionToken('token-1')}`, sk: 'META' };
+  const sessionKey = { pk: `SESSION#${hashToken('token-1')}`, sk: 'META' };
 
   it('returns the challenger of the session cookie', async () => {
     dynamodb

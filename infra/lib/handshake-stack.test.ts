@@ -75,6 +75,17 @@ describe('HandshakeStack', () => {
     });
   });
 
+  it('lets the deal token holder resume price approvals and escalations', () => {
+    for (const decision of ['purchase-approval', 'human-decision']) {
+      template.hasResourceProperties('AWS::ApiGatewayV2::Route', {
+        RouteKey: `POST /deals/{dealId}/${decision}`,
+      });
+    }
+    template.hasResourceProperties('AWS::ApiGatewayV2::Api', {
+      CorsConfiguration: Match.objectLike({ AllowHeaders: ['authorization', 'content-type'] }),
+    });
+  });
+
   it('exposes GET /health on the HTTP API', () => {
     template.hasResourceProperties('AWS::ApiGatewayV2::Route', { RouteKey: 'GET /health' });
   });

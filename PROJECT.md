@@ -217,6 +217,7 @@ Terminal states: `SETTLED`, `REFUSED`, `CANCELLED`, `ABANDONED`. Every transitio
 | Deal | `DEAL#<id>` | `META` |
 | Deal event | `DEAL#<id>` | `EVT#<ts>#<seq>` |
 | Negotiation message | `DEAL#<id>` | `MSG#<ts>#<seq>` |
+| Deal access (buyer token) | `DEAL#<id>` | `ACCESS#<sha256(token)>` |
 | Seller | `SELLER#<id>` | `META` |
 | Arena attempt | `ATTEMPT#<id>` | `META` (GSI1: `CHALLENGER#<id>` / `ATTEMPT#<ts>#<id>`) |
 | Challenger (handle, XP, stats, version) | `CHALLENGER#<id>` | `META` |
@@ -304,7 +305,8 @@ Done when both integration paths pass against the sandbox, triggered through the
 - [x] Seller agent with persona and floor price; negotiation loop with a turn cap.
 - [x] Deal contract generation and signing; human approval step.
   - Signatures from `packages/core/contract` are plain digests that anyone can compute. Create them only on the server after checking who the party is, never accept one from a client or seller agent, or switch to an HMAC with a server-held key.
-- [ ] Deal API: the buyer's price approval and a person's escalation decision resume the lifecycle (`purchase-approval` and `human-decision` waits).
+- [x] Deal API: the buyer's price approval and a person's escalation decision resume the lifecycle (`purchase-approval` and `human-decision` waits).
+  - Access is a per-deal token sent as `Authorization: Bearer <token>`. Whatever starts a deal must create the token, return it once, and store its hash with `grantDealAccess`.
 - [x] Verifier agent: deterministic checks first (price, currency, product ID, deadline), then per-criterion LLM checks; low confidence escalates.
 - [x] Untrusted-data wrapping for all third-party text in prompts.
 - [ ] WebSocket streaming of negotiation messages and state changes.

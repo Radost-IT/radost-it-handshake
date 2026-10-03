@@ -1,4 +1,3 @@
-import { createHash } from 'node:crypto';
 import { rankProgress, unlockedBadges, validateHandle } from '@handshake/arena';
 import {
   createChallenger,
@@ -10,6 +9,7 @@ import {
 } from '@handshake/store';
 import type { APIGatewayProxyStructuredResultV2 } from 'aws-lambda';
 import { z } from 'zod';
+import { hashToken, json, parseJson } from './http';
 
 export interface ArenaApiContext {
   table: StoreTable;
@@ -41,7 +41,7 @@ export async function createChallengerFromRequest(
     const challenger = await createChallenger(context.table, {
       challengerId: context.newChallengerId(),
       handle: check.handle,
-      sessionTokenHash: hashSessionToken(token),
+      sessionTokenHash: hashToken(token),
       createdAt: now,
       sessionExpiresAt: new Date(now.getTime() + SESSION_DAYS * 24 * 60 * 60 * 1000),
     });
@@ -66,16 +66,12 @@ export async function getChallengerFromSession(
   if (!token) return json(401, { error: 'Pick a handle first' });
   const challengerId = await findSessionChallengerId(
     context.table,
-    hashSessionToken(token),
+    hashToken(token),
     context.now(),
   );
   const challenger = challengerId ? await getChallenger(context.table, challengerId) : undefined;
   if (!challenger) return json(401, { error: 'Your session has ended. Pick a handle again' });
   return json(200, publicChallenger(challenger));
-}
-
-export function hashSessionToken(token: string): string {
-  return createHash('sha256').update(token).digest('hex');
 }
 
 function publicChallenger(challenger: Challenger) {
@@ -95,20 +91,4 @@ function publicChallenger(challenger: Challenger) {
 function readCookie(cookies: readonly string[], name: string): string | undefined {
   const prefix = `${name}=`;
   return cookies.find((cookie) => cookie.startsWith(prefix))?.slice(prefix.length) || undefined;
-}
-
-function parseJson(body: string): unknown {
-  try {
-    return JSON.parse(body);
-  } catch {
-    return undefined;
-  }
-}
-
-function json(statusCode: number, body: unknown): APIGatewayProxyStructuredResultV2 {
-  return {
-    statusCode,
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify(body),
-  };
 }
