@@ -299,7 +299,7 @@ Done when both integration paths pass against the sandbox, triggered through the
 ### Phase 3 — Agents (Oct 19–26)
 
 - [x] `LlmProvider` interface with a Bedrock implementation (Converse, tool use, JSON output, token accounting).
-- [ ] Buyer agent with Channel3 search and product detail tools; results cached in DynamoDB.
+- [x] Buyer agent with Channel3 search and product detail tools; results cached in DynamoDB.
 - [ ] `scripts/seed-sellers.ts`: create seller agents from Channel3 products with floor prices and personas.
 - [x] Seller agent with persona and floor price; negotiation loop with a turn cap.
 - [x] Deal contract generation and signing; human approval step.

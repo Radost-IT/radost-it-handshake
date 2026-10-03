@@ -30,3 +30,4 @@ export {
   type ArenaVerdict,
   type KnownLoophole,
 } from './arena-judge';
+export { findProductForGoal, type ProductCatalog, type ShoppingResult } from './shopper';

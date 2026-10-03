@@ -52,7 +52,7 @@ export async function generateObject<Schema extends z.ZodObject>(
 }
 
 // The model produces what the schema accepts, so the schema describes its input side.
-function toToolInputSchema(schema: z.ZodObject): Record<string, unknown> {
+export function toToolInputSchema(schema: z.ZodObject): Record<string, unknown> {
   const jsonSchema: Record<string, unknown> = z.toJSONSchema(schema, { io: 'input' });
   delete jsonSchema.$schema;
   return jsonSchema;
