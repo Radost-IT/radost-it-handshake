@@ -36,10 +36,10 @@ Last checked: 2 Oct 2026. Console menus change often; if a label differs, look f
 ### [I-3] PayPal developer app (sandbox)
 - [x] Log in at https://developer.paypal.com with your PayPal account (create one if needed).
 - [x] Make sure the dashboard toggle is set to **Sandbox**.
-- [x] Go to **Apps & Credentials → Create App**, type **Merchant**, name it `radost-it-handshake`.
+- [x] Go to **Apps & Credentials → Create App**, type **Merchant**, name it `radost-it-handshake`. Link it to a **US** sandbox Business account: card payments are not offered for apps on other sandbox countries.
 - [x] Keep the page open: you will need the **Client ID** and **Secret** in step [I-10]. Do not save them in a text file.
 - [x] In the app settings, make sure these features are enabled if listed: **Accept payments**, **Payouts**, **Transaction search**.
-- [ ] In the app settings, enable card payments (**Advanced Credit and Debit Card Payments**). Probes and integration tests authorize with a sandbox test card, so they need no browser login. Without it, PayPal answers `PAYEE_NOT_ENABLED_FOR_CARD_PROCESSING`. Then run `pnpm probe:paypal-limits` and send Claude the output.
+- [x] In the app settings, enable card payments (**Advanced Credit and Debit Card Payments**). Probes and integration tests authorize with a sandbox test card, so they need no browser login. Without it, PayPal answers `PAYEE_NOT_ENABLED_FOR_CARD_PROCESSING`. Then run `pnpm probe:paypal-limits` and send Claude the output. Done 3 Oct 2026; results are in `CHALLENGES.md`.
 
 ### [I-4] Sandbox test accounts
 - [x] Go to **Testing Tools → Sandbox Accounts**. PayPal creates one Business and one Personal account by default.

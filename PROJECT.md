@@ -243,7 +243,7 @@ The table gains one global secondary index, `GSI1` (`gsi1pk`, `gsi1sk`), for a c
 /handshake/<stage>/paypal/client-secret         SecureString
 /handshake/<stage>/paypal/base-url              https://api-m.sandbox.paypal.com
 /handshake/<stage>/paypal/webhook-id
-/handshake/<stage>/paypal/honor-period-hours    hours, 72 until the limits probe measures it
+/handshake/<stage>/paypal/honor-period-hours    hours, 72 (PayPal docs; the probe confirms reauthorizing earlier fails)
 /handshake/<stage>/channel3/api-key             SecureString
 /handshake/<stage>/bedrock/region
 /handshake/<stage>/bedrock/model-fast           inference profile or model ID
@@ -288,7 +288,7 @@ Done when the three probes pass against real services and `pnpm cdk:deploy` crea
 
 - [x] `packages/core`: money helpers, deal contract schema, deal state machine, policy engine; full unit tests.
 - [x] `packages/paypal`: create order (`intent=AUTHORIZE`), authorize, capture, void, reauthorize, get order; idempotency keys; typed errors with `debug_id`. Use the APIMatic Context Plugin for every SDK call.
-- [ ] Probe and document real sandbox authorization limits (honor period, reauthorization window, void and capture behavior). Put the values in SSM, not code. Blocked on card payments for the sandbox app ([I-3]).
+- [x] Probe and document real sandbox authorization limits (honor period, reauthorization window, void and capture behavior). Put the values in SSM, not code. Results are in `CHALLENGES.md`.
 - [x] `packages/settlement`: executes approved proposals only.
 - [x] Step Functions `DealLifecycle` covering authorize → wait for evidence → capture or void, plus the reauthorization timer.
 - [x] Webhook endpoint `POST /webhooks/paypal`: verify the signature with PayPal's API, deduplicate by event ID, publish to EventBridge. The stack prints a `WebhookUrl` output (`https://<api domain>/webhooks/paypal`) for [I-11], and a stack test fails if the output is missing.

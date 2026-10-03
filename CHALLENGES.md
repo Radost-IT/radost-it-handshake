@@ -54,6 +54,16 @@ We now pass our own `oAuthTokenProvider`. On failure it keeps the error and retu
 
 To measure authorization limits without a browser login, the probe pays with a PayPal sandbox test card. Creating the order failed with `422 PAYEE_NOT_ENABLED_FOR_CARD_PROCESSING: Payee account is not setup to be able to process card payments`. Card payments are a separate feature of the sandbox app. The probe now stops with a pointer to the manual step in `INSTRUCTIONS.md` [I-3], and the limits stay unmeasured until the feature is on.
 
+The first sandbox app sat on a non-US Business account, and its settings did not offer card payments. A new app on a new US sandbox Business account did. With cards on, the probe failed again: `422 ORDER_ALREADY_AUTHORIZED: Order already authorized.If 'intent=AUTHORIZE' only one authorization per order is allowed.` A card order with intent AUTHORIZE is authorized when it is created, with status `COMPLETED`. The probe now reads the authorization from the order instead of calling authorize. Buyer-approved PayPal orders still need the authorize call.
+
+Measured on 3 Oct 2026:
+
+- An authorization is valid for 696 hours (29 days).
+- Reauthorizing right away fails with `REAUTHORIZATION_TOO_SOON`. We keep the 72-hour honor period from the PayPal docs; the probe cannot wait three days.
+- Capture and void replay PayPal's first answer when the `PayPal-Request-Id` repeats.
+- A second capture with a new request ID fails with `AUTHORIZATION_ALREADY_CAPTURED`; voiding after capture fails with `PREVIOUSLY_CAPTURED`.
+- A second void fails with `PREVIOUSLY_VOIDED`; capturing after void fails with `AUTHORIZATION_VOIDED`.
+
 ## Cookie consent log has no DNS record
 
 *3 Oct 2026 · Web*

@@ -2,9 +2,9 @@ import { randomUUID } from 'node:crypto';
 import { loadConfig } from '@handshake/config';
 import { money } from '@handshake/core';
 import {
-  authorizeOrder,
   captureAuthorization,
   createPayPalClient,
+  getOrder,
   PayPalApiError,
   reauthorizeAuthorization,
   voidAuthorization,
@@ -17,14 +17,16 @@ const client = createPayPalClient(config.paypal);
 const amount = money('10.00', 'USD');
 const CARDS_DISABLED = 'PAYEE_NOT_ENABLED_FOR_CARD_PROCESSING';
 
-// A PayPal sandbox test card authorizes without a browser approval step.
+// A card order with intent AUTHORIZE is authorized when it is created: it needs
+// no buyer approval, and a separate authorize call fails with ORDER_ALREADY_AUTHORIZED.
 async function authorizeWithTestCard(dealId: string): Promise<PayPalAuthorization> {
   const created = await createCardOrder(dealId);
   const orderId = created.id;
   if (orderId === undefined) throw new Error('Order has no ID');
   console.log(`order ${orderId}: ${created.status ?? 'no status'}`);
-  const authorized = await authorizeOrder(client, { dealId, orderId, attempt: 0 });
-  return authorized.authorization;
+  const { authorization } = await getOrder(client, orderId);
+  if (authorization === undefined) throw new Error(`Order ${orderId} has no authorization`);
+  return authorization;
 }
 
 async function createCardOrder(dealId: string): Promise<{ id?: string; status?: string }> {
