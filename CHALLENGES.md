@@ -53,3 +53,11 @@ We now pass our own `oAuthTokenProvider`. On failure it keeps the error and retu
 *2 Oct 2026 · PayPal sandbox*
 
 To measure authorization limits without a browser login, the probe pays with a PayPal sandbox test card. Creating the order failed with `422 PAYEE_NOT_ENABLED_FOR_CARD_PROCESSING: Payee account is not setup to be able to process card payments`. Card payments are a separate feature of the sandbox app. The probe now stops with a pointer to the manual step in `INSTRUCTIONS.md` [I-3], and the limits stay unmeasured until the feature is on.
+
+## Cookie consent log has no DNS record
+
+*3 Oct 2026 · Web*
+
+We expected to reuse the cookie bar from radost-it-forge, which posts each consent to `https://stats.radostit.com/cookies/new`. That host does not resolve: `dig +short stats.radostit.com` prints nothing and `curl` ends with code `000`. Forge catches the error and drops it, so the failure was invisible there.
+
+Handshake sets only functional cookies and Seven uses none, so the notice needs no consent record. The bar stores the acknowledgment in the browser and sends nothing.

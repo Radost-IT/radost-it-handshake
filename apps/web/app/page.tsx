@@ -15,7 +15,7 @@ const structuredData = {
 
 export default function HomePage() {
   return (
-    <main className="mx-auto flex max-w-6xl flex-col items-start px-6 pt-24 pb-32 sm:pt-32">
+    <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col items-start px-6 pt-24 pb-32 sm:pt-32">
       <p className="text-accent text-sm font-semibold tracking-widest uppercase">
         Escrow for AI shopping agents
       </p>

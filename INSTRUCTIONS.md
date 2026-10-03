@@ -188,6 +188,11 @@ aws ssm put-parameter --name /handshake/$STAGE/paypal/honor-period-hours --type 
 - [x] Check the spelling of "HANDSHAKE" and "BY RADOST IT" letter by letter; image models often misspell text.
 - [x] Save the file as `apps/web/public/logo.png` (1024×1024), then tell Claude Code.
 
+### [I-10c] Register the site in Seven
+The web app loads the Seven script with `data-domain-id="handshake.radostit.com"`. Seven rejects page views from domains it does not know.
+- [ ] In Seven by Radost IT, add the domain `handshake.radostit.com` with an active subscription, so it is in the edge KeyValueStore.
+- [ ] After the next deploy, open https://handshake.radostit.com and check that a visit appears in Seven. The script records nothing on `localhost`, because it needs HTTPS and a matching host.
+
 ---
 
 ## During Phase 2

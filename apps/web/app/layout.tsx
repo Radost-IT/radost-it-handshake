@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { JetBrains_Mono, Outfit } from 'next/font/google';
 import type { ReactNode } from 'react';
+import { Footer } from './components/footer';
 import { Navbar } from './components/navbar';
 import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from './site';
 import './globals.css';
@@ -74,10 +75,16 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     >
       <head>
         <script dangerouslySetInnerHTML={{ __html: applyStoredTheme }} />
+        <script
+          async
+          src="https://cdn.radostit.com/seven.min.js"
+          data-domain-id="handshake.radostit.com"
+        />
       </head>
-      <body className="min-h-screen font-sans antialiased">
+      <body className="flex min-h-screen flex-col font-sans antialiased">
         <Navbar />
         {children}
+        <Footer />
       </body>
     </html>
   );
