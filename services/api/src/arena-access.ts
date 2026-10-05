@@ -51,15 +51,21 @@ export async function requestAccessFromSession(
   if (!stored) return json(409, { error: 'You have already asked to join' });
 
   const command = `pnpm arena:access ${context.table.name}`;
+  const email = quoteForShell(account.email);
   await sendEmail(context.mail.zeptoMail, {
     from: context.mail.from,
     to: context.mail.adminEmail,
     ...accessRequestEmail({
       email: account.email,
       reason,
-      approveCommand: `${command} approve ${account.email}`,
-      rejectCommand: `${command} reject ${account.email}`,
+      approveCommand: `${command} approve ${email}`,
+      rejectCommand: `${command} reject ${email}`,
     }),
   });
   return json(202, { access: 'pending' });
+}
+
+// The admin pastes these commands into a shell, and a valid email may contain a quote.
+function quoteForShell(value: string): string {
+  return /^[\w@.+-]+$/.test(value) ? value : `'${value.replaceAll("'", `'\\''`)}'`;
 }

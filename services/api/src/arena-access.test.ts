@@ -76,6 +76,15 @@ describe('requestAccessFromSession', () => {
     expect(email?.text).toContain('pnpm arena:access T approve ada@example.com');
   });
 
+  it('quotes an email with a quote so the pasted command stays one argument', async () => {
+    mockSignedIn(dynamodb, { ...newAccount, email: "o'neil@example.com" });
+    dynamodb.on(UpdateCommand).resolves({});
+
+    await ask('I build payment agents and want to test them.');
+
+    expect(sentEmails()[0]?.text).toContain(`pnpm arena:access T approve 'o'\\''neil@example.com'`);
+  });
+
   it('asks for a longer reason', async () => {
     mockSignedIn(dynamodb, newAccount);
 
