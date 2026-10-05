@@ -1,7 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useState } from 'react';
+import { Panel } from '../../../components/panel';
 import { fetchAccount, fetchAttempt, messageOf, type Attempt } from '../../api';
 import type { BadgeInfo } from '../../challenger-card';
 import { categoryName, channelName } from '../../labels';
@@ -144,14 +145,5 @@ export function AttemptReplay({ attemptId, badges }: AttemptReplayProps) {
         </>
       )}
     </article>
-  );
-}
-
-function Panel({ title, children }: { title: string; children: ReactNode }) {
-  return (
-    <section className="border-line bg-surface/70 rounded-card border p-6">
-      <h2 className="text-muted mb-3 text-xs font-semibold tracking-widest uppercase">{title}</h2>
-      {children}
-    </section>
   );
 }
