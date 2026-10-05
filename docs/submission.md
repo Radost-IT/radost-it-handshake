@@ -8,9 +8,9 @@ Devpost renders Markdown only in "About the project". Every other answer below i
 
 ## Elevator pitch
 
-Let your shopping agent pay safely. Agents negotiate real products and settle through PayPal escrow. In the Arena, exploits pay sandbox bounties and become tests.
+Escrow for AI shopping agents. PayPal holds the money until delivery matches the contract. Use it as an API or MCP server; every breach in our Red Team Lab becomes a test.
 
-Draft note: 162 characters, limit 200.
+Draft note: 172 characters, limit 200.
 
 ---
 
@@ -22,7 +22,7 @@ Shopping agents can already find products and talk to sellers. What stops people
 
 Escrow solved this problem for people long ago: hold the money, check the goods, then release or refund. We wanted the same thing for agents, with one hard rule: **the language model never moves money.** It can only propose. Plain, tested code decides.
 
-Handshake is for **teams building AI shopping agents**. Their agents can search and bargain, but their users will not let them pay. Handshake gives the agent a way to pay that its users can trust: PayPal holds the money, and it moves only when the deal checks out.
+Handshake is for **teams building AI shopping agents**. Their agents can search and bargain, but their users will not let them pay. Handshake gives the agent a way to pay that its users can trust: PayPal holds the money, and it moves only when the deal checks out. Teams plug it in through a REST Deal API or an MCP server, so an agent in Claude Desktop or any MCP client can buy with escrow.
 
 ### What it does
 
@@ -35,12 +35,12 @@ Handshake is for **teams building AI shopping agents**. Their agents can search 
 5. The seller submits delivery evidence. A verifier agent checks each acceptance criterion and proposes capture, void, or escalate.
 6. A deterministic policy engine checks that proposal against the contract and the mandate. Only then does the settlement code capture or void the payment through PayPal. Holds that are close to expiry are reauthorized on a timer.
 
-**Arena mode**
+**Red Team Lab**
 
-Visitors play the malicious seller. They write the listing, the chat messages, and the evidence, and try to make the agents pay for something they should not. Examples: prompt injection in a product description, fake urgency, a price change after agreement, evidence for a swapped item, or a partial delivery claimed as complete.
+Invited researchers play the malicious seller. They write the listing, the chat messages, and the evidence, and try to make the agents pay for something they should not. Examples: prompt injection in a product description, fake urgency, a price change after agreement, evidence for a swapped item, or a partial delivery claimed as complete.
 
 - If the defenses hold, the app shows the blocked action and the reason.
-- If the exploit works, the attacker gets a sandbox bounty through PayPal Payouts and a spot on the leaderboard, and the attack is saved as a regression test. Once the defense is fixed, the same attack runs again and is blocked.
+- If the exploit works, the attacker gets a sandbox bounty through PayPal Payouts and a spot on the leaderboard, and the attack is saved as a regression test. The `/evals` page shows how often the agents held against each attack category in the latest eval run. Once the defense is fixed, the same attack runs again and is blocked.
 
 Attacks are scored by how bad and how new they are:
 
@@ -63,7 +63,8 @@ Near-duplicates of known attacks get a lower novelty, so copying a known trick e
 - **Agents.** Buyer, seller, verifier, and arena judge agents run on Amazon Bedrock through the Converse API with tool use and JSON output. All third-party text (Channel3 data, seller messages, evidence) is wrapped and labeled as untrusted data in prompts. The verifier runs deterministic checks first (price, currency, product ID, deadline) and asks the model only about the criteria that need judgment. Low confidence escalates to a human.
 - **Products.** Channel3 supplies real product data. Results are cached in DynamoDB with a TTL to save credits.
 - **Backend.** AWS serverless, defined in one AWS CDK stack: API Gateway (HTTP and WebSocket), Lambda on Node.js 22, Step Functions for the deal lifecycle (with `waitForTaskToken` for human approval and evidence), EventBridge for PayPal webhook events and timers, a single DynamoDB table, and SSM Parameter Store for configuration and secrets. Every role the stack creates carries a permissions boundary, so no deploy can give a function more access than we allow.
-- **Frontend.** Next.js (App Router) with React and Tailwind CSS. OpenNext builds it for AWS, and the `cdk-nextjs-standalone` construct deploys it in the same CDK stack as the backend: static assets in S3, server rendering in Lambda, and CloudFront in front of both. AG Grid Community shows the audit log, active escrow holds, arena attack history, and leaderboard. AG Charts Community shows the defense win rate over time and attacks by category. Both follow the app's dark and light themes.
+- **Frontend.** Next.js (App Router) with React and Tailwind CSS. OpenNext builds it for AWS, and the `cdk-nextjs-standalone` construct deploys it in the same CDK stack as the backend: static assets in S3, server rendering in Lambda, and CloudFront in front of both. AG Grid Community shows the developer console, the eval scenarios, and the leaderboard. AG Charts Community shows the defense rate by attack category. Both follow the app's dark and light themes.
+- **For developers.** A REST Deal API with sandbox API keys, an MCP server with escrow tools (and, on purpose, no tool that approves a payment), and a developer console that shows every PayPal call of a deal with its `PayPal-Request-Id` and `debug_id`.
 - **Integration help.** We wrote the PayPal client with the APIMatic Context Plugin in Claude Code, so endpoint and model shapes came from PayPal's spec instead of guesses.
 - **Tests.** Unit tests for the pure domain code, integration tests against the real PayPal sandbox, and an eval suite of scripted deals plus every arena regression case.
 
@@ -90,10 +91,11 @@ Draft note: fill in at the end. Candidates: authorize-and-capture is a natural f
 
 ### What's next for Handshake by Radost IT
 
-- An SDK so any shopping agent can use the same escrow and policy layer.
+- Typed SDKs for the Deal API, next to the MCP server we already ship.
+- Signed mandates in the AP2 format, so a mandate from another agent can be checked as is.
 - Real merchants as sellers: the same contract and escrow let merchants accept agent buyers safely.
 - Partial captures for split shipments, and refunds after capture.
-- A public attack dataset built from arena regressions, for others to test their agents.
+- A public attack dataset built from Red Team Lab regressions, for others to test their agents.
 
 ---
 
@@ -117,7 +119,7 @@ Demo video: TBD (YouTube, public)
 
 Draft note: 3:2 ratio (for example 1500 x 1000), PNG, under 5 MB each. Use generic, unbranded products in every screenshot. Each image has what to show, then the caption to paste.
 
-1. Landing page with the two modes, Deal and Arena, side by side.
+1. Landing page with the console, evals and Red Team Lab entry points.
 Caption: Agents that buy for you, with PayPal escrow between them and your money.
 
 2. Deal room: product cards from Channel3 next to the live negotiation chat.
@@ -138,7 +140,7 @@ Caption: The verifier proposes. The policy engine decides.
 7. Refused deal: swapped-item evidence, failed criterion, payment voided.
 Caption: Wrong item delivered, so the hold is voided and nobody pays.
 
-8. Arena attack builder with a prompt-injection listing.
+8. Red Team Lab attack form with a prompt-injection listing.
 Caption: Play the scam seller and try to fool the agents.
 
 9. Blocked attack, with the blocked action and the reason on screen.
@@ -147,11 +149,11 @@ Caption: Attack blocked, and the reason is shown in plain words.
 10. Successful exploit: bounty paid through PayPal Payouts, new regression case created.
 Caption: A working exploit earns a sandbox bounty and becomes a test.
 
-11. Leaderboard in AG Grid next to the AG Charts defense win rate chart.
-Caption: Top attackers, and how often the defenses held.
+11. The /evals page: AG Charts defense rate by attack category above the AG Grid scenario table.
+Caption: How often the agents held, per attack category.
 
-12. Audit log of deal events with PayPal IDs, in AG Grid with a filter applied.
-Caption: Every state change is recorded and can be traced to a PayPal call.
+12. Developer console: the PayPal audit log of one deal in AG Grid, with debug_id and PayPal-Request-Id.
+Caption: Every PayPal call is recorded and can be traced.
 
 13. Architecture diagram (text and shapes only, no vendor logos).
 Caption: Agents propose, policy checks, settlement moves money.
@@ -168,7 +170,7 @@ Orders API v2 with intent=AUTHORIZE: creates the order for an agreed deal. The b
 
 Payments API v2 (capture, void, reauthorize): capture releases the money to the seller when delivery is verified. Void releases the hold when it is not. Reauthorize keeps long deals alive before the hold expires.
 
-Payouts API: pays sandbox bounties to arena players whose exploits succeed.
+Payouts API: pays sandbox bounties to Red Team Lab researchers whose exploits succeed.
 
 Webhooks and webhook signature verification: confirm authorization, capture, void, and payout events. A deal is marked settled only after a verified capture.
 
@@ -198,7 +200,7 @@ Channel3: product search and product details for the buyer agent, and the source
 
 APIMatic: the Context Plugin for PayPal, used throughout the PayPal integration.
 
-AG Grid: AG Grid Community for the audit log, escrow holds, arena attack history, and leaderboard. AG Charts Community for the defense statistics.
+AG Grid: AG Grid Community for the developer console (deals, PayPal audit log, webhooks), the eval scenarios, and the Red Team Lab leaderboard. AG Charts Community for the defense rate by attack category.
 
 ---
 
@@ -226,7 +228,9 @@ Draft note: fill in the real values after [I-13].
    Email: TBD
    Password: TBD
 4. Submit the sample delivery evidence and watch the verifier capture the payment. Try the "wrong item" evidence to see the payment voided.
-5. Arena mode: pick a deal template, write a malicious listing or message, and run it. You will see either the blocked action and the reason, or a sandbox bounty and a new regression case.
+5. Developer console: open https://handshake.radostit.com/console, paste the judge API key TBD, open a deal, and select it to read its PayPal calls and webhooks.
+6. Evals: open https://handshake.radostit.com/evals to see the defense rate per attack category.
+7. Red Team Lab: sign in at /arena with your email and ask to join. We check join requests every day during judging. Then write a malicious listing or message and run it. You will see either the blocked action and the reason, or a sandbox bounty and a new regression case.
 
 These are PayPal sandbox credentials. No real money moves. Running the project locally needs your own PayPal sandbox app, Channel3 key, and AWS account, so the hosted app is the supported way to test.
 

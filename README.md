@@ -82,6 +82,42 @@ To use it from Claude Desktop, add this to `claude_desktop_config.json` and rest
 
 `--silent` matters: the server talks over stdout, and pnpm's banner would break the protocol. From Claude Code, run `claude mcp add handshake --env HANDSHAKE_API_KEY=hs_sandbox_... -- pnpm --silent --dir /path/to/radost-it-handshake mcp`.
 
+## PayPal integration
+
+All PayPal calls go to the sandbox and live in `packages/paypal`. Only `packages/settlement` calls the money operations, and only after `packages/core` policy approves the proposal.
+
+| PayPal API | Operation | When Handshake calls it |
+| --- | --- | --- |
+| Orders v2 | Create order, `intent=AUTHORIZE` | The agents agree on a contract. The buyer approves the order in PayPal checkout. |
+| Orders v2 | Get order | Confirms the buyer approved before authorizing. |
+| Orders v2 | Authorize order | Places the hold. This is the escrow. |
+| Payments v2 | Capture authorization | Policy accepts the verifier's capture proposal. |
+| Payments v2 | Void authorization | Policy accepts a void, or the delivery deadline passes. |
+| Payments v2 | Reauthorize authorization | A delivery timer runs past the honor period of the hold. |
+| Payouts v1 | Create batch payout | A Red Team Lab breach pays a sandbox bounty. |
+| Webhooks v1 | Verify webhook signature | Every webhook before it changes a deal: `CHECKOUT.ORDER.APPROVED`, `PAYMENT.AUTHORIZATION.CREATED`, `PAYMENT.CAPTURE.COMPLETED`, `PAYMENT.CAPTURE.DENIED`. |
+
+Every mutating call sends a deterministic `PayPal-Request-Id` of the form `dealId:operation:attempt`, so a retried Lambda replays the first result instead of charging twice. Each call is stored in the deal's audit log with its operation, HTTP status, request ID and PayPal `debug_id`; the console and `GET /deals/{dealId}` show it. A deal becomes settled only after a capture is confirmed by the API response or a verified webhook.
+
+The escrow timeline on `/deals/<id>` follows one deal through the state machine in `packages/core/src/deal.ts`:
+
+```text
+NEGOTIATING -> AGREED -> [AWAITING_HUMAN_APPROVAL] -> AUTHORIZING -> IN_ESCROW -> AWAITING_DELIVERY
+  -> VERIFYING -> CAPTURING -> SETTLED     money captured
+               -> VOIDING   -> REFUSED     hold voided, buyer pays nothing
+               -> ESCALATED                a person decides, policy still checks
+```
+
+## How it fits agent payment protocols
+
+Handshake does not replace these protocols. It adds the step none of them define: hold the money, check the delivery against the contract, then capture or void.
+
+| | What it defines | Where Handshake fits |
+| --- | --- | --- |
+| [AP2](https://ap2-protocol.org/) (Google) | Verifiable mandates: a Checkout Mandate for what the user allows and the final cart, and a Payment Mandate for the budget and the exact amount. | The buyer mandate (max price, approval threshold, blocked categories) plays the role of the open mandates. The signed deal contract plays the role of the closed Checkout Mandate. Policy refuses any capture outside both. |
+| [ACP](https://developers.openai.com/commerce) (OpenAI) | Agentic checkout between an agent and a merchant, and delegated payment tokens limited by `max_amount` and `expires_at`. | The authorization is the same idea with PayPal: a hold capped at the contract price that expires. Handshake adds verification before capture, which ACP leaves to the merchant. |
+| [PayPal Agent Toolkit](https://github.com/paypal/agent-toolkit) | Tools that let an agent call PayPal: orders (`create_order`, `get_order`, `pay_order`), invoices, subscriptions, disputes and shipment tracking. | The toolkit pays in one step. Handshake exposes escrow tools instead, through the Deal API and the MCP server, and keeps the release decision out of the model. |
+
 ## Red Team Lab
 
 Invited researchers act as a dishonest seller and try to make the agents release money they should not at `/arena`. A breach earns a sandbox bounty and becomes a regression test. Each attack runs through the `ArenaRun` state machine; the attempt page at `/arena/attempts/<id>` listens on the WebSocket at wss://ws-handshake.radostit.com and reloads when the judge decides. It also polls every 10 seconds in case a push is lost. The arena page updates its defense counter from the same socket. The leaderboard is at `/arena/leaderboard`.

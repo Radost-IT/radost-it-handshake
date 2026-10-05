@@ -59,7 +59,7 @@ Handshake is a settlement layer for AI shopping agents. A team that builds an ag
 - **MCP server** (`packages/mcp`): the agent-facing operations as tools (`open_deal`, `list_deals`, `get_deal`, `submit_delivery_evidence`), so any MCP client can buy with escrow. Price approval, checkout approval and escalation decisions stay with the person on the deal page, so no tool can release money. It calls the Deal API; it holds no PayPal credentials.
 - **Developer console** at `/console`: paste an API key, configure a mandate and open a deal, see deals and the PayPal audit log (operation, request ID, status, `debug_id`) and webhook log in AG Grid.
 - **Deal page** at `/deals/<id>`: the escrow timeline, contract, negotiation and verification for one deal. The buyer opens it from the deal link, which carries the deal token.
-- **Protocol mapping:** the mandate and the signed contract line up with AP2 Intent and Cart mandates and with OpenAI's Agentic Commerce Protocol; the README shows the mapping.
+- **Protocol mapping:** the mandate and the signed contract line up with the AP2 Checkout and Payment mandates, with the delegated payment limits in OpenAI's Agentic Commerce Protocol, and with the PayPal Agent Toolkit; the README shows the mapping.
 
 ### Deal mode
 
@@ -388,7 +388,7 @@ Done when a successful attack produces a payout and a regression case, and the p
 - [x] Developer console `/console` with AG Grid deals, audit log and webhook log.
 - [x] Red Team Lab reframe: copy, ranks, badges and styling.
 - [x] Eval report and defense rate chart (AG Charts Community).
-- [ ] README: PayPal API depth table, AP2 / ACP / PayPal Agent Toolkit mapping, API and MCP docs.
+- [x] README: PayPal API depth table, AP2 / ACP / PayPal Agent Toolkit mapping, API and MCP docs.
 
 ### Phase 5 — Product polish (Nov 3–8)
 
