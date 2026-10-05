@@ -39,7 +39,7 @@ pnpm eval                # agent evals in evals/scenarios against Bedrock; write
 
 ## Deal API
 
-Base URL: `https://api-handshake.radostit.com/v1`. Send `authorization: Bearer <key>`; create a sandbox key with `pnpm api-keys:create`. The console calls the same routes with the session cookie of a signed-in, approved account instead of a key.
+Base URL: `https://api-handshake.radostit.com/v1`. Send `authorization: Bearer <key>` and, with a body, `content-type: application/json`; other bodies are ignored, so a cross-site form cannot act with a signed-in session. Create a sandbox key with `pnpm api-keys:create`. The console calls the same routes with the session cookie of a signed-in, approved account instead of a key.
 
 | Route | What it does |
 | --- | --- |
