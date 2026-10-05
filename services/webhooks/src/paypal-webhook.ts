@@ -7,8 +7,12 @@ const webhookEventSchema = z.object({
   event_type: z.string().min(1),
   resource_type: z.string().optional(),
   resource: z.record(z.string(), z.unknown()),
-  create_time: z.string(),
+  create_time: z.iso.datetime({ offset: true }),
 });
+
+// PayPal retries a delivery for up to three days. An older signed event is a
+// replay, and past this age its delivery record may already have expired.
+const MAX_EVENT_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 
 export type PayPalWebhookEvent = z.infer<typeof webhookEventSchema>;
 
@@ -30,6 +34,7 @@ export interface WebhookDependencies {
   forgetDelivery: (eventId: string) => Promise<void>;
   publishEvent: (event: PayPalWebhookEvent) => Promise<void>;
   log: Logger;
+  now: () => Date;
 }
 
 /**
@@ -59,6 +64,10 @@ export async function receivePayPalWebhook(
   }
 
   const context = { eventId: event.id, eventType: event.event_type };
+  if (dependencies.now().getTime() - Date.parse(event.create_time) > MAX_EVENT_AGE_MS) {
+    log.warn('PayPal webhook is too old', { ...context, createdAt: event.create_time });
+    return { statusCode: 200 };
+  }
   // Verify before recording, so an unsigned request cannot claim a real event ID.
   if (!(await dependencies.verifySignature(webhookId, transmission, request.body))) {
     log.warn('PayPal webhook signature rejected', context);

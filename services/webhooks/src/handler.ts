@@ -85,6 +85,7 @@ export async function handler(event: APIGatewayProxyEventV2): Promise<APIGateway
         forgetDelivery,
         publishEvent,
         log,
+        now: () => new Date(),
       },
       { headers: event.headers, body },
     );

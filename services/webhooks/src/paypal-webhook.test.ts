@@ -30,6 +30,7 @@ function dependencies(overrides: Partial<WebhookDependencies> = {}): WebhookDepe
     forgetDelivery: vi.fn(() => Promise.resolve()),
     publishEvent: vi.fn(() => Promise.resolve()),
     log: silentLog,
+    now: () => new Date('2026-10-02T10:05:00Z'),
     ...overrides,
   };
 }
@@ -47,6 +48,14 @@ describe('receivePayPalWebhook', () => {
     );
     expect(deps.recordFirstDelivery).toHaveBeenCalledWith('WH-1');
     expect(deps.publishEvent).toHaveBeenCalledWith(event);
+  });
+
+  it('drops a signed event older than PayPal retries, which can only be a replay', async () => {
+    const deps = dependencies({ now: () => new Date('2026-10-12T10:00:00Z') });
+
+    await expect(receivePayPalWebhook(deps, request)).resolves.toEqual({ statusCode: 200 });
+    expect(deps.recordFirstDelivery).not.toHaveBeenCalled();
+    expect(deps.publishEvent).not.toHaveBeenCalled();
   });
 
   it('answers 200 to a repeated event without publishing it again', async () => {
