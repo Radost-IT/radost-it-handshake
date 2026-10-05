@@ -31,6 +31,7 @@ pnpm ssm:put prod        # copy .env values to SSM under /handshake/prod
 pnpm regressions:export <table>  # write arena regression cases to evals/regressions/
 pnpm arena:access <table> [approve|reject <email>]  # list or decide requests to join the arena
 pnpm api-keys:create <table> <name>  # issue a sandbox Deal API key; shown once
+pnpm accounts:password <table> <email>  # create or reset an approved account that signs in with a password; shown once
 pnpm mcp                 # MCP server over stdio; needs HANDSHAKE_API_KEY
 pnpm seed:sellers <table> [query ...]  # seller agents from Channel3 products
 pnpm eval                # agent evals in evals/scenarios against Bedrock; writes evals/report.json

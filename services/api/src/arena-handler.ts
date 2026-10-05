@@ -10,7 +10,7 @@ import { getAccountFromSession, requestAccessFromSession } from './arena-access'
 import { createChallengerFromRequest } from './arena-challengers';
 import { getLeaderboardPage, getMyAttempts, getStats } from './arena-reads';
 import type { ArenaApiContext } from './arena-session';
-import { requestSignInCode, signOut, verifySignInCode } from './arena-sign-in';
+import { requestSignInCode, signInWithPassword, signOut, verifySignInCode } from './arena-sign-in';
 import { readBody } from './http';
 
 const environment = z
@@ -39,6 +39,11 @@ export function handler(event: APIGatewayProxyEventV2): Promise<APIGatewayProxyS
   switch (event.routeKey) {
     case 'POST /arena/sign-in':
       return requestSignInCode(context, {
+        body: readBody(event),
+        sourceIp: event.requestContext.http.sourceIp,
+      });
+    case 'POST /arena/sign-in/password':
+      return signInWithPassword(context, {
         body: readBody(event),
         sourceIp: event.requestContext.http.sourceIp,
       });

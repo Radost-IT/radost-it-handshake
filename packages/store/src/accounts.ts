@@ -27,6 +27,8 @@ export const accountSchema = z.object({
   decidedAt: z.iso.datetime({ offset: true }).optional(),
   /** Set once the approved person picks a handle. */
   challengerId: z.string().min(1).optional(),
+  /** Only accounts the operator creates with a password have one, such as the judges' account. */
+  passwordHash: z.string().min(1).optional(),
 });
 
 export type Account = z.infer<typeof accountSchema>;

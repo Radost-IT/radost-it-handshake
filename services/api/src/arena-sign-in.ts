@@ -3,10 +3,12 @@ import {
   accountIdForEmail,
   checkSignInCode,
   closeSession,
+  getAccount,
   openSession,
   saveSignInCode,
   takeRateLimitSlot,
   upsertAccount,
+  verifyPassword,
 } from '@handshake/store';
 import type { APIGatewayProxyStructuredResultV2 } from 'aws-lambda';
 import { z } from 'zod';
@@ -27,6 +29,10 @@ const HOUR_MS = 60 * MINUTE_MS;
 // network from mailing many addresses.
 const CODES_PER_EMAIL_PER_HOUR = 5;
 const CODES_PER_IP_PER_HOUR = 20;
+// Password accounts are few and shared on purpose, such as the judges' one, so
+// the limits only need to make guessing a long random password hopeless.
+const PASSWORD_TRIES_PER_EMAIL_PER_HOUR = 10;
+const PASSWORD_TRIES_PER_IP_PER_HOUR = 20;
 
 const emailSchema = z
   .string()
@@ -34,6 +40,36 @@ const emailSchema = z
   .max(254)
   .transform((email) => email.toLowerCase())
   .pipe(z.email());
+
+/** Takes one slot from each hourly limit and says whether all of them had room. */
+async function takeHourlySlots(
+  context: ArenaApiContext,
+  now: Date,
+  limits: readonly { subject: string; limit: number }[],
+): Promise<boolean> {
+  const hour = now.toISOString().slice(0, 13);
+  const expiresAt = new Date(Date.parse(`${hour}:00:00Z`) + 2 * HOUR_MS);
+  const slots = await Promise.all(
+    limits.map(({ subject, limit }) =>
+      takeRateLimitSlot(context.table, { subject, window: hour, limit, expiresAt }),
+    ),
+  );
+  return slots.every(Boolean);
+}
+
+async function openSessionCookie(
+  context: ArenaApiContext,
+  accountId: string,
+  now: Date,
+): Promise<string> {
+  const token = context.newSessionToken();
+  await openSession(context.table, {
+    tokenHash: hashToken(token),
+    accountId,
+    expiresAt: new Date(now.getTime() + SESSION_DAYS * 24 * HOUR_MS),
+  });
+  return sessionCookie(token);
+}
 
 // Salting with the account stops one hash table of all six-digit codes from working on every account.
 const hashSignInCode = (accountId: string, code: string) => hashToken(`${accountId}:${code}`);
@@ -59,25 +95,11 @@ export async function requestSignInCode(
   const accountId = accountIdForEmail(email);
 
   const now = context.now();
-  const hour = now.toISOString().slice(0, 13);
-  const expiresAt = new Date(Date.parse(`${hour}:00:00Z`) + 2 * HOUR_MS);
-  const [emailAllowed, ipAllowed] = await Promise.all([
-    takeRateLimitSlot(context.table, {
-      subject: `signin-email#${accountId}`,
-      window: hour,
-      limit: CODES_PER_EMAIL_PER_HOUR,
-      expiresAt,
-    }),
-    takeRateLimitSlot(context.table, {
-      subject: `signin-ip#${hashToken(request.sourceIp)}`,
-      window: hour,
-      limit: CODES_PER_IP_PER_HOUR,
-      expiresAt,
-    }),
+  const allowed = await takeHourlySlots(context, now, [
+    { subject: `signin-email#${accountId}`, limit: CODES_PER_EMAIL_PER_HOUR },
+    { subject: `signin-ip#${hashToken(request.sourceIp)}`, limit: CODES_PER_IP_PER_HOUR },
   ]);
-  if (!emailAllowed || !ipAllowed) {
-    return json(429, { error: 'Too many sign-in codes. Try again next hour' });
-  }
+  if (!allowed) return json(429, { error: 'Too many sign-in codes. Try again next hour' });
 
   const code = context.newSignInCode();
   await saveSignInCode(context.table, {
@@ -125,16 +147,44 @@ export async function verifySignInCode(
   });
   if (check !== 'valid') return json(400, { error: codeErrors[check] });
 
-  const token = context.newSessionToken();
-  const [account] = await Promise.all([
+  const [account, cookie] = await Promise.all([
     upsertAccount(context.table, { accountId, email, signedInAt: now }),
-    openSession(context.table, {
-      tokenHash: hashToken(token),
-      accountId,
-      expiresAt: new Date(now.getTime() + SESSION_DAYS * 24 * HOUR_MS),
-    }),
+    openSessionCookie(context, accountId, now),
   ]);
-  return { ...json(200, { access: account.access }), cookies: [sessionCookie(token)] };
+  return { ...json(200, { access: account.access }), cookies: [cookie] };
+}
+
+const passwordBodySchema = z.object({ email: emailSchema, password: z.string().min(1).max(200) });
+
+/**
+ * Signs in an account the operator created with a password. Accounts that
+ * sign in with emailed codes have no password, so this refuses them.
+ */
+export async function signInWithPassword(
+  context: ArenaApiContext,
+  request: SignInRequest,
+): Promise<APIGatewayProxyStructuredResultV2> {
+  const parsed = passwordBodySchema.safeParse(parseJson(request.body));
+  if (!parsed.success) return json(400, { error: 'Enter your email and password' });
+  const { email, password } = parsed.data;
+  const accountId = accountIdForEmail(email);
+  const now = context.now();
+
+  const allowed = await takeHourlySlots(context, now, [
+    { subject: `password-email#${accountId}`, limit: PASSWORD_TRIES_PER_EMAIL_PER_HOUR },
+    {
+      subject: `password-ip#${hashToken(request.sourceIp)}`,
+      limit: PASSWORD_TRIES_PER_IP_PER_HOUR,
+    },
+  ]);
+  if (!allowed) return json(429, { error: 'Too many tries. Try again next hour' });
+
+  const account = await getAccount(context.table, accountId);
+  if (!(await verifyPassword(password, account?.passwordHash)) || !account) {
+    return json(400, { error: 'This email and password do not match' });
+  }
+  const cookie = await openSessionCookie(context, accountId, now);
+  return { ...json(200, { access: account.access }), cookies: [cookie] };
 }
 
 export async function signOut(

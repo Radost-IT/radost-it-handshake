@@ -8,8 +8,8 @@ import {
 } from '@aws-sdk/lib-dynamodb';
 import { mockClient } from 'aws-sdk-client-mock';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { accountIdForEmail } from '@handshake/store';
-import { requestSignInCode, signOut, verifySignInCode } from './arena-sign-in';
+import { accountIdForEmail, hashPassword } from '@handshake/store';
+import { requestSignInCode, signInWithPassword, signOut, verifySignInCode } from './arena-sign-in';
 import { arenaTestContext, sessionCookies, testAccount, stubZeptoMail } from './arena-test-context';
 import { hashToken } from './http';
 
@@ -104,6 +104,66 @@ describe('verifySignInCode', () => {
     expect(response.statusCode).toBe(400);
     expect(JSON.parse(response.body ?? '')).toEqual({ error: 'This code is wrong' });
     expect(dynamodb.commandCalls(PutCommand)).toHaveLength(0);
+  });
+});
+
+describe('signInWithPassword', () => {
+  const judgesId = accountIdForEmail('judges@example.com');
+  const passwordSignIn = (body: unknown) =>
+    signInWithPassword(context, { body: JSON.stringify(body), sourceIp: '203.0.113.7' });
+  const mockJudgesAccount = (account: Record<string, unknown>) => {
+    dynamodb.on(GetCommand, { Key: { pk: `ACCOUNT#${judgesId}`, sk: 'META' } }).resolves({
+      Item: {
+        id: judgesId,
+        email: 'judges@example.com',
+        createdAt: '2026-10-05T09:00:00.000Z',
+        access: 'approved',
+        ...account,
+      },
+    });
+  };
+
+  it('opens a session for the right password', async () => {
+    mockJudgesAccount({ passwordHash: await hashPassword('long-random-password') });
+
+    const response = await passwordSignIn({
+      email: 'Judges@Example.com',
+      password: 'long-random-password',
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(JSON.parse(response.body ?? '')).toEqual({ access: 'approved' });
+    expect(response.cookies?.[0]).toMatch(/^__Host-handshake_account=token-1;/);
+    expect(dynamodb.commandCalls(PutCommand)[0]?.args[0].input.Item).toMatchObject({
+      pk: `SESSION#${hashToken('token-1')}`,
+      accountId: judgesId,
+    });
+  });
+
+  it('refuses a wrong password and an account that signs in with codes', async () => {
+    mockJudgesAccount({ passwordHash: await hashPassword('long-random-password') });
+    const wrong = await passwordSignIn({ email: 'judges@example.com', password: 'guess' });
+    mockJudgesAccount({});
+    const noPassword = await passwordSignIn({ email: 'judges@example.com', password: 'guess' });
+
+    for (const response of [wrong, noPassword]) {
+      expect(response.statusCode).toBe(400);
+      expect(JSON.parse(response.body ?? '')).toEqual({
+        error: 'This email and password do not match',
+      });
+    }
+    expect(dynamodb.commandCalls(PutCommand)).toHaveLength(0);
+  });
+
+  it('limits tries per email and per network', async () => {
+    dynamodb
+      .on(UpdateCommand)
+      .rejects(new ConditionalCheckFailedException({ message: 'failed', $metadata: {} }));
+
+    const response = await passwordSignIn({ email: 'judges@example.com', password: 'guess' });
+
+    expect(response.statusCode).toBe(429);
+    expect(dynamodb.commandCalls(GetCommand)).toHaveLength(0);
   });
 });
 

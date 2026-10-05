@@ -20,6 +20,12 @@ export {
 export { getArenaStats, type ArenaStats, type CategoryStats } from './arena-stats';
 export { markBountyPaid, releaseBounty, reserveBounty, type BountyReservation } from './bounties';
 export {
+  hashPassword,
+  savePasswordAccount,
+  verifyPassword,
+  type PasswordAccount,
+} from './account-passwords';
+export {
   accessStatuses,
   accountIdForEmail,
   decideAccess,
