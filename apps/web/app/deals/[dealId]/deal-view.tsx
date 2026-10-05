@@ -3,6 +3,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { Panel } from '../../components/panel';
 import {
+  API_KEY_STORAGE_KEY,
   fetchDealRecord,
   finalDealStates,
   messageOf,
@@ -66,7 +67,10 @@ function takeDealToken(dealId: string): string | null {
       window.history.replaceState(null, '', window.location.pathname);
       return fromLink;
     }
-    return sessionStorage.getItem(tokenStorageKey(dealId));
+    // A developer who comes from the console acts with their API key.
+    return (
+      sessionStorage.getItem(tokenStorageKey(dealId)) ?? sessionStorage.getItem(API_KEY_STORAGE_KEY)
+    );
   } catch {
     // Storage can be blocked. The token from the link still works for this visit.
     return fromLink;
@@ -328,7 +332,7 @@ function NextAction({ record, token, onDone }: NextActionProps) {
         >
           <a
             href={record.checkout.approveUrl}
-            className="bg-accent text-canvas rounded-full px-4 py-2 text-sm font-semibold"
+            className="bg-accent text-on-accent rounded-full px-4 py-2 text-sm font-semibold"
           >
             Pay with PayPal
           </a>

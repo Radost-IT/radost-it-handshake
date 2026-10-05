@@ -167,6 +167,29 @@ export async function callDealApi<T>(
 
 const acceptedSchema = z.object({ status: z.literal('accepted') });
 
+/** The developer console keeps the API key here for the tab; the deal page reads it too. */
+export const API_KEY_STORAGE_KEY = 'handshake-api-key';
+
+export async function fetchDeals(apiKey: string): Promise<Deal[]> {
+  const { deals } = await callDealApi('/deals', apiKey, z.object({ deals: z.array(dealSchema) }));
+  return deals;
+}
+
+export interface NewDeal {
+  goal: string;
+  mandate: { maxPrice: Money; humanApprovalThreshold: Money; blockedCategories: string[] };
+  sellerId?: string;
+}
+
+const openedDealSchema = z.object({ deal: dealSchema, buyerUrl: z.url() });
+
+export function openDeal(
+  apiKey: string,
+  newDeal: NewDeal,
+): Promise<z.infer<typeof openedDealSchema>> {
+  return callDealApi('/deals', apiKey, openedDealSchema, newDeal);
+}
+
 export function fetchDealRecord(dealId: string, credential: string): Promise<DealRecord> {
   return callDealApi(`/deals/${encodeURIComponent(dealId)}`, credential, dealRecordSchema);
 }

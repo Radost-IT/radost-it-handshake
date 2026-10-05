@@ -36,6 +36,9 @@ export function Navbar() {
           </span>
         </Link>
         <div className="flex items-center gap-5">
+          <Link href="/console" className="text-muted hover:text-ink text-sm font-semibold">
+            Console
+          </Link>
           <Link href="/arena" className="text-muted hover:text-ink text-sm font-semibold">
             Arena
           </Link>

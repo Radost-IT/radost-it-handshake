@@ -1,29 +1,12 @@
 'use client';
 
-import {
-  ClientSideRowModelModule,
-  ModuleRegistry,
-  themeQuartz,
-  type ColDef,
-} from 'ag-grid-community';
+import { ClientSideRowModelModule, ModuleRegistry, type ColDef } from 'ag-grid-community';
 import { AgGridReact } from 'ag-grid-react';
 import { useEffect, useState } from 'react';
+import { gridTheme } from '../../components/grid-theme';
 import { fetchLeaderboard, messageOf, type LeaderboardEntry } from '../api';
 
 ModuleRegistry.registerModules([ClientSideRowModelModule]);
-
-// The grid reads the site's color tokens, so it follows the light and dark themes.
-const gridTheme = themeQuartz.withParams({
-  backgroundColor: 'var(--surface)',
-  foregroundColor: 'var(--ink)',
-  borderColor: 'var(--line)',
-  headerBackgroundColor: 'var(--canvas)',
-  headerTextColor: 'var(--muted)',
-  accentColor: 'var(--accent)',
-  browserColorScheme: 'inherit',
-  fontFamily: 'inherit',
-  wrapperBorderRadius: 20,
-});
 
 const columns: ColDef<LeaderboardEntry>[] = [
   { field: 'position', headerName: '#', width: 70 },

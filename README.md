@@ -51,6 +51,8 @@ Base URL: `https://api-handshake.radostit.com/v1`. Send `authorization: Bearer <
 
 The deal routes also accept the deal's access token, so the buyer can act without your API key. Each key opens up to 25 deals a day.
 
+The developer console at https://handshake.radostit.com/console does the same from a browser: paste a key, open a deal, and read each deal's PayPal calls (operation, HTTP status, `debug_id`, `PayPal-Request-Id`) and verified webhooks. The buyer follows a deal at `/deals/<id>`, which shows the escrow timeline and the approval buttons.
+
 ## MCP server
 
 `packages/mcp` exposes the Deal API as MCP tools, so any MCP client can buy with escrow. It calls the Deal API with your key and holds no PayPal credentials.
