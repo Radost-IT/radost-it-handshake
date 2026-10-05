@@ -19,7 +19,14 @@ import {
   renewEscrow,
   type SettlementContext,
 } from '@handshake/settlement';
-import { getDeal, saveCheckout, saveDeal, saveWait, type StoreTable } from '@handshake/store';
+import {
+  getCheckout,
+  getDeal,
+  saveCheckout,
+  saveDeal,
+  saveWait,
+  type StoreTable,
+} from '@handshake/store';
 import { z } from 'zod';
 
 export interface LifecycleContext extends SettlementContext {
@@ -212,6 +219,11 @@ async function authorizePayment(
   orderId: string,
 ): Promise<LifecycleTaskResult> {
   if (deal.state !== 'AUTHORIZING') return { state: deal.state };
+  // Only the order this deal created may be authorized, never one named by an event alone.
+  const checkout = await getCheckout(context.table, deal.id);
+  if (checkout?.orderId !== orderId) {
+    throw new InvalidTransitionError(`Order ${orderId} is not the checkout of deal ${deal.id}`);
+  }
   const result = await authorizeEscrow(context, deal, orderId);
   if (result.approved) return save(context, result.deal, result.events);
   // The buyer approved an order the mandate does not allow. Nothing is held yet.

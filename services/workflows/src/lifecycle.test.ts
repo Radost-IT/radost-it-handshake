@@ -132,8 +132,15 @@ describe('StartCheckout', () => {
 });
 
 describe('AuthorizePayment', () => {
+  const checkoutOf = (orderId: string) => {
+    dynamodb.on(GetCommand, { Key: { pk: 'DEAL#deal-1', sk: 'CHECKOUT' } }).resolves({
+      Item: { orderId, approveUrl: 'https://www.sandbox.paypal.com/checkoutnow?token=1' },
+    });
+  };
+
   it('holds the money and waits for delivery', async () => {
     storeDeal(authorizingDeal());
+    checkoutOf('ORDER-1');
 
     const { result } = await run(
       { task: 'AuthorizePayment', dealId: 'deal-1', orderId: 'ORDER-1' },
@@ -160,6 +167,19 @@ describe('AuthorizePayment', () => {
 
     expect(result).toEqual({ state: 'AWAITING_DELIVERY' });
     expect(savedStates()).toEqual(['AWAITING_DELIVERY']);
+  });
+
+  it('refuses an order that is not the checkout of the deal', async () => {
+    storeDeal(authorizingDeal());
+    checkoutOf('ORDER-2');
+
+    await expect(
+      run(
+        { task: 'AuthorizePayment', dealId: 'deal-1', orderId: 'ORDER-1' },
+        '2026-10-02T12:05:00Z',
+      ),
+    ).rejects.toThrow('Order ORDER-1 is not the checkout of deal deal-1');
+    expect(savedStates()).toEqual([]);
   });
 
   it('only reports the state of a deal that has moved on', async () => {
