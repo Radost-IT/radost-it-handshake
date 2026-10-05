@@ -258,6 +258,12 @@ Developers now open deals through `https://api-handshake.radostit.com/v1/deals`.
   ```
   The response has a `buyerUrl`. Then run `curl -H "authorization: Bearer <key>" https://api-handshake.radostit.com/v1/deals/<deal id>` a minute later and check that the deal reached `AUTHORIZING`, `AWAITING_HUMAN_APPROVAL` or `ABANDONED`.
 
+### [I-25] Connect the MCP server to Claude Desktop
+Optional, for the demo. Needs a Deal API key from [I-24].
+- [ ] Add `HANDSHAKE_API_KEY=<key>` to your `.env` if you want to run `pnpm mcp` from the terminal.
+- [ ] In Claude Desktop, open Settings > Developer > Edit Config and add the `handshake` server from the README section "MCP server", with the full path to this repo and your key.
+- [ ] Restart Claude Desktop and ask: "Use Handshake to buy a steel water bottle under 60 USD, approval above 50 USD." Check that it calls `open_deal` and shows you the `buyerUrl`.
+
 ---
 
 ## During Phase 5

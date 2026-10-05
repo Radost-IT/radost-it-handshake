@@ -56,7 +56,7 @@ Handshake is a settlement layer for AI shopping agents. A team that builds an ag
 ### Developer platform
 
 - **Deal API** at `https://api-handshake.radostit.com/v1`, authenticated with an API key (`Authorization: Bearer hs_sandbox_…`). Open a deal with a goal and a mandate, read its state, contract, negotiation, PayPal calls and webhooks, submit delivery evidence, approve a price or decide an escalation.
-- **MCP server** (`packages/mcp`): the same operations as tools (`handshake_open_deal`, `handshake_get_deal`, `handshake_list_deals`, `handshake_approve_purchase`, `handshake_submit_evidence`, `handshake_decide_escalation`), so any MCP client can buy with escrow. It calls the Deal API; it holds no PayPal credentials.
+- **MCP server** (`packages/mcp`): the agent-facing operations as tools (`open_deal`, `list_deals`, `get_deal`, `submit_delivery_evidence`), so any MCP client can buy with escrow. Price approval, checkout approval and escalation decisions stay with the person on the deal page, so no tool can release money. It calls the Deal API; it holds no PayPal credentials.
 - **Developer console** at `/console`: paste an API key, configure a mandate and open a deal, see deals and the PayPal audit log (operation, request ID, status, `debug_id`) and webhook log in AG Grid.
 - **Deal page** at `/deals/<id>`: the escrow timeline, contract, negotiation and verification for one deal. The buyer opens it from the deal link, which carries the deal token.
 - **Protocol mapping:** the mandate and the signed contract line up with AP2 Intent and Cart mandates and with OpenAI's Agentic Commerce Protocol; the README shows the mapping.
@@ -384,7 +384,7 @@ Done when a successful attack produces a payout and a regression case, and the p
 - [x] `DealAgents` Lambda: negotiation and verification inside `DealLifecycle`, with Bedrock and Channel3 grants and no PayPal access.
 - [x] PayPal audit log (operation, request ID, status, `debug_id`) and webhook log stored per deal.
 - [x] Deal page `/deals/[id]` with the escrow timeline.
-- [ ] MCP server in `packages/mcp` with setup steps for Claude Desktop.
+- [x] MCP server in `packages/mcp` with setup steps for Claude Desktop.
 - [ ] Developer console `/console` with AG Grid deals, audit log and webhook log.
 - [ ] Red Team Lab reframe: copy, ranks, badges and styling.
 - [ ] Eval report and defense rate chart (AG Charts Community).

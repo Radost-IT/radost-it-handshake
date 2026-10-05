@@ -31,6 +31,7 @@ pnpm ssm:put prod        # copy .env values to SSM under /handshake/prod
 pnpm regressions:export <table>  # write arena regression cases to evals/regressions/
 pnpm arena:access <table> [approve|reject <email>]  # list or decide requests to join the arena
 pnpm api-keys:create <table> <name>  # issue a sandbox Deal API key; shown once
+pnpm mcp                 # MCP server over stdio; needs HANDSHAKE_API_KEY
 pnpm seed:sellers <table> [query ...]  # seller agents from Channel3 products
 pnpm eval                # agent evals in evals/scenarios against Bedrock
 ```
@@ -49,6 +50,35 @@ Base URL: `https://api-handshake.radostit.com/v1`. Send `authorization: Bearer <
 | `POST /deals/{dealId}/human-decision` | A settlement proposal for an escalated deal. Policy still checks it. |
 
 The deal routes also accept the deal's access token, so the buyer can act without your API key. Each key opens up to 25 deals a day.
+
+## MCP server
+
+`packages/mcp` exposes the Deal API as MCP tools, so any MCP client can buy with escrow. It calls the Deal API with your key and holds no PayPal credentials.
+
+| Tool | What it does |
+| --- | --- |
+| `open_deal` | Opens a deal and returns the `buyerUrl` for the person. |
+| `list_deals` | Lists your deals. |
+| `get_deal` | One deal with its contract, escrow hold and PayPal audit log. |
+| `submit_delivery_evidence` | Plays the sandbox seller and reports delivery. |
+
+There is no tool to approve a price, approve the checkout, or decide an escalation. Those stay with the person on the deal page, so a prompt-injected agent cannot release money through the MCP server.
+
+To use it from Claude Desktop, add this to `claude_desktop_config.json` and restart the app:
+
+```json
+{
+  "mcpServers": {
+    "handshake": {
+      "command": "pnpm",
+      "args": ["--silent", "--dir", "/path/to/radost-it-handshake", "mcp"],
+      "env": { "HANDSHAKE_API_KEY": "hs_sandbox_..." }
+    }
+  }
+}
+```
+
+`--silent` matters: the server talks over stdout, and pnpm's banner would break the protocol. From Claude Code, run `claude mcp add handshake --env HANDSHAKE_API_KEY=hs_sandbox_... -- pnpm --silent --dir /path/to/radost-it-handshake mcp`.
 
 ## Red Team Lab
 
