@@ -19,21 +19,25 @@ import { Construct } from 'constructs';
 const CHECKOUT_TIMEOUT = Duration.hours(1);
 // A buyer asked to approve a price gets a day before the deal is cancelled.
 const PURCHASE_APPROVAL_TIMEOUT = Duration.days(1);
-const VERDICT_TIMEOUT = Duration.days(1);
 // PayPal settles most pending captures within days; past this a person looks at it.
 const CAPTURE_TIMEOUT = Duration.days(7);
 
 /**
  * The DealLifecycle state machine. Each Lambda step loads the deal, applies
  * one change and reports the deal's state; the state decides what comes next.
- * The machine pauses with a task token until the buyer approves a price above
- * their threshold or the checkout, delivery evidence arrives, the verifier
- * answers or a person decides. Started with `{ "dealId": "..." }` once the
- * deal reaches AWAITING_HUMAN_APPROVAL or AUTHORIZING.
+ * The agent steps negotiate and verify; they never move money. The machine
+ * pauses with a task token until the buyer approves a price above their
+ * threshold or the checkout, delivery evidence arrives or a person decides.
+ * Started with `{ "dealId": "..." }` once the deal is NEGOTIATING, or once an
+ * arena deal reaches AWAITING_HUMAN_APPROVAL or AUTHORIZING.
  */
-export function createDealLifecycle(scope: Construct, lifecycleFunction: IFunction): StateMachine {
+export function createDealLifecycle(
+  scope: Construct,
+  functions: { lifecycle: IFunction; agents: IFunction },
+): StateMachine {
   const lifecycle = new Construct(scope, 'DealLifecycle');
   const dealId = JsonPath.stringAt('$.dealId');
+  const lifecycleFunction = functions.lifecycle;
 
   const step = (id: string, payload: Record<string, unknown>) => {
     const task = new LambdaInvoke(lifecycle, id, {
@@ -86,25 +90,34 @@ export function createDealLifecycle(scope: Construct, lifecycleFunction: IFuncti
       .otherwise(routeByState),
   );
 
-  // The resumer sends the settlement proposal itself as the task output.
-  const waitForVerdict = waitFor(
-    'WaitForVerdict',
-    { task: 'AwaitSignal', signal: 'verdict' },
-    '$.proposal',
-    Timeout.duration(VERDICT_TIMEOUT),
-  )
+  // Model calls are slow and capped, so an agent step gets one retry for a
+  // throttled or flaky model and then a fallback path instead of more retries.
+  const agentStep = (id: string, task: string) =>
+    new LambdaInvoke(lifecycle, id, {
+      lambdaFunction: functions.agents,
+      payload: TaskInput.fromObject({ dealId, task }),
+      payloadResponseOnly: true,
+      resultPath: '$.result',
+    }).addRetry({
+      errors: ['ThrottlingException', 'ServiceUnavailableException'],
+      interval: Duration.seconds(5),
+      maxAttempts: 1,
+    });
+
+  // The verifier returns `{ "proposal": ... }`; policy checks it in the next step.
+  const verify = agentStep('Verify', 'Verify')
     .addCatch(
-      step('EscalateUnanswered', {
+      step('EscalateUnverified', {
         task: 'Escalate',
-        reason: 'The verifier did not answer in time',
+        reason: 'The verifier could not check the evidence',
       }).next(routeByState),
-      timeouts,
+      { errors: [Errors.ALL], resultPath: JsonPath.DISCARD },
     )
     .next(
       step('SettleByVerifier', {
         task: 'Settle',
         proposer: 'verifier',
-        proposal: JsonPath.objectAt('$.proposal'),
+        proposal: JsonPath.objectAt('$.result.proposal'),
       }),
     )
     .next(routeByState);
@@ -149,7 +162,7 @@ export function createDealLifecycle(scope: Construct, lifecycleFunction: IFuncti
   // A capture that is still pending leaves it CAPTURING, which also waits again.
   routeByState
     .when(Condition.stringEquals('$.result.state', 'AWAITING_DELIVERY'), checkDeliveryTimer)
-    .when(Condition.stringEquals('$.result.state', 'VERIFYING'), waitForVerdict)
+    .when(Condition.stringEquals('$.result.state', 'VERIFYING'), verify)
     .when(Condition.stringEquals('$.result.state', 'ESCALATED'), waitForHumanDecision)
     .when(Condition.stringEquals('$.result.state', 'CAPTURING'), waitForCapture)
     .otherwise(done);
@@ -199,6 +212,14 @@ export function createDealLifecycle(scope: Construct, lifecycleFunction: IFuncti
     timeouts,
   );
   const routeStart = new Choice(lifecycle, 'RouteStart');
+  const negotiate = agentStep('Negotiate', 'Negotiate').addCatch(
+    step('AbandonFailedNegotiation', {
+      task: 'AbandonNegotiation',
+      reason: 'The agents could not finish the negotiation',
+    }).next(routeStart),
+    { errors: [Errors.ALL], resultPath: JsonPath.DISCARD },
+  );
+  negotiate.next(routeStart);
   // A refused decision leaves the deal AWAITING_HUMAN_APPROVAL, which waits again.
   waitForPurchaseApproval
     .next(
@@ -209,6 +230,7 @@ export function createDealLifecycle(scope: Construct, lifecycleFunction: IFuncti
     )
     .next(routeStart);
   routeStart
+    .when(Condition.stringEquals('$.result.state', 'NEGOTIATING'), negotiate)
     .when(
       Condition.stringEquals('$.result.state', 'AWAITING_HUMAN_APPROVAL'),
       waitForPurchaseApproval,

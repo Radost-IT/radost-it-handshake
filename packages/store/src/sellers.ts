@@ -1,6 +1,7 @@
 import { setTimeout as sleep } from 'node:timers/promises';
 import {
   BatchWriteCommand,
+  GetCommand,
   QueryCommand,
   type BatchWriteCommandInput,
 } from '@aws-sdk/lib-dynamodb';
@@ -38,6 +39,8 @@ const RETRY_BASE_DELAY_MS = 100;
 
 type WriteRequests = NonNullable<BatchWriteCommandInput['RequestItems']>[string];
 
+const sellerKey = (sellerId: string) => ({ pk: `SELLER#${sellerId}`, sk: 'META' });
+
 // GSI1 lists every seeded seller under one partition, so the arena can pick one without a scan.
 const SELLERS = 'SELLERS';
 
@@ -58,8 +61,7 @@ async function writeBatch(table: StoreTable, sellers: Seller[]): Promise<void> {
   let requests: WriteRequests = sellers.map((seller) => ({
     PutRequest: {
       Item: {
-        pk: `SELLER#${seller.sellerId}`,
-        sk: 'META',
+        ...sellerKey(seller.sellerId),
         gsi1pk: SELLERS,
         gsi1sk: seller.sellerId,
         ...seller,
@@ -93,4 +95,11 @@ export async function listSellers(table: StoreTable, limit: number): Promise<Sel
     }),
   );
   return Items.map((item) => sellerSchema.parse(item));
+}
+
+export async function getSeller(table: StoreTable, sellerId: string): Promise<Seller | undefined> {
+  const { Item } = await table.client.send(
+    new GetCommand({ TableName: table.name, Key: sellerKey(sellerId) }),
+  );
+  return Item ? sellerSchema.parse(Item) : undefined;
 }

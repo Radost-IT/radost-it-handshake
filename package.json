@@ -23,6 +23,7 @@
     "ssm:put": "tsx --env-file=.env scripts/put-ssm-parameters.ts",
     "regressions:export": "tsx scripts/export-regressions.ts",
     "arena:access": "tsx --env-file=.env scripts/arena-access.ts",
+    "api-keys:create": "tsx scripts/create-api-key.ts",
     "seed:sellers": "tsx --env-file=.env scripts/seed-sellers.ts",
     "eval": "tsx --env-file=.env scripts/run-evals.ts"
   },

@@ -1,7 +1,12 @@
 import { money } from '@handshake/core';
 import { sellerSchema } from '@handshake/store';
 import { describe, expect, it } from 'vitest';
-import { sellerFromProduct, sellerPersonas, sellersFromProducts } from './sellers';
+import {
+  sellerForProduct,
+  sellerFromProduct,
+  sellerPersonas,
+  sellersFromProducts,
+} from './sellers';
 
 const product = {
   productId: 'c3-bottle',
@@ -47,5 +52,15 @@ describe('sellersFromProducts', () => {
     const sellers = sellersFromProducts([product, other, product]);
 
     expect(sellers.map((seller) => seller.name)).toEqual(['Mara', 'Viktor']);
+  });
+});
+
+describe('sellerForProduct', () => {
+  it('always gives the same product the same persona', () => {
+    const first = sellerForProduct(product);
+    const second = sellerForProduct({ ...product });
+
+    expect(second).toEqual(first);
+    expect(sellerPersonas.map((persona) => persona.name)).toContain(first.name);
   });
 });

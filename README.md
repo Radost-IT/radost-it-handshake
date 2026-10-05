@@ -30,9 +30,25 @@ pnpm probe:paypal-payout # pay a 1.00 USD sandbox bounty to the arena recipient
 pnpm ssm:put prod        # copy .env values to SSM under /handshake/prod
 pnpm regressions:export <table>  # write arena regression cases to evals/regressions/
 pnpm arena:access <table> [approve|reject <email>]  # list or decide requests to join the arena
+pnpm api-keys:create <table> <name>  # issue a sandbox Deal API key; shown once
 pnpm seed:sellers <table> [query ...]  # seller agents from Channel3 products
 pnpm eval                # agent evals in evals/scenarios against Bedrock
 ```
+
+## Deal API
+
+Base URL: `https://api-handshake.radostit.com/v1`. Send `authorization: Bearer <key>`; create a sandbox key with `pnpm api-keys:create`.
+
+| Route | What it does |
+| --- | --- |
+| `POST /deals` | Opens a deal from a goal, a buyer mandate and an optional `sellerId`. Returns the deal, a one-time `accessToken` and a `buyerUrl` where the buyer approves the PayPal checkout. |
+| `GET /deals` | Lists the deals opened with your key, newest first. |
+| `GET /deals/{dealId}` | The deal with its events, negotiation, evidence, PayPal calls (with `debug_id`) and webhooks. |
+| `POST /deals/{dealId}/evidence` | Delivery evidence. The verifier checks it against the signed contract, then policy decides to capture or void. |
+| `POST /deals/{dealId}/purchase-approval` | `{ "approved": true }` for a price above the mandate's approval threshold. |
+| `POST /deals/{dealId}/human-decision` | A settlement proposal for an escalated deal. Policy still checks it. |
+
+The deal routes also accept the deal's access token, so the buyer can act without your API key. Each key opens up to 25 deals a day.
 
 ## Red Team Lab
 

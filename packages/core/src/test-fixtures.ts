@@ -56,8 +56,8 @@ export function authorizingDeal(terms: DealTerms = buildTerms()): Deal {
   return transitionDeal(deal, { to: 'AUTHORIZING' }, at, 'below threshold').deal;
 }
 
-/** A deal walked through the real state machine up to VERIFYING. */
-export function verifyingDeal(terms: DealTerms = buildTerms()): Deal {
+/** A deal walked through the real state machine up to AWAITING_DELIVERY. */
+export function awaitingDeliveryDeal(terms: DealTerms = buildTerms()): Deal {
   let deal = authorizingDeal(terms);
   deal = transitionDeal(
     deal,
@@ -65,6 +65,11 @@ export function verifyingDeal(terms: DealTerms = buildTerms()): Deal {
     at,
     'authorized',
   ).deal;
-  deal = transitionDeal(deal, { to: 'AWAITING_DELIVERY' }, at, 'waiting').deal;
+  return transitionDeal(deal, { to: 'AWAITING_DELIVERY' }, at, 'waiting').deal;
+}
+
+/** A deal walked through the real state machine up to VERIFYING. */
+export function verifyingDeal(terms: DealTerms = buildTerms()): Deal {
+  const deal = awaitingDeliveryDeal(terms);
   return transitionDeal(deal, { to: 'VERIFYING' }, at, 'evidence received').deal;
 }

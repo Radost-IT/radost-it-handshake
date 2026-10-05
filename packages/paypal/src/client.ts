@@ -7,6 +7,10 @@ import {
   type OAuthToken,
 } from '@paypal/paypal-server-sdk';
 import { PAYPAL_SANDBOX_BASE_URL, type Config } from '@handshake/config';
+import type { PayPalCallRecord } from './errors';
+
+/** Receives every finished PayPal call made for a deal, for the audit log. */
+export type PayPalCallObserver = (call: PayPalCallRecord) => Promise<void>;
 
 export interface PayPalClient {
   orders: OrdersController;
@@ -15,6 +19,7 @@ export interface PayPalClient {
   createRequest: ReturnType<Client['getRequestBuilderFactory']>;
   /** Returns the error from the last failed token request once, then forgets it. */
   consumeTokenFailure: () => unknown;
+  onCall: PayPalCallObserver | undefined;
 }
 
 const REQUEST_TIMEOUT_MS = 15_000;
@@ -26,14 +31,18 @@ export const RETURN_REPRESENTATION = 'return=representation';
  * Builds a long-lived sandbox client. Create it once per process and reuse it,
  * so the OAuth token is cached across Lambda invocations.
  */
-export function createPayPalClient(config: Config['paypal']): PayPalClient {
-  return buildPayPalClient(config, {});
+export function createPayPalClient(
+  config: Config['paypal'],
+  onCall?: PayPalCallObserver,
+): PayPalClient {
+  return buildPayPalClient(config, {}, onCall);
 }
 
 /** Same as `createPayPalClient`, with extra SDK options for tests (a stub transport). */
 export function buildPayPalClient(
   config: Config['paypal'],
   extraConfiguration: Partial<Configuration>,
+  onCall?: PayPalCallObserver,
 ): PayPalClient {
   if (config.baseUrl !== PAYPAL_SANDBOX_BASE_URL) {
     throw new Error('Only the PayPal sandbox is supported');
@@ -82,6 +91,7 @@ export function buildPayPalClient(
       tokenFailure = undefined;
       return failure;
     },
+    onCall,
   };
 }
 

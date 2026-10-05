@@ -3,12 +3,13 @@ import { SendTaskSuccessCommand, SFNClient } from '@aws-sdk/client-sfn';
 import { DeleteCommand, DynamoDBDocumentClient, GetCommand } from '@aws-sdk/lib-dynamodb';
 import { mockClient } from 'aws-sdk-client-mock';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { approvePurchase, decideEscalation, type DealApiContext } from './deal-approvals';
+import type { ResumeContext } from '@handshake/workflows/resume-lifecycle';
+import { approvePurchase, decideEscalation } from './deal-approvals';
 import { hashToken } from './http';
 
 const dynamodb = mockClient(DynamoDBDocumentClient);
 const stepFunctions = mockClient(SFNClient);
-const context: DealApiContext = {
+const context: ResumeContext = {
   table: { client: DynamoDBDocumentClient.from(new DynamoDBClient({})), name: 'T' },
   stepFunctions: new SFNClient({}),
   now: () => '2026-10-03T12:00:00Z',

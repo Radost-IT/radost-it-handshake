@@ -47,18 +47,56 @@ const errorBodySchema = z.object({
   details: z.array(z.object({ issue: z.string() })).optional(),
 });
 
-/** Runs one SDK call and translates SDK errors into the typed errors above. */
+/** One PayPal call made for a deal, as the audit log shows it. */
+export interface PayPalCallRecord {
+  dealId: string;
+  operation: PayPalOperation;
+  requestId: string | undefined;
+  statusCode: number;
+  debugId: string | undefined;
+}
+
+/** Ties a call to a deal so the client's observer can record it. */
+export interface DealCall {
+  dealId: string;
+  requestId?: string;
+}
+
+/**
+ * Runs one SDK call and translates SDK errors into the typed errors above.
+ * Calls made for a deal are reported to the client's observer, failed ones too.
+ */
 export async function callPayPal<T>(
   client: PayPalClient,
   operation: PayPalOperation,
   send: () => Promise<ApiResponse<T>>,
+  dealCall?: DealCall,
 ): Promise<T> {
+  let response: ApiResponse<T>;
   try {
-    const response = await send();
-    return response.result;
+    response = await send();
   } catch (error) {
-    throw translateError(client, operation, error);
+    const translated = translateError(client, operation, error);
+    if (dealCall && translated instanceof PayPalApiError) {
+      await report(client, operation, dealCall, translated.statusCode, translated.debugId);
+    }
+    throw translated;
   }
+  if (dealCall) {
+    const debugId = headerValue(response.headers, 'paypal-debug-id');
+    await report(client, operation, dealCall, response.statusCode, debugId);
+  }
+  return response.result;
+}
+
+async function report(
+  client: PayPalClient,
+  operation: PayPalOperation,
+  { dealId, requestId }: DealCall,
+  statusCode: number,
+  debugId: string | undefined,
+): Promise<void> {
+  await client.onCall?.({ dealId, operation, requestId, statusCode, debugId });
 }
 
 export function parsePayPalResponse<T>(

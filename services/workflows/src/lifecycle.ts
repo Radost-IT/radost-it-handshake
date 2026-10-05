@@ -34,6 +34,8 @@ const dealId = z.string().min(1);
 /** The input the DealLifecycle state machine sends with each Lambda task. */
 export const lifecycleTaskSchema = z.discriminatedUnion('task', [
   z.object({ task: z.literal('ReadState'), dealId }),
+  // The negotiation step failed, for example because the daily token budget ran out.
+  z.object({ task: z.literal('AbandonNegotiation'), dealId, reason: z.string().min(1) }),
   // The buyer's answer to a price above their approval threshold.
   z.object({ task: z.literal('DecidePurchase'), dealId, decision: z.unknown() }),
   z.object({ task: z.literal('CancelPurchase'), dealId, reason: z.string().min(1) }),
@@ -44,7 +46,7 @@ export const lifecycleTaskSchema = z.discriminatedUnion('task', [
   z.object({
     task: z.literal('AwaitSignal'),
     dealId,
-    signal: z.enum(['purchase-approval', 'evidence', 'verdict', 'human-decision', 'capture']),
+    signal: z.enum(['purchase-approval', 'evidence', 'human-decision', 'capture']),
     taskToken: z.string().min(1),
   }),
   z.object({ task: z.literal('StartVerification'), dealId }),
@@ -92,6 +94,8 @@ export async function runLifecycleTask(
   switch (task.task) {
     case 'ReadState':
       return { state: deal.state };
+    case 'AbandonNegotiation':
+      return moveIfIn(context, deal, 'NEGOTIATING', 'ABANDONED', task.reason);
     case 'DecidePurchase':
       return decidePurchase(context, deal, task.decision);
     case 'CancelPurchase':
@@ -149,7 +153,7 @@ async function moveIfIn(
   context: LifecycleContext,
   deal: Deal,
   from: DealState,
-  to: 'AUTHORIZING' | 'CANCELLED' | 'VERIFYING' | 'ESCALATED',
+  to: 'ABANDONED' | 'AUTHORIZING' | 'CANCELLED' | 'VERIFYING' | 'ESCALATED',
   reason: string,
 ): Promise<LifecycleTaskResult> {
   if (deal.state !== from) return { state: deal.state };

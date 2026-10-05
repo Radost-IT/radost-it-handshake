@@ -354,12 +354,18 @@ importers:
       '@aws-sdk/lib-dynamodb':
         specifier: ^3.1146.0
         version: 3.1146.0(@aws-sdk/client-dynamodb@3.1146.0)
+      '@channel3/sdk':
+        specifier: ^4.1.0
+        version: 4.1.0
       '@handshake/agents':
         specifier: workspace:*
         version: link:../../packages/agents
       '@handshake/arena':
         specifier: workspace:*
         version: link:../../packages/arena
+      '@handshake/channel3':
+        specifier: workspace:*
+        version: link:../../packages/channel3
       '@handshake/config':
         specifier: workspace:*
         version: link:../../packages/config

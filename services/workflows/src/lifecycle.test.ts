@@ -263,6 +263,21 @@ describe('CancelPurchase', () => {
   });
 });
 
+describe('AbandonNegotiation', () => {
+  it('abandons a deal whose negotiation step failed', async () => {
+    const opened = createDeal('deal-1', mandate, '2026-10-02T12:00:00Z').deal;
+    storeDeal(transitionDeal(opened, { to: 'NEGOTIATING' }, '2026-10-02T12:00:00Z', 'open').deal);
+
+    const { result } = await run(
+      { task: 'AbandonNegotiation', dealId: 'deal-1', reason: 'The token budget ran out' },
+      '2026-10-02T12:05:00Z',
+    );
+
+    expect(result).toEqual({ state: 'ABANDONED' });
+    expect(savedStates()).toEqual(['ABANDONED']);
+  });
+});
+
 describe('CancelCheckout', () => {
   it('cancels a deal whose buyer never approved the payment', async () => {
     storeDeal(authorizingDeal());

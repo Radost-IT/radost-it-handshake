@@ -104,11 +104,16 @@ describe('HandshakeStack', () => {
     });
   });
 
-  it('lets the deal token holder resume price approvals and escalations', () => {
-    for (const decision of ['purchase-approval', 'human-decision']) {
-      template.hasResourceProperties('AWS::ApiGatewayV2::Route', {
-        RouteKey: `POST /deals/{dealId}/${decision}`,
-      });
+  it('serves the versioned Deal API to API keys and deal token holders', () => {
+    for (const routeKey of [
+      'POST /v1/deals',
+      'GET /v1/deals',
+      'GET /v1/deals/{dealId}',
+      'POST /v1/deals/{dealId}/evidence',
+      'POST /v1/deals/{dealId}/purchase-approval',
+      'POST /v1/deals/{dealId}/human-decision',
+    ]) {
+      template.hasResourceProperties('AWS::ApiGatewayV2::Route', { RouteKey: routeKey });
     }
     template.hasResourceProperties('AWS::ApiGatewayV2::Api', {
       CorsConfiguration: Match.objectLike({ AllowHeaders: ['authorization', 'content-type'] }),
@@ -156,13 +161,15 @@ describe('HandshakeStack', () => {
     const definition = JSON.stringify(stateMachine);
     for (const state of [
       'ReadState',
+      'Negotiate',
+      'AbandonFailedNegotiation',
       'WaitForPurchaseApproval',
       'DecidePurchase',
       'StartCheckout',
       'AuthorizePayment',
       'CheckDeliveryTimer',
       'WaitForEvidence',
-      'WaitForVerdict',
+      'Verify',
       'SettleByVerifier',
       'WaitForHumanDecision',
       'SettleByHuman',

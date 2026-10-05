@@ -5,7 +5,7 @@ import type { StoreTable } from './table';
 
 /** What a paused deal lifecycle waits for before it continues. */
 export type WaitSignal =
-  'purchase-approval' | 'checkout' | 'evidence' | 'verdict' | 'human-decision' | 'capture';
+  'purchase-approval' | 'checkout' | 'evidence' | 'human-decision' | 'capture';
 
 // Step Functions keeps a task token valid for at most a year, but no wait in
 // the lifecycle outlasts the 29-day authorization, so a month is enough.

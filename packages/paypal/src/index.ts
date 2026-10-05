@@ -4,8 +4,13 @@ export {
   voidAuthorization,
   type AuthorizationRequest,
 } from './authorizations';
-export { createPayPalClient, type PayPalClient } from './client';
-export { PayPalApiError, PayPalResponseError, type PayPalOperation } from './errors';
+export { createPayPalClient, type PayPalCallObserver, type PayPalClient } from './client';
+export {
+  PayPalApiError,
+  PayPalResponseError,
+  type PayPalCallRecord,
+  type PayPalOperation,
+} from './errors';
 export {
   authorizeOrder,
   createAuthorizeOrder,

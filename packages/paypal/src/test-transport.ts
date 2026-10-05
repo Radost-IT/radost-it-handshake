@@ -1,5 +1,5 @@
 import { PAYPAL_SANDBOX_BASE_URL } from '@handshake/config';
-import { buildPayPalClient, type PayPalClient } from './client';
+import { buildPayPalClient, type PayPalCallObserver, type PayPalClient } from './client';
 
 export interface StubResponse {
   status: number;
@@ -34,6 +34,7 @@ const tokenResponse: StubResponse = {
 export function stubPayPalClient(
   responses: StubResponse[],
   tokenResponses: StubResponse[] = [],
+  onCall?: PayPalCallObserver,
 ): { client: PayPalClient; sent: SentRequest[] } {
   const sent: SentRequest[] = [];
   const client = buildPayPalClient(
@@ -72,6 +73,7 @@ export function stubPayPalClient(
         },
       },
     },
+    onCall,
   );
   return { client, sent };
 }

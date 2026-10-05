@@ -27,13 +27,18 @@ export async function captureAuthorization(
   client: PayPalClient,
   request: AuthorizationRequest & { amount: Money },
 ): Promise<PayPalCapture> {
-  const capture = await callPayPal(client, 'capture', () =>
-    client.payments.captureAuthorizedPayment({
-      authorizationId: request.authorizationId,
-      paypalRequestId: paypalRequestId(request.dealId, 'capture', request.attempt),
-      prefer: RETURN_REPRESENTATION,
-      body: { amount: toPayPalMoney(request.amount), finalCapture: true },
-    }),
+  const requestId = paypalRequestId(request.dealId, 'capture', request.attempt);
+  const capture = await callPayPal(
+    client,
+    'capture',
+    () =>
+      client.payments.captureAuthorizedPayment({
+        authorizationId: request.authorizationId,
+        paypalRequestId: requestId,
+        prefer: RETURN_REPRESENTATION,
+        body: { amount: toPayPalMoney(request.amount), finalCapture: true },
+      }),
+    { dealId: request.dealId, requestId },
   );
   return parsePayPalResponse('capture', captureSchema, capture);
 }
@@ -45,12 +50,17 @@ export async function voidAuthorization(
   client: PayPalClient,
   request: AuthorizationRequest,
 ): Promise<{ id: string; status: PayPalAuthorizationStatus }> {
-  const authorization = await callPayPal(client, 'void', () =>
-    client.payments.voidPayment({
-      authorizationId: request.authorizationId,
-      paypalRequestId: paypalRequestId(request.dealId, 'void', request.attempt),
-      prefer: RETURN_REPRESENTATION,
-    }),
+  const requestId = paypalRequestId(request.dealId, 'void', request.attempt);
+  const authorization = await callPayPal(
+    client,
+    'void',
+    () =>
+      client.payments.voidPayment({
+        authorizationId: request.authorizationId,
+        paypalRequestId: requestId,
+        prefer: RETURN_REPRESENTATION,
+      }),
+    { dealId: request.dealId, requestId },
   );
   return parsePayPalResponse('void', voidedAuthorizationSchema, authorization);
 }
@@ -63,12 +73,17 @@ export async function reauthorizeAuthorization(
   client: PayPalClient,
   request: AuthorizationRequest,
 ): Promise<PayPalAuthorization> {
-  const authorization = await callPayPal(client, 'reauthorize', () =>
-    client.payments.reauthorizePayment({
-      authorizationId: request.authorizationId,
-      paypalRequestId: paypalRequestId(request.dealId, 'reauthorize', request.attempt),
-      prefer: RETURN_REPRESENTATION,
-    }),
+  const requestId = paypalRequestId(request.dealId, 'reauthorize', request.attempt);
+  const authorization = await callPayPal(
+    client,
+    'reauthorize',
+    () =>
+      client.payments.reauthorizePayment({
+        authorizationId: request.authorizationId,
+        paypalRequestId: requestId,
+        prefer: RETURN_REPRESENTATION,
+      }),
+    { dealId: request.dealId, requestId },
   );
   return parsePayPalResponse('reauthorize', authorizationSchema, authorization);
 }

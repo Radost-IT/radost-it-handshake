@@ -82,6 +82,7 @@ pnpm ssm:put <stage>     # copy .env values to SSM; secrets as SecureString
 pnpm seed:sellers <table> [query ...]  # seller agents from Channel3 products; reads .env
 pnpm regressions:export <table>  # write hall of fame cases to evals/regressions/
 pnpm arena:access <table> [approve|reject <email>]  # list or decide requests to join the arena
+pnpm api-keys:create <table> <name>  # issue a sandbox Deal API key; shown once
 pnpm demo:reset
 pnpm cdk:synth
 pnpm cdk:deploy

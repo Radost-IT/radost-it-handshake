@@ -1,7 +1,8 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
 import { loadConfig } from '@handshake/config';
-import { createPayPalClient } from '@handshake/paypal';
+import { createPayPalClient, type PayPalCallRecord } from '@handshake/paypal';
+import { recordPayPalCall } from '@handshake/store';
 import { z } from 'zod';
 import {
   lifecycleTaskSchema,
@@ -16,15 +17,28 @@ const environment = z
 
 const config = await loadConfig();
 
+const table = {
+  client: DynamoDBDocumentClient.from(new DynamoDBClient({})),
+  name: environment.TABLE_NAME,
+};
+const now = () => new Date().toISOString();
+
+// Every PayPal call made for a deal lands in its audit log, with PayPal's debug ID.
+const auditPayPalCall = (call: PayPalCallRecord) =>
+  recordPayPalCall(table, call.dealId, {
+    at: now(),
+    operation: call.operation,
+    requestId: call.requestId ?? null,
+    statusCode: call.statusCode,
+    debugId: call.debugId ?? null,
+  });
+
 const context: LifecycleContext = {
-  paypal: createPayPalClient(config.paypal),
-  table: {
-    client: DynamoDBDocumentClient.from(new DynamoDBClient({})),
-    name: environment.TABLE_NAME,
-  },
+  paypal: createPayPalClient(config.paypal, auditPayPalCall),
+  table,
   webUrl: environment.WEB_URL,
   honorPeriodMs: config.paypal.honorPeriodHours * 60 * 60 * 1000,
-  now: () => new Date().toISOString(),
+  now,
 };
 
 /** One step of the DealLifecycle state machine. Errors fail the step so Step Functions can retry. */

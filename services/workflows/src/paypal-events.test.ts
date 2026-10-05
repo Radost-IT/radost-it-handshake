@@ -25,6 +25,13 @@ function waitingFor(signal: string): void {
   });
 }
 
+function savedWaits() {
+  return dynamodb
+    .commandCalls(PutCommand)
+    .map((call) => call.args[0].input.Item)
+    .filter((item) => String(item?.sk).startsWith('WAIT#'));
+}
+
 const orderApproved = {
   'detail-type': 'CHECKOUT.ORDER.APPROVED',
   detail: {
@@ -47,6 +54,22 @@ describe('CHECKOUT.ORDER.APPROVED', () => {
     });
   });
 
+  it('logs the event on the deal', async () => {
+    waitingFor('checkout');
+    stepFunctions.on(SendTaskSuccessCommand).resolves({});
+
+    await resumeLifecycleFromPayPal(context, orderApproved);
+
+    expect(dynamodb.commandCalls(PutCommand)[0]?.args[0].input.Item).toEqual({
+      pk: 'DEAL#deal-1',
+      sk: 'WEBHOOK#2026-10-02T12:10:00Z#WH-1',
+      at: '2026-10-02T12:10:00Z',
+      eventId: 'WH-1',
+      eventType: 'CHECKOUT.ORDER.APPROVED',
+      resourceId: 'ORDER-1',
+    });
+  });
+
   it('ignores an approval that nothing waits for', async () => {
     dynamodb.on(DeleteCommand).resolves({});
 
@@ -63,7 +86,7 @@ describe('CHECKOUT.ORDER.APPROVED', () => {
 
     await resumeLifecycleFromPayPal(context, orderApproved);
 
-    expect(dynamodb.commandCalls(PutCommand)).toHaveLength(0);
+    expect(savedWaits()).toHaveLength(0);
   });
 
   it('keeps the wait when Step Functions fails, so the retried event can resume it', async () => {
@@ -74,7 +97,7 @@ describe('CHECKOUT.ORDER.APPROVED', () => {
       'Rate exceeded',
     );
 
-    expect(dynamodb.commandCalls(PutCommand)[0]?.args[0].input.Item).toMatchObject({
+    expect(savedWaits()[0]).toMatchObject({
       sk: 'WAIT#checkout',
       taskToken: 'token-1',
     });
@@ -106,7 +129,7 @@ describe('PAYMENT.CAPTURE.COMPLETED', () => {
   it('ignores a capture without a deal ID, which the capture timeout then escalates', async () => {
     await resumeLifecycleFromPayPal(context, {
       'detail-type': 'PAYMENT.CAPTURE.COMPLETED',
-      detail: { resource: { ...capture, custom_id: undefined } },
+      detail: { id: 'WH-3', resource: { ...capture, custom_id: undefined } },
     });
 
     expect(dynamodb.calls()).toHaveLength(0);
@@ -116,7 +139,7 @@ describe('PAYMENT.CAPTURE.COMPLETED', () => {
 it('ignores PayPal events the lifecycle does not wait for', async () => {
   await resumeLifecycleFromPayPal(context, {
     'detail-type': 'PAYMENT.AUTHORIZATION.CREATED',
-    detail: { resource: { id: 'auth-1' } },
+    detail: { id: 'WH-4', resource: { id: 'auth-1' } },
   });
 
   expect(dynamodb.calls()).toHaveLength(0);

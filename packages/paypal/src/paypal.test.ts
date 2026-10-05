@@ -1,11 +1,11 @@
 import { money } from '@handshake/core';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
   captureAuthorization,
   reauthorizeAuthorization,
   voidAuthorization,
 } from './authorizations';
-import { PayPalApiError, PayPalResponseError } from './errors';
+import { PayPalApiError, PayPalResponseError, type PayPalCallRecord } from './errors';
 import { authorizeOrder, createAuthorizeOrder, getOrder } from './orders';
 import { paypalRequestId } from './request-id';
 import { lastSent, stubPayPalClient } from './test-transport';
@@ -217,6 +217,68 @@ describe('voidAuthorization', () => {
 
     expect(voided).toEqual({ id: 'AUTH-1', status: 'VOIDED' });
     expect(lastSent(sent).headers['PayPal-Request-Id']).toBe('deal-1:void:0');
+  });
+});
+
+describe('deal call audit', () => {
+  const voidRequest = { dealId: 'deal-1', authorizationId: 'AUTH-1', attempt: 0 };
+
+  it('reports a successful call with its request ID and debug_id', async () => {
+    const calls: PayPalCallRecord[] = [];
+    const { client } = stubPayPalClient(
+      [
+        {
+          status: 200,
+          body: { ...authorizationBody, status: 'VOIDED' },
+          headers: { 'paypal-debug-id': 'debug-ok' },
+        },
+      ],
+      [],
+      (call) => {
+        calls.push(call);
+        return Promise.resolve();
+      },
+    );
+
+    await voidAuthorization(client, voidRequest);
+
+    expect(calls).toEqual([
+      {
+        dealId: 'deal-1',
+        operation: 'void',
+        requestId: 'deal-1:void:0',
+        statusCode: 200,
+        debugId: 'debug-ok',
+      },
+    ]);
+  });
+
+  it('reports a failed call before the error reaches the caller', async () => {
+    const calls: PayPalCallRecord[] = [];
+    const { client } = stubPayPalClient(
+      [{ status: 422, body: { debug_id: 'debug-bad', details: [{ issue: 'X' }] } }],
+      [],
+      (call) => {
+        calls.push(call);
+        return Promise.resolve();
+      },
+    );
+
+    await expect(voidAuthorization(client, voidRequest)).rejects.toBeInstanceOf(PayPalApiError);
+    expect(calls).toMatchObject([{ operation: 'void', statusCode: 422, debugId: 'debug-bad' }]);
+  });
+
+  it('does not report calls made without a deal', async () => {
+    const onCall = vi.fn(() => Promise.resolve());
+    const { client } = stubPayPalClient(
+      [{ status: 200, body: { id: 'ORDER-1', status: 'APPROVED' } }],
+      [],
+      onCall,
+    );
+
+    await getOrder(client, 'ORDER-1');
+
+    expect(onCall).not.toHaveBeenCalled();
   });
 });
 

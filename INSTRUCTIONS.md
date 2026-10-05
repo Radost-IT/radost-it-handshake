@@ -246,6 +246,18 @@ The arena now pushes results over a WebSocket API at `ws-handshake.radostit.com`
 - [ ] Run `AWS_PROFILE=handshake pnpm cdk:deploy`. The `LiveUrl` output should read `wss://ws-handshake.radostit.com`.
 - [ ] Open an attempt page and launch an attack in another tab. The page should switch to the result without a reload, and the defense counter on `/arena` should go up by one.
 
+### [I-24] Turn on the Deal API
+Developers now open deals through `https://api-handshake.radostit.com/v1/deals`. Agents negotiate and verify in a new `DealAgents` Lambda. No new `.env` keys are needed; deals without a `sellerId` shop Channel3, so they need `CHANNEL3_API_KEY` ([I-5]).
+- [ ] Run `AWS_PROFILE=handshake pnpm cdk:deploy`. The old `/deals/{dealId}/…` routes are replaced by `/v1/deals/{dealId}/…`.
+- [ ] Run `AWS_PROFILE=handshake pnpm api-keys:create <table> "<your name>"` and keep the printed key in your password manager. It starts with `hs_sandbox_` and is shown only once.
+- [ ] Open a test deal with a seeded seller (find one with `pnpm seed:sellers` output or in the table):
+  ```bash
+  curl -X POST https://api-handshake.radostit.com/v1/deals \
+    -H "authorization: Bearer <key>" -H "content-type: application/json" \
+    -d '{"goal":"A steel water bottle","sellerId":"<seller id>","mandate":{"maxPrice":{"currency":"USD","value":"60.00"},"blockedCategories":[],"humanApprovalThreshold":{"currency":"USD","value":"50.00"}}}'
+  ```
+  The response has a `buyerUrl`. Then run `curl -H "authorization: Bearer <key>" https://api-handshake.radostit.com/v1/deals/<deal id>` a minute later and check that the deal reached `AUTHORIZING`, `AWAITING_HUMAN_APPROVAL` or `ABANDONED`.
+
 ---
 
 ## During Phase 5

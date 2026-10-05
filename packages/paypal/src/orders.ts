@@ -63,39 +63,52 @@ export async function createAuthorizeOrder(
   client: PayPalClient,
   request: AuthorizeOrderRequest,
 ): Promise<PayPalOrder> {
-  const order = await callPayPal(client, 'create-order', () =>
-    client.orders.createOrder({
-      paypalRequestId: paypalRequestId(request.dealId, 'create-order', request.attempt),
-      prefer: RETURN_REPRESENTATION,
-      body: {
-        intent: CheckoutPaymentIntent.Authorize,
-        purchaseUnits: [
-          {
-            referenceId: request.dealId,
-            customId: request.dealId,
-            description: request.description,
-            amount: toPayPalMoney(request.amount),
-          },
-        ],
-        paymentSource: {
-          paypal: {
-            experienceContext: {
-              brandName: 'Handshake',
-              userAction: PaypalExperienceUserAction.PayNow,
-              returnUrl: request.returnUrl,
-              cancelUrl: request.cancelUrl,
+  const requestId = paypalRequestId(request.dealId, 'create-order', request.attempt);
+  const order = await callPayPal(
+    client,
+    'create-order',
+    () =>
+      client.orders.createOrder({
+        paypalRequestId: requestId,
+        prefer: RETURN_REPRESENTATION,
+        body: {
+          intent: CheckoutPaymentIntent.Authorize,
+          purchaseUnits: [
+            {
+              referenceId: request.dealId,
+              customId: request.dealId,
+              description: request.description,
+              amount: toPayPalMoney(request.amount),
+            },
+          ],
+          paymentSource: {
+            paypal: {
+              experienceContext: {
+                brandName: 'Handshake',
+                userAction: PaypalExperienceUserAction.PayNow,
+                returnUrl: request.returnUrl,
+                cancelUrl: request.cancelUrl,
+              },
             },
           },
         },
-      },
-    }),
+      }),
+    { dealId: request.dealId, requestId },
   );
   return parsePayPalResponse('create-order', orderSchema, order);
 }
 
-export async function getOrder(client: PayPalClient, orderId: string): Promise<PayPalOrder> {
-  const order = await callPayPal(client, 'get-order', () =>
-    client.orders.getOrder({ id: orderId }),
+/** Reads an order. Pass the deal ID to record the call in the deal's audit log. */
+export async function getOrder(
+  client: PayPalClient,
+  orderId: string,
+  dealId?: string,
+): Promise<PayPalOrder> {
+  const order = await callPayPal(
+    client,
+    'get-order',
+    () => client.orders.getOrder({ id: orderId }),
+    dealId === undefined ? undefined : { dealId },
   );
   return parsePayPalResponse('get-order', orderSchema, order);
 }
@@ -110,12 +123,17 @@ export async function authorizeOrder(
   client: PayPalClient,
   request: { dealId: string; orderId: string; attempt: number },
 ): Promise<AuthorizedOrder> {
-  const response = await callPayPal(client, 'authorize', () =>
-    client.orders.authorizeOrder({
-      id: request.orderId,
-      paypalRequestId: paypalRequestId(request.dealId, 'authorize', request.attempt),
-      prefer: RETURN_REPRESENTATION,
-    }),
+  const requestId = paypalRequestId(request.dealId, 'authorize', request.attempt);
+  const response = await callPayPal(
+    client,
+    'authorize',
+    () =>
+      client.orders.authorizeOrder({
+        id: request.orderId,
+        paypalRequestId: requestId,
+        prefer: RETURN_REPRESENTATION,
+      }),
+    { dealId: request.dealId, requestId },
   );
   const order = parsePayPalResponse('authorize', orderSchema, response);
   if (order.authorization === undefined) {

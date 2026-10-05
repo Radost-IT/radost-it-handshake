@@ -1,10 +1,9 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
 import { Channel3 } from '@channel3/sdk';
-import { searchProducts } from '@handshake/channel3';
+import { searchProducts, sellersFromProducts } from '@handshake/channel3';
 import { loadConfig, requireChannel3ApiKey } from '@handshake/config';
 import { saveSellers } from '@handshake/store';
-import { sellersFromProducts } from './sellers';
 
 const [tableName, ...queries] = process.argv.slice(2);
 if (tableName === undefined) {

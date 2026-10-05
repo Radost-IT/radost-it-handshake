@@ -380,9 +380,9 @@ Done when a successful attack produces a payout and a regression case, and the p
 ### Phase 4b — Developer platform (Oct 5–Nov 2)
 
 - [x] Positioning in this file and the README: settlement API and MCP server for agent builders, basis-point fee per settled deal.
-- [ ] Deal API under `/v1`: API keys (`pnpm api-keys:create`), open and list deals, deal detail, evidence, purchase approval, escalation decision, checkout approval fallback.
-- [ ] `DealAgents` Lambda: negotiation and verification inside `DealLifecycle`, with Bedrock and Channel3 grants and no PayPal access.
-- [ ] PayPal audit log (operation, request ID, status, `debug_id`) and webhook log stored per deal.
+- [x] Deal API under `/v1`: API keys (`pnpm api-keys:create`), open and list deals, deal detail, evidence, purchase approval, escalation decision. The PayPal webhook already resumes checkout, so there is no separate checkout approval route.
+- [x] `DealAgents` Lambda: negotiation and verification inside `DealLifecycle`, with Bedrock and Channel3 grants and no PayPal access.
+- [x] PayPal audit log (operation, request ID, status, `debug_id`) and webhook log stored per deal.
 - [ ] Deal page `/deals/[id]` with the escrow timeline.
 - [ ] MCP server in `packages/mcp` with setup steps for Claude Desktop.
 - [ ] Developer console `/console` with AG Grid deals, audit log and webhook log.

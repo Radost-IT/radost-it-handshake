@@ -178,7 +178,33 @@ export class HandshakeStack extends Stack {
       'dynamodb:ConditionCheckItem',
     );
     this.grantConfigRead(workflowsFunction, configPath);
-    const dealLifecycle = createDealLifecycle(this, workflowsFunction);
+
+    const dealAgentsFunction = new NodejsFunction(this, 'DealAgentsFunction', {
+      entry: serviceSource('workflows', 'deal-agents-handler.ts'),
+      runtime: Runtime.NODEJS_22_X,
+      architecture: Architecture.ARM_64,
+      memorySize: 512,
+      // Shopping the catalog and a full negotiation are many model calls in a row.
+      timeout: Duration.minutes(10),
+      logGroup: new LogGroup(this, 'DealAgentsFunctionLogs', {
+        retention: RetentionDays.ONE_MONTH,
+      }),
+      bundling: esmBundling,
+      environment: { HANDSHAKE_STAGE: props.stage, TABLE_NAME: table.tableName },
+    });
+    table.grant(
+      dealAgentsFunction,
+      'dynamodb:GetItem',
+      'dynamodb:PutItem',
+      'dynamodb:UpdateItem',
+      'dynamodb:ConditionCheckItem',
+    );
+    this.grantConfigRead(dealAgentsFunction, configPath);
+    this.grantAnthropicModels(dealAgentsFunction);
+    const dealLifecycle = createDealLifecycle(this, {
+      lifecycle: workflowsFunction,
+      agents: dealAgentsFunction,
+    });
 
     const arenaRunFunction = new NodejsFunction(this, 'ArenaRunFunction', {
       entry: serviceSource('workflows', 'arena-run-handler.ts'),
@@ -258,9 +284,23 @@ export class HandshakeStack extends Stack {
       timeout: Duration.seconds(10),
       logGroup: new LogGroup(this, 'DealApiFunctionLogs', { retention: RetentionDays.ONE_MONTH }),
       bundling: esmBundling,
-      environment: { TABLE_NAME: table.tableName },
+      environment: {
+        TABLE_NAME: table.tableName,
+        DEAL_LIFECYCLE_ARN: dealLifecycle.stateMachineArn,
+        WEB_URL: `https://${props.domains.web}`,
+      },
     });
-    table.grant(dealApiFunction, 'dynamodb:GetItem', 'dynamodb:PutItem', 'dynamodb:DeleteItem');
+    table.grant(
+      dealApiFunction,
+      'dynamodb:GetItem',
+      'dynamodb:PutItem',
+      'dynamodb:UpdateItem',
+      'dynamodb:DeleteItem',
+      'dynamodb:Query',
+      'dynamodb:BatchGetItem',
+      'dynamodb:ConditionCheckItem',
+    );
+    dealLifecycle.grantStartExecution(dealApiFunction);
     dealLifecycle.grantTaskResponse(dealApiFunction);
 
     const certificateFromParameter = (id: string, parameterName: string) =>
@@ -345,9 +385,19 @@ export class HandshakeStack extends Stack {
       httpApi.addRoutes({ path, methods: [HttpMethod.GET], integration: arenaApiIntegration });
     }
     const dealApiIntegration = new HttpLambdaIntegration('DealApiIntegration', dealApiFunction);
-    for (const decision of ['purchase-approval', 'human-decision']) {
+    httpApi.addRoutes({
+      path: '/v1/deals',
+      methods: [HttpMethod.GET, HttpMethod.POST],
+      integration: dealApiIntegration,
+    });
+    httpApi.addRoutes({
+      path: '/v1/deals/{dealId}',
+      methods: [HttpMethod.GET],
+      integration: dealApiIntegration,
+    });
+    for (const action of ['evidence', 'purchase-approval', 'human-decision']) {
       httpApi.addRoutes({
-        path: `/deals/{dealId}/${decision}`,
+        path: `/v1/deals/{dealId}/${action}`,
         methods: [HttpMethod.POST],
         integration: dealApiIntegration,
       });

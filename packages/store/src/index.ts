@@ -39,7 +39,30 @@ export {
   type Challenger,
   type NewChallenger,
 } from './challengers';
-export { saveCheckout, type Checkout } from './checkout';
+export { getCheckout, saveCheckout, type Checkout } from './checkout';
+export { API_KEY_PREFIX, findApiKey, issueApiKey, type ApiKey } from './api-keys';
+export {
+  getDealBrief,
+  getDealRecord,
+  getEvidence,
+  recordPayPalCall,
+  recordWebhook,
+  saveDealBrief,
+  saveEvidence,
+  saveNegotiationRecord,
+  type DealBrief,
+  type DealRecord,
+  type NegotiationRecord,
+  type PayPalCallEntry,
+  type WebhookEntry,
+} from './deal-records';
+export {
+  isDealOwner,
+  listDeveloperDeals,
+  MAX_LISTED_DEALS,
+  saveDealOwner,
+  UnreadDealsError,
+} from './developer-deals';
 export { grantDealAccess, hasDealAccess } from './deal-access';
 export { ConcurrentDealUpdateError, getDeal, saveDeal } from './deals';
 export { getLeaderboard, type LeaderboardEntry, type LeaderboardScope } from './leaderboard';
@@ -66,6 +89,7 @@ export type { StoreTable } from './table';
 export { addTokensUsed, getTokensUsed } from './token-budget';
 export { saveWait, takeWait, type WaitSignal } from './waits';
 export {
+  getSeller,
   listSellers,
   saveSellers,
   sellerSchema,
