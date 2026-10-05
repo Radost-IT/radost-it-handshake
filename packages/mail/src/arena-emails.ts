@@ -1,10 +1,10 @@
 import type { Email } from './send';
 
-const ARENA_URL = 'https://handshake.radostit.com/arena';
+const SIGN_IN_URL = 'https://handshake.radostit.com/sign-in';
 
 export function signInCodeEmail(code: string, validMinutes: number): Email {
   return {
-    subject: `${code} is your Handshake Arena code`,
+    subject: `${code} is your Handshake sign-in code`,
     text: [
       `Your sign-in code is ${code}.`,
       `It works once and expires in ${validMinutes} minutes.`,
@@ -20,9 +20,9 @@ export function accessRequestEmail(request: {
   rejectCommand: string;
 }): Email {
   return {
-    subject: `Arena access request from ${request.email}`,
+    subject: `Handshake access request from ${request.email}`,
     text: [
-      `${request.email} asks to join the arena.`,
+      `${request.email} asks for access to the console and the Red Team Lab.`,
       `Reason:\n${request.reason}`,
       `Approve:\n${request.approveCommand}`,
       `Turn down:\n${request.rejectCommand}`,
@@ -32,20 +32,20 @@ export function accessRequestEmail(request: {
 
 export function accessApprovedEmail(): Email {
   return {
-    subject: 'You can join Handshake Arena',
+    subject: 'Your Handshake access is approved',
     text: [
-      'Your request to join the arena is approved.',
-      `Sign in with this email at ${ARENA_URL}, pick a handle and start.`,
+      'Your request for access is approved.',
+      `Sign in with this email at ${SIGN_IN_URL}. You can open sandbox deals in the console and attack the agents in the Red Team Lab.`,
     ].join('\n\n'),
   };
 }
 
 export function accessRejectedEmail(): Email {
   return {
-    subject: 'Your Handshake Arena request',
+    subject: 'Your Handshake access request',
     text: [
-      'Thanks for asking to join the arena.',
-      'Places are limited because every attempt runs real AI agents, and we cannot add you right now.',
+      'Thanks for asking for access.',
+      'Places are limited because every deal and attack runs real AI agents, and we cannot add you right now.',
     ].join('\n\n'),
   };
 }
