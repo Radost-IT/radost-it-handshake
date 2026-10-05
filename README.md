@@ -1,8 +1,14 @@
 # Handshake by Radost IT
 
-AI agents negotiate and settle real-product deals through PayPal escrow. The language model never moves money: agents propose, and tested code captures or voids the PayPal authorization.
+Escrow settlement for AI shopping agents, on PayPal.
 
-Work in progress for the PayPal AI Hackathon. See `PROJECT.md` for the plan.
+Teams building shopping agents have a trust problem: their users will not let the agent pay, because one fake listing or injected message could cost them money. Handshake lets the agent pay safely. The agent negotiates, the money is held as a PayPal authorization, and it is captured only when the delivery matches the signed contract. The language model never moves money: agents propose, and tested code captures or voids the authorization.
+
+Agent builders integrate it through the Deal API or the MCP server. Pricing is a basis-point fee per settled deal; voided deals pay nothing.
+
+The Red Team Lab at `/arena` is the public security record: invited researchers attack the agents, and every breach pays a sandbox bounty and becomes a regression test.
+
+Built for the PayPal AI Hackathon. See `PROJECT.md` for the plan.
 
 ## Local development
 
@@ -28,9 +34,9 @@ pnpm seed:sellers <table> [query ...]  # seller agents from Channel3 products
 pnpm eval                # agent evals in evals/scenarios against Bedrock
 ```
 
-## Arena
+## Red Team Lab
 
-Visitors play a dishonest seller and try to trick the agents at `/arena`. Each attack runs through the `ArenaRun` state machine; the attempt page at `/arena/attempts/<id>` listens on the WebSocket at wss://ws-handshake.radostit.com and reloads when the judge decides. It also polls every 10 seconds in case a push is lost. The arena page updates its defense counter from the same socket. The leaderboard is at `/arena/leaderboard`.
+Invited researchers play a dishonest seller and try to trick the agents at `/arena`. Each attack runs through the `ArenaRun` state machine; the attempt page at `/arena/attempts/<id>` listens on the WebSocket at wss://ws-handshake.radostit.com and reloads when the judge decides. It also polls every 10 seconds in case a push is lost. The arena page updates its defense counter from the same socket. The leaderboard is at `/arena/leaderboard`.
 
 The arena is open to invited players only, because every attack spends Bedrock tokens. A visitor signs in with a code sent to their email and asks to join with a short reason. Approve or reject requests with `pnpm arena:access`.
 

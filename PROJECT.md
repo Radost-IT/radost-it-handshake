@@ -28,8 +28,8 @@ Stage one is pass/fail: reasonable fit with the theme and proper use of the PayP
 |---|---|---|
 | Technological Implementation | Thorough, skilled, non-trivial use of PayPal and AI | Escrow via authorize/capture/void/reauthorize, Payouts, webhooks; README API mapping table |
 | Design | A complete, coherent product, not a proof of concept | Look and feel section; Phase 5 screens and states |
-| Potential Impact | A credible, specific case for a real problem and a real audience | The named target audience (Phase 0), shown in the first 20 seconds of the video |
-| Innovation/Idea | Creative, novel, different from existing concepts | Arena mode: exploits become paid bounties and regression tests |
+| Potential Impact | A credible, specific case for a real problem and a real audience | The named target audience (Phase 0), the Deal API and MCP server they integrate, shown in the first 20 seconds of the video |
+| Innovation/Idea | Creative, novel, different from existing concepts | Escrow as the settlement layer for agent payments, mapped to AP2 and ACP; the Red Team Lab turns exploits into paid bounties and regression tests |
 | Presentation | Video shows it working end to end; problem, audience, and why it matters are clear | Demo video outline below |
 
 ## Rules that shape the build
@@ -40,7 +40,26 @@ Stage one is pass/fail: reasonable fit with the theme and proper use of the PayP
 - The video must not show third-party trademarks or copyrighted material without permission.
 - All materials in English.
 
+## Positioning
+
+Handshake is a settlement layer for AI shopping agents. A team that builds an agent calls the Deal API or the MCP server instead of handing the agent a card. The agent negotiates; Handshake holds the money in a PayPal authorization and only captures it when the delivery matches the signed contract.
+
+- **Primary customer:** teams building AI shopping agents (agent platforms, assistants, browser agents). They integrate the Deal API or connect the MCP server.
+- **Secondary customer:** marketplaces that want agent buyers on their catalog without new fraud exposure.
+- **End users** are the people protected: their money moves only when the deal checks out.
+- **Business model:** a basis-point fee on each settled deal, taken at capture. Voided deals pay nothing, so the fee is only earned when the buyer got what they paid for.
+- **Why PayPal:** the escrow is a native PayPal authorization (`intent=AUTHORIZE`), not a custodial wallet. Capture, void and reauthorization are PayPal calls, and every call is in the audit log with its `debug_id`.
+- **Trust story:** the Red Team Lab. Security researchers attack the agents in public, successful attacks pay a sandbox bounty and become regression tests.
+
 ## Product
+
+### Developer platform
+
+- **Deal API** at `https://api-handshake.radostit.com/v1`, authenticated with an API key (`Authorization: Bearer hs_sandbox_…`). Open a deal with a goal and a mandate, read its state, contract, negotiation, PayPal calls and webhooks, submit delivery evidence, approve a price or decide an escalation.
+- **MCP server** (`packages/mcp`): the same operations as tools (`handshake_open_deal`, `handshake_get_deal`, `handshake_list_deals`, `handshake_approve_purchase`, `handshake_submit_evidence`, `handshake_decide_escalation`), so any MCP client can buy with escrow. It calls the Deal API; it holds no PayPal credentials.
+- **Developer console** at `/console`: paste an API key, configure a mandate and open a deal, see deals and the PayPal audit log (operation, request ID, status, `debug_id`) and webhook log in AG Grid.
+- **Deal page** at `/deals/<id>`: the escrow timeline, contract, negotiation and verification for one deal. The buyer opens it from the deal link, which carries the deal token.
+- **Protocol mapping:** the mandate and the signed contract line up with AP2 Intent and Cart mandates and with OpenAI's Agentic Commerce Protocol; the README shows the mapping.
 
 ### Deal mode
 
@@ -67,9 +86,11 @@ Stage one is pass/fail: reasonable fit with the theme and proper use of the PayP
 
 Prompt injection in a listing, fake urgency, price bait-and-switch after agreement, swapped-item evidence, partial delivery claimed as complete, impersonating the platform, currency confusion, and split-payment tricks.
 
-### Arena gamification
+### Red Team Lab (arena)
 
-The goal is to make visitors try a second and a third time. Every attempt makes the agents harder to fool, so play feeds the product. The arena must suit any age, so the UI calls players **challengers** and a successful attack a **loophole found**. Code and docs keep the technical terms (attack, breach).
+The arena is a red team lab, not a game. Invited security researchers play a dishonest seller and try to make the agents pay for something the contract does not allow. Every attempt is a test of the policy engine, so the lab doubles as the product's public security record: the defense rate, the attack taxonomy, the blocked action with its policy reason, and the regression suite that grew from real breaches.
+
+The UI calls players **researchers** and a successful attack a **breach**. Code keeps the older names (`challenger`, `loophole`) so stored records need no migration.
 
 Scoring, XP, ranks and badges are pure functions in `packages/arena`, unit tested and computed on the server. They never decide money. The bounty amount comes from the deterministic score and goes through policy and settlement like any other payout, to the arena recipient sandbox account ([I-12]).
 
@@ -78,19 +99,19 @@ Scoring, XP, ranks and badges are pure functions in `packages/arena`, unit teste
 - **Invited players only.** Every attack runs real agents and spends Bedrock tokens, so the arena is not open to everyone. A visitor signs in with a six-digit code sent to their email, then asks to join and says why. The admin approves or rejects the request with `pnpm arena:access`, which emails the answer. Codes are stored hashed, work once, expire after 10 minutes and lock after five wrong tries. The session token sits in an HTTP-only cookie and only its hash is stored.
 - **Handle.** An approved player picks a handle, which shows on the leaderboard instead of the email. The handle passes a length, charset and blocklist check.
 - **XP.** Every attempt earns XP: 10 for a held attempt, 100 for a loophole, plus a bonus for severity and novelty. Near-duplicates of a known loophole earn the held amount only.
-- **Ranks** from XP: Newcomer, Explorer, Investigator, Puzzle Solver, Codebreaker, Master Tester. The rank shows next to the handle and on the leaderboard.
+- **Ranks** from XP: Observer, Analyst, Tester, Red Teamer, Senior Red Teamer, Principal Red Teamer. The rank shows next to the handle and on the leaderboard.
 - **Badges**, unlocked from thresholds and computed from the challenger's stats on every read, so changing a threshold needs no migration:
 
 | Badge | Unlocked when |
 |---|---|
-| Eureka | First loophole found |
-| Trailblazer | First challenger ever to find a loophole in a category |
-| Map Maker | Tried all eight attack categories |
-| Wordsmith | Found a loophole through listing or message text |
-| Sharp Eye | Found a loophole through delivery evidence |
-| Never Give Up | Ten held attempts in a row |
-| Shield Builder | Your loophole became a regression test that now holds |
-| Daily Regular | Played the daily challenge on five different days |
+| First Breach | First breach found |
+| First in Category | First researcher ever to breach a category |
+| Full Coverage | Tested all eight attack categories |
+| Text Channel | Breach through listing or message text |
+| Evidence Channel | Breach through delivery evidence |
+| Sustained Testing | Ten held attempts in a row |
+| Regression Author | Your breach became a regression test that now holds |
+| Daily Target | Tested the daily target on five different days |
 
 - **Open bounties.** Each attack category shows whether anyone has found a loophole in it yet. Untouched categories pay a higher sandbox bounty, which points players at the least tested defenses.
 - **Daily challenge.** One deal template a day, chosen by a pure function of the date (`pickDailyChallenge(date, templates)`), so it needs no scheduler. It has its own leaderboard.
@@ -351,10 +372,23 @@ Done when an AI-driven deal completes end to end in the deployed app and evals p
 - [x] Arena UI: challenger card with rank progress, badge grid (locked badges show how to earn them), open bounties per category, daily challenge, defense counter, rank-up and badge toasts.
 - [ ] Hall of fame: regression case pages credit the challenger and show attempt, fix, and the rerun that holds.
 - [ ] Share images for loopholes and badges with `next/og`.
-- [x] UI copy check: every arena screen uses "challenger" and "loophole found", suitable for any age.
+- [x] UI copy check: every arena screen uses one consistent player term and one term for a successful attack.
 - [ ] Run every catalog attack ourselves, fix what breaks, keep at least one realistic success for the demo story.
 
 Done when a successful attack produces a payout and a regression case, and the patched system then blocks it.
+
+### Phase 4b — Developer platform (Oct 5–Nov 2)
+
+- [x] Positioning in this file and the README: settlement API and MCP server for agent builders, basis-point fee per settled deal.
+- [ ] Deal API under `/v1`: API keys (`pnpm api-keys:create`), open and list deals, deal detail, evidence, purchase approval, escalation decision, checkout approval fallback.
+- [ ] `DealAgents` Lambda: negotiation and verification inside `DealLifecycle`, with Bedrock and Channel3 grants and no PayPal access.
+- [ ] PayPal audit log (operation, request ID, status, `debug_id`) and webhook log stored per deal.
+- [ ] Deal page `/deals/[id]` with the escrow timeline.
+- [ ] MCP server in `packages/mcp` with setup steps for Claude Desktop.
+- [ ] Developer console `/console` with AG Grid deals, audit log and webhook log.
+- [ ] Red Team Lab reframe: copy, ranks, badges and styling.
+- [ ] Eval report and defense rate chart (AG Charts Community).
+- [ ] README: PayPal API depth table, AP2 / ACP / PayPal Agent Toolkit mapping, API and MCP docs.
 
 ### Phase 5 — Product polish (Nov 3–8)
 
