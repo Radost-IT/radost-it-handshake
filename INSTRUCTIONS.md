@@ -272,6 +272,15 @@ The web app now has `/console`, `/evals` and the Red Team Lab copy. No new `.env
 - [ ] Create a separate key for judges with `AWS_PROFILE=handshake pnpm api-keys:create <table> "Judges"` and keep it in your password manager. It goes into the testing instructions in `docs/submission.md` at [I-16]. Each key opens up to 25 deals a day.
 - [ ] After any change to agent prompts or policy, run `AWS_PROFILE=handshake pnpm eval`, commit the new `evals/report.json`, and deploy again.
 
+### [I-27] Give judges a sign-in account
+Judges sign in at `/sign-in` with an email and password that you create. Everyone else requests access at `/request-access`, and you approve them with `pnpm arena:access`. No new `.env` keys are needed.
+- [ ] Run `AWS_PROFILE=handshake pnpm cdk:deploy`. It ships the `POST /arena/sign-in/password` route and the new pages.
+- [ ] Run `AWS_PROFILE=handshake pnpm accounts:password <table> <judges email>`, for example an address on your own domain. The account is approved straight away. Keep the printed password in your password manager; it is shown only once. Running the command again sets a new password.
+- [ ] Open https://handshake.radostit.com/sign-in in a private window, sign in with that email and password, and check that the console lists deals and opens one. Then open `/arena` and check that you can pick a handle.
+- [ ] Put the email and password in the testing instructions in `docs/submission.md` at [I-16].
+- [ ] All judges share this account, so they share its 25 deals a day. Tell me if you want a higher limit for it.
+- [ ] Open https://handshake.radostit.com/request-access in another private window, confirm a test email with the code, and send a request. It should reach `ARENA_ADMIN_EMAIL`. Approve it with `pnpm arena:access <table> approve <email>`.
+
 ---
 
 ## During Phase 5

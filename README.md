@@ -39,7 +39,7 @@ pnpm eval                # agent evals in evals/scenarios against Bedrock; write
 
 ## Deal API
 
-Base URL: `https://api-handshake.radostit.com/v1`. Send `authorization: Bearer <key>`; create a sandbox key with `pnpm api-keys:create`.
+Base URL: `https://api-handshake.radostit.com/v1`. Send `authorization: Bearer <key>`; create a sandbox key with `pnpm api-keys:create`. The console calls the same routes with the session cookie of a signed-in, approved account instead of a key.
 
 | Route | What it does |
 | --- | --- |
@@ -50,9 +50,9 @@ Base URL: `https://api-handshake.radostit.com/v1`. Send `authorization: Bearer <
 | `POST /deals/{dealId}/purchase-approval` | `{ "approved": true }` for a price above the mandate's approval threshold. |
 | `POST /deals/{dealId}/human-decision` | A settlement proposal for an escalated deal. Policy still checks it. |
 
-The deal routes also accept the deal's access token, so the buyer can act without your API key. Each key opens up to 25 deals a day.
+The deal routes also accept the deal's access token, so the buyer can act without your API key. Each key or account opens up to 25 deals a day.
 
-The developer console at https://handshake.radostit.com/console does the same from a browser: paste a key, open a deal, and read each deal's PayPal calls (operation, HTTP status, `debug_id`, `PayPal-Request-Id`) and verified webhooks. The buyer follows a deal at `/deals/<id>`, which shows the escrow timeline and the approval buttons.
+The developer console at https://handshake.radostit.com/console does the same from a browser: sign in or paste a key, open a deal, and read each deal's PayPal calls (operation, HTTP status, `debug_id`, `PayPal-Request-Id`) and verified webhooks. The buyer follows a deal at `/deals/<id>`, which shows the escrow timeline and the approval buttons.
 
 ## MCP server
 
@@ -123,7 +123,14 @@ Handshake does not replace these protocols. It adds the step none of them define
 
 Invited researchers act as a dishonest seller and try to make the agents release money they should not at `/arena`. A breach earns a sandbox bounty and becomes a regression test. Each attack runs through the `ArenaRun` state machine; the attempt page at `/arena/attempts/<id>` listens on the WebSocket at wss://ws-handshake.radostit.com and reloads when the judge decides. It also polls every 10 seconds in case a push is lost. The arena page updates its defense counter from the same socket. The leaderboard is at `/arena/leaderboard`.
 
-The lab is open to invited researchers only, because every attack spends Bedrock tokens. A visitor signs in with a code sent to their email and asks to join with a short reason. Approve or reject requests with `pnpm arena:access`.
+## Accounts
+
+The console and the lab are open to approved accounts only, because every deal and attack spends Bedrock tokens. There is no open sign-up:
+
+- A visitor goes to `/request-access`, confirms their email with a one-time code, and says what they want to do. Approve or reject requests with `pnpm arena:access`; the visitor gets an email either way.
+- The operator creates accounts that sign in with a password, such as the judges' account, with `pnpm accounts:password`. They are approved from the start.
+
+Both kinds sign in at `/sign-in`. The session is an `HttpOnly` cookie on the API domain that lasts 90 days.
 
 The lab pages call the deployed API at https://api-handshake.radostit.com, which accepts browser calls only from the hosted site. They do not work from `pnpm dev`.
 

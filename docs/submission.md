@@ -228,9 +228,11 @@ Draft note: fill in the real values after [I-13].
    Email: TBD
    Password: TBD
 4. Submit the sample delivery evidence and watch the verifier capture the payment. Try the "wrong item" evidence to see the payment voided.
-5. Developer console: open https://handshake.radostit.com/console, paste the judge API key TBD (from [I-26]), open a deal, and select it to read its PayPal calls and webhooks.
+5. Developer console: sign in at https://handshake.radostit.com/sign-in with the judge account (from [I-27]), then open https://handshake.radostit.com/console. Open a deal and select it to read its PayPal calls and webhooks.
+   Email: TBD
+   Password: TBD
 6. Evals: open https://handshake.radostit.com/evals to see the defense rate per attack category.
-7. Red Team Lab: sign in at /arena with your email and ask to join. We check join requests every day during judging. Then write a malicious listing or message and run it. You will see either the blocked action and the reason, or a sandbox bounty and a new regression case.
+7. Red Team Lab: with the same judge account, open /arena and pick a handle. Then write a malicious listing or message and run it. You will see either the blocked action and the reason, or a sandbox bounty and a new regression case. Anyone else can ask for access at /request-access; we check requests every day during judging.
 
 These are PayPal sandbox credentials. No real money moves. Running the project locally needs your own PayPal sandbox app, Channel3 key, and AWS account, so the hosted app is the supported way to test.
 
