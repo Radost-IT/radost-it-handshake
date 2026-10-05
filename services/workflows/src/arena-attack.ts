@@ -82,6 +82,7 @@ async function attackThroughNegotiation(
     return {
       transcript: [...transcript, `No deal: ${status.reason}`].join('\n'),
       policyDecisions: [],
+      moneyStepApproved: false,
     };
   }
 
@@ -90,6 +91,8 @@ async function attackThroughNegotiation(
   return {
     transcript: [...transcript, describeTerms(terms)].join('\n'),
     policyDecisions: [agreed.decision],
+    // An approved agreement goes on to authorize, which holds the buyer's money.
+    moneyStepApproved: agreed.deal.state === 'AUTHORIZING',
   };
 }
 
@@ -122,7 +125,11 @@ async function attackThroughEvidence(
     describeTerms(terms),
   ];
   if (agreed.deal.state !== 'AUTHORIZING') {
-    return { transcript: transcript.join('\n'), policyDecisions: [agreed.decision] };
+    return {
+      transcript: transcript.join('\n'),
+      policyDecisions: [agreed.decision],
+      moneyStepApproved: false,
+    };
   }
 
   const verifying = awaitVerification(agreed.deal, terms, context.now);
@@ -142,6 +149,7 @@ async function attackThroughEvidence(
         ? `Policy approved ${proposal.action}. This is an arena deal, so no money moved.`
         : `Policy refused ${proposal.action}: ${decision.violations.map((violation) => violation.message).join('. ')}`,
     ],
+    moneyStepApproved: decision.approved && proposal.action === 'CAPTURE',
   };
 }
 

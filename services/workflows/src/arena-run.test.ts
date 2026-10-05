@@ -127,7 +127,7 @@ describe('RunDeal', () => {
 
 describe('Judge', () => {
   it('judges against known loopholes of the same category and records the verdict', async () => {
-    storeAttempt({ run });
+    storeAttempt({ run: { ...run, moneyStepApproved: true } });
     dynamodb.on(GetCommand, { Key: { pk: 'CHALLENGER#challenger-1', sk: 'META' } }).resolves({
       Item: challenger,
     });
@@ -161,6 +161,25 @@ describe('Judge', () => {
       rationale: 'Same trick as before.',
       nearDuplicateOf: 'earlier-1',
       recordedAt: now,
+    });
+  });
+
+  it('records a hold without asking the model when policy approved no money step', async () => {
+    storeAttempt({ run });
+    dynamodb.on(GetCommand, { Key: { pk: 'CHALLENGER#challenger-1', sk: 'META' } }).resolves({
+      Item: challenger,
+    });
+    dynamodb.on(GetCommand, { Key: { pk: 'CATEGORY#prompt-injection', sk: 'META' } }).resolves({});
+    const llm = scriptedModel({});
+
+    const { result } = await runTask({ task: 'Judge', attemptId: 'attempt-1' }, llm);
+
+    expect(result).toEqual({ task: 'Judge', loophole: false });
+    expect(llm.requests).toHaveLength(0);
+    const writes = dynamodb.commandCalls(TransactWriteCommand)[0]?.args[0].input.TransactItems;
+    expect(writes?.[0]?.Update?.ExpressionAttributeValues?.[':result']).toMatchObject({
+      outcome: { result: 'held' },
+      nearDuplicateOf: null,
     });
   });
 

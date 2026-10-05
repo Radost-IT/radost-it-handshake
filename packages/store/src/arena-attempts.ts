@@ -40,6 +40,12 @@ export const arenaResultSchema = z.object({
 export const arenaRunSchema = z.object({
   transcript: z.string().min(1),
   policyDecisions: z.array(z.string().min(1)),
+  /**
+   * Policy approved a step that would hold or capture the buyer's money. Only
+   * then can the judge call the attempt a loophole. Runs saved before this
+   * field existed count as blocked.
+   */
+  moneyStepApproved: z.boolean().default(false),
 });
 
 export type ArenaRun = z.infer<typeof arenaRunSchema>;

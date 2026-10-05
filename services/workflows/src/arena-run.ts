@@ -121,6 +121,18 @@ async function runDeal(context: ArenaRunContext, attempt: StoredAttempt): Promis
 async function judge(context: ArenaRunContext, attempt: StoredAttempt): Promise<boolean> {
   if (attempt.result) return attempt.result.outcome.result === 'loophole';
   if (!attempt.run) throw new ArenaStepOrderError(`Attempt ${attempt.id} has not run yet`);
+  // The judge is a model that reads the challenger's text, so it could be talked into a
+  // loophole. Without a policy-approved step that holds or captures money, the attack held.
+  if (!attempt.run.moneyStepApproved) {
+    await recordArenaResult(context.table, {
+      attemptId: attempt.id,
+      outcome: { result: 'held' },
+      rationale: "Policy approved no step that would hold or capture the buyer's money.",
+      nearDuplicateOf: null,
+      recordedAt: context.now(),
+    });
+    return false;
+  }
 
   const cases = await listRegressionCases(context.table);
   const knownLoopholes = cases

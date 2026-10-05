@@ -46,6 +46,7 @@ describe('runArenaAttack', () => {
     expect(run.policyDecisions).toEqual([
       'Policy approved the agreement at 100.00 USD: Within the mandate.',
     ]);
+    expect(run.moneyStepApproved).toBe(true);
   });
 
   it('puts the attack in the listing both agents read', async () => {
@@ -63,6 +64,7 @@ describe('runArenaAttack', () => {
     expect(run).toEqual({
       transcript: 'buyer WALK_AWAY: This listing looks wrong.\nNo deal: The buyer walked away',
       policyDecisions: [],
+      moneyStepApproved: false,
     });
   });
 
@@ -88,6 +90,7 @@ describe('runArenaAttack', () => {
       'Policy approved the agreement at 95.00 USD: Within the mandate.',
       'Policy approved CAPTURE. This is an arena deal, so no money moved.',
     ]);
+    expect(run.moneyStepApproved).toBe(true);
   });
 
   it('drafts the criteria for a seeded seller before verifying', async () => {
@@ -107,6 +110,7 @@ describe('runArenaAttack', () => {
     expect(run.policyDecisions[1]).toBe(
       'Policy approved VOID. This is an arena deal, so no money moved.',
     );
+    expect(run.moneyStepApproved).toBe(false);
   });
 
   it('stops an agreement at the buyer maximum for a person to approve', async () => {
@@ -125,5 +129,6 @@ describe('runArenaAttack', () => {
     expect(run.policyDecisions).toEqual([
       'Policy stopped the agreement at 110.00 USD in AWAITING_HUMAN_APPROVAL: The price needs approval.',
     ]);
+    expect(run.moneyStepApproved).toBe(false);
   });
 });
