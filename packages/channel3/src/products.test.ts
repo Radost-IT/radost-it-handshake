@@ -26,6 +26,17 @@ describe('toCatalogProduct', () => {
     expect(toCatalogProduct({ ...channel3Bottle, offers })).toBeNull();
   });
 
+  it('cuts long titles and descriptions so a listing cannot flood the prompts', () => {
+    const product = toCatalogProduct({
+      ...channel3Bottle,
+      title: 't'.repeat(1000),
+      description: 'd'.repeat(10_000),
+    });
+
+    expect(product?.title).toHaveLength(300);
+    expect(product?.description).toHaveLength(4000);
+  });
+
   it('returns null for a product with no offers', () => {
     expect(toCatalogProduct({ id: 'c3-x', title: 'Lamp' })).toBeNull();
   });

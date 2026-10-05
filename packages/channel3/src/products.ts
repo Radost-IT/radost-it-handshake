@@ -53,6 +53,11 @@ const channel3ProductSchema = z.object({
     .optional(),
 });
 
+// Listings go into every agent prompt of a deal, so their length bounds the
+// input tokens a merchant's text can make the deal spend.
+const MAX_TITLE_LENGTH = 300;
+const MAX_DESCRIPTION_LENGTH = 4000;
+
 type Channel3Offer = NonNullable<z.infer<typeof channel3ProductSchema>['offers']>[number];
 
 /**
@@ -68,10 +73,11 @@ export function toCatalogProduct(raw: unknown): CatalogProduct | null {
   const features = product.key_features ?? [];
   return {
     productId: product.id,
-    title: product.title,
+    title: product.title.slice(0, MAX_TITLE_LENGTH),
     description: [product.description ?? '', ...features.map((feature) => `- ${feature}`)]
       .join('\n')
-      .trim(),
+      .trim()
+      .slice(0, MAX_DESCRIPTION_LENGTH),
     brand: product.brands?.[0]?.name ?? null,
     categoryPath: categoryPath(product.category),
     listPrice: moneyFromNumber(offer.price.price, currency),
