@@ -131,9 +131,7 @@ export async function runLifecycleTask(
     case 'Escalate':
       return escalate(context, deal, task.reason);
     case 'ConfirmCapture':
-      return deal.state === 'CAPTURING'
-        ? confirmCapture(context, deal, task.capture)
-        : { state: deal.state };
+      return confirmCapture(context, deal, task.capture);
     case 'Settle':
       return task.proposer === 'verifier'
         ? settleByVerifier(context, deal, task.proposal)
@@ -278,18 +276,34 @@ const webhookCaptureSchema = z.object({
     .pipe(moneySchema),
 });
 
-async function confirmCapture(
+type WebhookCapture = z.infer<typeof webhookCaptureSchema>;
+
+function confirmCapture(
   context: LifecycleContext,
   deal: Deal,
   resource: unknown,
 ): Promise<LifecycleTaskResult> {
   const capture = webhookCaptureSchema.parse(resource);
+  switch (deal.state) {
+    case 'CAPTURING':
+      return confirmPendingCapture(context, deal, capture);
+    case 'ESCALATED':
+      return confirmLateCapture(context, deal, capture);
+    default:
+      return Promise.resolve({ state: deal.state });
+  }
+}
+
+async function confirmPendingCapture(
+  context: LifecycleContext,
+  deal: Deal,
+  capture: WebhookCapture,
+): Promise<LifecycleTaskResult> {
   if (capture.status === 'PENDING') return { state: deal.state };
   if (capture.status !== 'COMPLETED') {
     return moveIfIn(context, deal, 'CAPTURING', 'ESCALATED', `Capture ${capture.status}`);
   }
-  const price = deal.contract?.terms.price;
-  if (!price || !moneyEquals(capture.amount, price)) {
+  if (!capturesContractPrice(deal, capture)) {
     return moveIfIn(
       context,
       deal,
@@ -298,7 +312,38 @@ async function confirmCapture(
       `PayPal captured ${formatMoney(capture.amount)}, not the contract price`,
     );
   }
-  const change = transitionDeal(
+  const change = settleWithCapture(context, deal, capture);
+  return save(context, change.deal, [change.event]);
+}
+
+// PayPal completed a capture after its wait timed out and a person took over.
+// The money has moved, so the deal settles instead of waiting for a decision
+// that can no longer change anything. Anything else stays with the person.
+async function confirmLateCapture(
+  context: LifecycleContext,
+  deal: Deal,
+  capture: WebhookCapture,
+): Promise<LifecycleTaskResult> {
+  if (capture.status !== 'COMPLETED' || !capturesContractPrice(deal, capture)) {
+    return { state: deal.state };
+  }
+  const capturing = transitionDeal(
+    deal,
+    { to: 'CAPTURING' },
+    context.now(),
+    'PayPal completed the capture after it was escalated',
+  );
+  const settled = settleWithCapture(context, capturing.deal, capture);
+  return save(context, settled.deal, [capturing.event, settled.event]);
+}
+
+function capturesContractPrice(deal: Deal, capture: WebhookCapture): boolean {
+  const price = deal.contract?.terms.price;
+  return price !== undefined && moneyEquals(capture.amount, price);
+}
+
+function settleWithCapture(context: LifecycleContext, deal: Deal, capture: WebhookCapture) {
+  return transitionDeal(
     deal,
     {
       to: 'SETTLED',
@@ -307,7 +352,6 @@ async function confirmCapture(
     context.now(),
     'Payment captured',
   );
-  return save(context, change.deal, [change.event]);
 }
 
 async function settleBySystem(

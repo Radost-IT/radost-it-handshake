@@ -126,6 +126,21 @@ describe('PAYMENT.CAPTURE.COMPLETED', () => {
     );
   });
 
+  it('hands a late capture to the escalated deal that waits for a person', async () => {
+    dynamodb.on(DeleteCommand).resolves({});
+    waitingFor('human-decision');
+    stepFunctions.on(SendTaskSuccessCommand).resolves({});
+
+    await resumeLifecycleFromPayPal(context, {
+      'detail-type': 'PAYMENT.CAPTURE.COMPLETED',
+      detail: { id: 'WH-5', resource: capture },
+    });
+
+    expect(stepFunctions.commandCalls(SendTaskSuccessCommand)[0]?.args[0].input.output).toBe(
+      JSON.stringify({ capture }),
+    );
+  });
+
   it('ignores a capture without a deal ID, which the capture timeout then escalates', async () => {
     await resumeLifecycleFromPayPal(context, {
       'detail-type': 'PAYMENT.CAPTURE.COMPLETED',

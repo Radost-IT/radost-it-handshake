@@ -48,7 +48,14 @@ export async function resumeLifecycleFromPayPal(
       if (!dealId) return;
       await logWebhook(context, dealId, event);
       // The lifecycle checks the capture itself, so it gets the whole resource.
-      await resumeLifecycle(context, dealId, 'capture', event.detail.resource);
+      const resumed = await resumeLifecycle(context, dealId, 'capture', event.detail.resource);
+      // Once the capture wait times out, the deal waits for a person instead,
+      // who must not be asked to decide a capture that already happened.
+      if (!resumed && event['detail-type'] === 'PAYMENT.CAPTURE.COMPLETED') {
+        await resumeLifecycle(context, dealId, 'human-decision', {
+          capture: event.detail.resource,
+        });
+      }
       return;
     }
   }

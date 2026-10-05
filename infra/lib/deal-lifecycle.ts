@@ -122,19 +122,29 @@ export function createDealLifecycle(
     )
     .next(routeByState);
 
+  // A capture PayPal completes after its wait timed out arrives here as
+  // `{ "capture": ... }`. The API strips that key from a person's decision.
   const waitForHumanDecision = waitFor(
     'WaitForHumanDecision',
     { task: 'AwaitSignal', signal: 'human-decision' },
     '$.proposal',
-  )
-    .next(
-      step('SettleByHuman', {
-        task: 'Settle',
-        proposer: 'human',
-        proposal: JsonPath.objectAt('$.proposal'),
-      }),
-    )
-    .next(routeByState);
+  ).next(
+    new Choice(lifecycle, 'RouteHumanDecision')
+      .when(
+        Condition.isPresent('$.proposal.capture'),
+        step('ConfirmLateCapture', {
+          task: 'ConfirmCapture',
+          capture: JsonPath.objectAt('$.proposal.capture'),
+        }).next(routeByState),
+      )
+      .otherwise(
+        step('SettleByHuman', {
+          task: 'Settle',
+          proposer: 'human',
+          proposal: JsonPath.objectAt('$.proposal'),
+        }).next(routeByState),
+      ),
+  );
 
   // The resumer sends the capture resource of the PayPal webhook.
   const waitForCapture = waitFor(

@@ -493,6 +493,36 @@ describe('ConfirmCapture', () => {
     expect(result).toEqual({ state: 'ESCALATED' });
   });
 
+  it('settles an escalated deal when PayPal completes the capture late', async () => {
+    const escalated = transitionDeal(
+      capturingDeal(),
+      { to: 'ESCALATED' },
+      '2026-10-11T10:00:00Z',
+      'PayPal did not confirm the capture in time',
+    ).deal;
+    storeDeal(escalated);
+
+    const { result } = await run(
+      { task: 'ConfirmCapture', dealId: 'deal-1', capture: capture('COMPLETED') },
+      '2026-10-12T10:00:00Z',
+    );
+
+    expect(result).toEqual({ state: 'SETTLED' });
+    expect(savedStates()).toEqual(['SETTLED']);
+  });
+
+  it('leaves an escalated deal with the person when a late capture is not complete', async () => {
+    storeDeal(escalatedDeal());
+
+    const { result } = await run(
+      { task: 'ConfirmCapture', dealId: 'deal-1', capture: capture('COMPLETED', '1.00') },
+      '2026-10-12T10:00:00Z',
+    );
+
+    expect(result).toEqual({ state: 'ESCALATED' });
+    expect(savedStates()).toEqual([]);
+  });
+
   it('escalates a capture PayPal never confirms', async () => {
     storeDeal(capturingDeal());
 
