@@ -19,12 +19,7 @@ export {
 } from './arena-results';
 export { getArenaStats, type ArenaStats, type CategoryStats } from './arena-stats';
 export { markBountyPaid, releaseBounty, reserveBounty, type BountyReservation } from './bounties';
-export {
-  hashPassword,
-  savePasswordAccount,
-  verifyPassword,
-  type PasswordAccount,
-} from './account-passwords';
+export { saveFixedCodeAccount, type FixedCodeAccount } from './fixed-code-accounts';
 export {
   accessStatuses,
   accountIdForEmail,
@@ -87,6 +82,7 @@ export { listRegressionCases, saveRegressionCase } from './regressions';
 export { closeSession, findSessionAccountId, openSession, type NewSession } from './sessions';
 export {
   checkSignInCode,
+  hashSignInCode,
   saveSignInCode,
   type SignInCode,
   type SignInCodeCheck,

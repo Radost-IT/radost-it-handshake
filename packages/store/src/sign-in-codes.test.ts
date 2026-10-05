@@ -8,7 +8,7 @@ import {
 } from '@aws-sdk/lib-dynamodb';
 import { mockClient } from 'aws-sdk-client-mock';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { checkSignInCode, saveSignInCode } from './sign-in-codes';
+import { checkSignInCode, hashSignInCode, saveSignInCode } from './sign-in-codes';
 
 const dynamodb = mockClient(DynamoDBDocumentClient);
 const table = { client: DynamoDBDocumentClient.from(new DynamoDBClient({})), name: 'T' };
@@ -45,7 +45,7 @@ describe('checkSignInCode', () => {
 
     await expect(checkSignInCode(table, attempt)).resolves.toBe('valid');
     expect(dynamodb.commandCalls(DeleteCommand)[0]?.args[0].input.ConditionExpression).toBe(
-      'codeHash = :hash',
+      'codeHash = :hash AND failedChecks < :max',
     );
   });
 
@@ -54,10 +54,19 @@ describe('checkSignInCode', () => {
     dynamodb.on(UpdateCommand).resolves({});
 
     await expect(checkSignInCode(table, { ...attempt, codeHash: 'wrong' })).resolves.toBe('wrong');
-    expect(dynamodb.commandCalls(UpdateCommand)[0]?.args[0].input.UpdateExpression).toBe(
-      'ADD failedChecks :one',
-    );
+    const input = dynamodb.commandCalls(UpdateCommand)[0]?.args[0].input;
+    expect(input?.UpdateExpression).toBe('ADD failedChecks :one');
+    expect(input?.ConditionExpression).toBe('failedChecks < :max');
     expect(dynamodb.commandCalls(DeleteCommand)).toHaveLength(0);
+  });
+
+  it('locks a wrong code that parallel guesses already locked', async () => {
+    dynamodb.on(GetCommand).resolves({ Item: { codeHash: 'right', failedChecks: 4, ttl: live } });
+    dynamodb
+      .on(UpdateCommand)
+      .rejects(new ConditionalCheckFailedException({ message: 'failed', $metadata: {} }));
+
+    await expect(checkSignInCode(table, { ...attempt, codeHash: 'wrong' })).resolves.toBe('locked');
   });
 
   it('locks a code after five wrong tries, even for the right code', async () => {
@@ -88,5 +97,12 @@ describe('checkSignInCode', () => {
       .rejects(new ConditionalCheckFailedException({ message: 'failed', $metadata: {} }));
 
     await expect(checkSignInCode(table, attempt)).resolves.toBe('expired');
+  });
+});
+
+describe('hashSignInCode', () => {
+  it('salts the code with the account', () => {
+    expect(hashSignInCode('account-1', '123456')).not.toBe(hashSignInCode('account-2', '123456'));
+    expect(hashSignInCode('account-1', '123456')).not.toContain('123456');
   });
 });

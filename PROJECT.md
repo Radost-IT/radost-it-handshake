@@ -96,7 +96,7 @@ Scoring, XP, ranks and badges are pure functions in `packages/arena`, unit teste
 
 **Mechanics**
 
-- **Invited players only.** Every attack runs real agents and spends Bedrock tokens, so the arena and the console are not open to everyone. There is no sign-up: a visitor requests access at `/request-access`, confirms their email with a six-digit code, and says why. Judges get an approved account with a password, created by the operator with `pnpm accounts:password`, and sign in at `/sign-in`. Passwords are stored as salted scrypt hashes, and wrong tries are limited per email and per IP. The admin approves or rejects the request with `pnpm arena:access`, which emails the answer. Codes are stored hashed, work once, expire after 10 minutes and lock after five wrong tries. The session token sits in an HTTP-only cookie and only its hash is stored.
+- **Invited players only.** Every attack runs real agents and spends Bedrock tokens, so the arena and the console are not open to everyone. There is no sign-up: a visitor requests access at `/request-access`, confirms their email with a six-digit code, and says why. Judges get one of five approved accounts with a fixed code, created by the operator with `pnpm accounts:judges`, and no email is sent to them. There are no passwords. Code checks are limited to 20 per email a day and 30 per IP an hour, and sign-in emails stop after 300 a day. The admin approves or rejects the request with `pnpm arena:access`, which emails the answer. Codes are stored hashed, work once, expire after 10 minutes and lock after five wrong tries. The session token sits in an HTTP-only cookie and only its hash is stored.
 - **Handle.** An approved player picks a handle, which shows on the leaderboard instead of the email. The handle passes a length, charset and blocklist check.
 - **XP.** Every attempt earns XP: 10 for a held attempt, 100 for a loophole, plus a bonus for severity and novelty. Near-duplicates of a known loophole earn the held amount only.
 - **Ranks** from XP: Observer, Analyst, Tester, Red Teamer, Senior Red Teamer, Principal Red Teamer. The rank shows next to the handle and on the leaderboard.
@@ -146,7 +146,7 @@ apps/web/app/arena                /arena, /arena/leaderboard, /arena/hall-of-fam
 5. If a step still fails after its retries, `MarkFailed` stores why (`budget` when the daily token budget ran out, `error` otherwise) and `GET /arena/attempts/{id}` shows the attempt as `failed`. An attempt older than the 30-minute run timeout without a result also counts as failed.
 6. The WebSocket pushes `arena.result` (verdict, policy reason), `challenger.progress` (XP gained, rank change, new badges) and `arena.stats` (defense counter) to connected clients.
 
-**Account endpoints:** `POST /arena/sign-in` (email a code), `POST /arena/sign-in/verify` (check the code, set the session cookie), `POST /arena/sign-in/password` (operator-made accounts), `POST /arena/sign-out`, `GET /arena/account` (email, access status and challenger), `POST /arena/access-requests` (ask to join with a reason), `POST /arena/challengers` (pick a handle once approved).
+**Account endpoints:** `POST /arena/sign-in` (email a code), `POST /arena/sign-in/verify` (check the code, set the session cookie), `POST /arena/sign-out`, `GET /arena/account` (email, access status and challenger), `POST /arena/access-requests` (ask to join with a reason), `POST /arena/challengers` (pick a handle once approved).
 
 **Read endpoints:** `GET /arena/deals` (the deals a challenger can pick, without private prices, and today's daily deal), `GET /arena/challengers/me/attempts` (the challenger's history), `GET /arena/leaderboard?scope=all|daily`, `GET /arena/stats` (defense counter and loopholes per category, which drives the open bounties), `GET /arena/hall-of-fame`, `GET /arena/attempts/{id}`.
 
@@ -246,7 +246,7 @@ Terminal states: `SETTLED`, `REFUSED`, `CANCELLED`, `ABANDONED`. Every transitio
 | Seller | `SELLER#<id>` | `META` (GSI1: `SELLERS` / `<id>`) |
 | Arena attempt | `ATTEMPT#<id>` | `META` (GSI1: `CHALLENGER#<id>` / `ATTEMPT#<ts>#<id>`) |
 | Challenger (handle, XP, stats, version) | `CHALLENGER#<id>` | `META` |
-| Account (email, access status, reason, challenger ID, password hash for operator-made accounts) | `ACCOUNT#<sha256(email)>` | `META` (GSI1 while pending: `ACCESS#pending` / `<requestedAt>#<id>`) |
+| Account (email, access status, reason, challenger ID, fixed code hash for judge accounts) | `ACCOUNT#<sha256(email)>` | `META` (GSI1 while pending: `ACCESS#pending` / `<requestedAt>#<id>`) |
 | Email sign-in code (hash, failed tries) | `SIGNIN#<accountId>` | `META` (TTL) |
 | Account session | `SESSION#<sha256(token)>` | `META` (TTL) |
 | Handle reservation | `HANDLE#<lowercase handle>` | `META` |

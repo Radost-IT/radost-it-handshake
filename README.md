@@ -31,7 +31,7 @@ pnpm ssm:put prod        # copy .env values to SSM under /handshake/prod
 pnpm regressions:export <table>  # write arena regression cases to evals/regressions/
 pnpm arena:access <table> [approve|reject <email>]  # list or decide requests to join the arena
 pnpm api-keys:create <table> <name>  # issue a sandbox Deal API key; shown once
-pnpm accounts:password <table> <email>  # create or reset an approved account that signs in with a password; shown once
+pnpm accounts:judges <table> <email-domain>  # create or reset 5 approved judge accounts with fixed sign-in codes; shown once
 pnpm mcp                 # MCP server over stdio; needs HANDSHAKE_API_KEY
 pnpm seed:sellers <table> [query ...]  # seller agents from Channel3 products
 pnpm eval                # agent evals in evals/scenarios against Bedrock; writes evals/report.json
@@ -128,9 +128,9 @@ Invited researchers act as a dishonest seller and try to make the agents release
 The console and the lab are open to approved accounts only, because every deal and attack spends Bedrock tokens. There is no open sign-up:
 
 - A visitor goes to `/request-access`, confirms their email with a one-time code, and says what they want to do. Approve or reject requests with `pnpm arena:access`; the visitor gets an email either way.
-- The operator creates accounts that sign in with a password, such as the judges' account, with `pnpm accounts:password`. They are approved from the start.
+- The operator creates five judge accounts with `pnpm accounts:judges`. They are approved from the start and have a fixed code, so no email is sent to them.
 
-Both kinds sign in at `/sign-in`. The session is an `HttpOnly` cookie on the API domain that lasts 90 days.
+Everyone signs in at `/sign-in` with an email and a six-digit code; there are no passwords. Emailed codes work once, expire after 10 minutes and lock after five wrong tries. Each email may check 20 codes a day and each network 30 an hour, which keeps guessing a judge's fixed code hopeless. Sign-in emails stop for the day after 300. The session is an `HttpOnly` cookie on the API domain that lasts 90 days.
 
 The lab pages call the deployed API at https://api-handshake.radostit.com, which accepts browser calls only from the hosted site. They do not work from `pnpm dev`.
 

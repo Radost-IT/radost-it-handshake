@@ -273,12 +273,12 @@ The web app now has `/console`, `/evals` and the Red Team Lab copy. No new `.env
 - [ ] After any change to agent prompts or policy, run `AWS_PROFILE=handshake pnpm eval`, commit the new `evals/report.json`, and deploy again.
 
 ### [I-27] Give judges a sign-in account
-Judges sign in at `/sign-in` with an email and password that you create. Everyone else requests access at `/request-access`, and you approve them with `pnpm arena:access`. No new `.env` keys are needed.
-- [ ] Run `AWS_PROFILE=handshake pnpm cdk:deploy`. It ships the `POST /arena/sign-in/password` route and the new pages.
-- [ ] Run `AWS_PROFILE=handshake pnpm accounts:password <table> <judges email>`, for example an address on your own domain. The account is approved straight away. Keep the printed password in your password manager; it is shown only once. Running the command again sets a new password.
-- [ ] Open https://handshake.radostit.com/sign-in in a private window, sign in with that email and password, and check that the console lists deals and opens one. Then open `/arena` and check that you can pick a handle.
-- [ ] Put the email and password in the testing instructions in `docs/submission.md` at [I-16].
-- [ ] All judges share this account, so they share its 25 deals a day. Tell me if you want a higher limit for it.
+Judges sign in at `/sign-in` with one of five emails and a fixed six-digit code that you create. No email is sent to these accounts. Everyone else requests access at `/request-access`, and you approve them with `pnpm arena:access`. No new `.env` keys are needed.
+- [ ] Run `AWS_PROFILE=handshake pnpm cdk:deploy`. It removes the password route and adds the limits on code checks.
+- [ ] Run `AWS_PROFILE=handshake pnpm accounts:judges <table> <email-domain>`, for example your own domain. It creates `judge-1` to `judge-5` at that domain, approved straight away, and prints each fixed code once. Keep them in your password manager. Running the command again sets new codes.
+- [ ] If you made the shared judges' password account earlier, it can no longer sign in, because passwords are gone. Reject or ignore it.
+- [ ] Open https://handshake.radostit.com/sign-in in a private window, enter `judge-1@<domain>`, ask for a code, and type the fixed code. Check that the console lists deals and opens one. Then open `/arena` and check that you can pick a handle.
+- [ ] Put the five emails and codes in the testing instructions in `docs/submission.md` at [I-16]. Each judge has their own 25 deals and 40 arena attempts a day.
 - [ ] Open https://handshake.radostit.com/request-access in another private window, confirm a test email with the code, and send a request. It should reach `ARENA_ADMIN_EMAIL`. Approve it with `pnpm arena:access <table> approve <email>`.
 
 ---

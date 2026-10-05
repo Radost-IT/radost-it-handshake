@@ -363,7 +363,6 @@ export class HandshakeStack extends Stack {
     for (const path of [
       '/arena/sign-in',
       '/arena/sign-in/verify',
-      '/arena/sign-in/password',
       '/arena/sign-out',
       '/arena/access-requests',
       '/arena/challengers',

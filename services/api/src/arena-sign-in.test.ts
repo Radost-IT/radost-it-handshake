@@ -8,8 +8,8 @@ import {
 } from '@aws-sdk/lib-dynamodb';
 import { mockClient } from 'aws-sdk-client-mock';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { accountIdForEmail, hashPassword } from '@handshake/store';
-import { requestSignInCode, signInWithPassword, signOut, verifySignInCode } from './arena-sign-in';
+import { accountIdForEmail, hashSignInCode } from '@handshake/store';
+import { requestSignInCode, signOut, verifySignInCode } from './arena-sign-in';
 import { arenaTestContext, sessionCookies, testAccount, stubZeptoMail } from './arena-test-context';
 import { hashToken } from './http';
 
@@ -19,9 +19,31 @@ const context = arenaTestContext('2026-10-03T12:30:00Z');
 const accountId = accountIdForEmail('ada@example.com');
 const signIn = (body: unknown) =>
   requestSignInCode(context, { body: JSON.stringify(body), sourceIp: '203.0.113.7' });
+const verify = (body: unknown) =>
+  verifySignInCode(context, { body: JSON.stringify(body), sourceIp: '203.0.113.7' });
+const judgeId = accountIdForEmail('judge-1@example.com');
+const mockJudgeAccount = () => {
+  dynamodb.on(GetCommand, { Key: { pk: `ACCOUNT#${judgeId}`, sk: 'META' } }).resolves({
+    Item: {
+      id: judgeId,
+      email: 'judge-1@example.com',
+      createdAt: '2026-10-05T09:00:00.000Z',
+      access: 'approved',
+      fixedSignInCodeHash: hashSignInCode(judgeId, '424242'),
+    },
+  });
+};
+const rejectRateLimits = () => {
+  dynamodb
+    .on(UpdateCommand)
+    .rejects(new ConditionalCheckFailedException({ message: 'failed', $metadata: {} }));
+};
+const rateLimitSubjects = () =>
+  dynamodb.commandCalls(UpdateCommand).map((call): unknown => call.args[0].input.Key?.pk);
 
 beforeEach(() => {
   dynamodb.reset();
+  dynamodb.on(GetCommand).resolves({});
   dynamodb.on(UpdateCommand).resolves({});
   dynamodb.on(PutCommand).resolves({});
   sentEmails = stubZeptoMail();
@@ -45,21 +67,39 @@ describe('requestSignInCode', () => {
   });
 
   it('limits codes per email and per network', async () => {
+    rejectRateLimits();
+
+    const response = await signIn({ email: 'ada@example.com' });
+
+    expect(response.statusCode).toBe(429);
+    expect(sentEmails()).toHaveLength(0);
+    expect(rateLimitSubjects()).toEqual([
+      `RATE#signin-email#${accountId}`,
+      `RATE#signin-ip#${hashToken('203.0.113.7')}`,
+    ]);
+  });
+
+  it('stops sending emails once the day has used its share', async () => {
     dynamodb
-      .on(UpdateCommand)
+      .on(UpdateCommand, { Key: { pk: 'RATE#signin-emails', sk: 'WINDOW#2026-10-03' } })
       .rejects(new ConditionalCheckFailedException({ message: 'failed', $metadata: {} }));
 
     const response = await signIn({ email: 'ada@example.com' });
 
     expect(response.statusCode).toBe(429);
     expect(sentEmails()).toHaveLength(0);
-    const subjects = dynamodb
-      .commandCalls(UpdateCommand)
-      .map((call): unknown => call.args[0].input.Key?.pk);
-    expect(subjects).toEqual([
-      `RATE#signin-email#${accountId}`,
-      `RATE#signin-ip#${hashToken('203.0.113.7')}`,
-    ]);
+    expect(dynamodb.commandCalls(PutCommand)).toHaveLength(0);
+  });
+
+  it('sends no email to a judge, who has a fixed code', async () => {
+    mockJudgeAccount();
+
+    const response = await signIn({ email: 'judge-1@example.com' });
+
+    expect(response.statusCode).toBe(202);
+    expect(sentEmails()).toHaveLength(0);
+    expect(dynamodb.commandCalls(PutCommand)).toHaveLength(0);
+    expect(rateLimitSubjects()).not.toContain('RATE#signin-emails');
   });
 
   it('rejects an invalid email', async () => {
@@ -73,14 +113,13 @@ describe('verifySignInCode', () => {
   const live = { codeHash: hashToken(`${accountId}:123456`), failedChecks: 0, ttl: 1_900_000_000 };
 
   it('opens a session for a valid code and sets the cookie', async () => {
-    dynamodb.on(GetCommand).resolves({ Item: live });
+    dynamodb.on(GetCommand, { Key: { pk: `SIGNIN#${accountId}`, sk: 'META' } }).resolves({
+      Item: live,
+    });
     dynamodb.on(DeleteCommand).resolves({});
     dynamodb.on(UpdateCommand).resolves({ Attributes: { ...testAccount, access: 'none' } });
 
-    const response = await verifySignInCode(
-      context,
-      JSON.stringify({ email: 'ada@example.com', code: '123456' }),
-    );
+    const response = await verify({ email: 'ada@example.com', code: '123456' });
 
     expect(response.statusCode).toBe(200);
     expect(JSON.parse(response.body ?? '')).toEqual({ access: 'none' });
@@ -94,76 +133,51 @@ describe('verifySignInCode', () => {
   });
 
   it('explains a wrong code without opening a session', async () => {
-    dynamodb.on(GetCommand).resolves({ Item: live });
+    dynamodb.on(GetCommand, { Key: { pk: `SIGNIN#${accountId}`, sk: 'META' } }).resolves({
+      Item: live,
+    });
 
-    const response = await verifySignInCode(
-      context,
-      JSON.stringify({ email: 'ada@example.com', code: '654321' }),
-    );
+    const response = await verify({ email: 'ada@example.com', code: '654321' });
 
     expect(response.statusCode).toBe(400);
     expect(JSON.parse(response.body ?? '')).toEqual({ error: 'This code is wrong' });
     expect(dynamodb.commandCalls(PutCommand)).toHaveLength(0);
   });
-});
 
-describe('signInWithPassword', () => {
-  const judgesId = accountIdForEmail('judges@example.com');
-  const passwordSignIn = (body: unknown) =>
-    signInWithPassword(context, { body: JSON.stringify(body), sourceIp: '203.0.113.7' });
-  const mockJudgesAccount = (account: Record<string, unknown>) => {
-    dynamodb.on(GetCommand, { Key: { pk: `ACCOUNT#${judgesId}`, sk: 'META' } }).resolves({
-      Item: {
-        id: judgesId,
-        email: 'judges@example.com',
-        createdAt: '2026-10-05T09:00:00.000Z',
-        access: 'approved',
-        ...account,
-      },
-    });
-  };
+  it('signs a judge in with the fixed code, which works again', async () => {
+    mockJudgeAccount();
+    dynamodb.on(UpdateCommand).resolves({ Attributes: { ...testAccount, access: 'approved' } });
 
-  it('opens a session for the right password', async () => {
-    mockJudgesAccount({ passwordHash: await hashPassword('long-random-password') });
+    const first = await verify({ email: 'Judge-1@Example.com', code: '424242' });
+    const second = await verify({ email: 'judge-1@example.com', code: '424242' });
 
-    const response = await passwordSignIn({
-      email: 'Judges@Example.com',
-      password: 'long-random-password',
-    });
-
-    expect(response.statusCode).toBe(200);
-    expect(JSON.parse(response.body ?? '')).toEqual({ access: 'approved' });
-    expect(response.cookies?.[0]).toMatch(/^__Host-handshake_account=token-1;/);
-    expect(dynamodb.commandCalls(PutCommand)[0]?.args[0].input.Item).toMatchObject({
-      pk: `SESSION#${hashToken('token-1')}`,
-      accountId: judgesId,
-    });
+    for (const response of [first, second]) {
+      expect(response.statusCode).toBe(200);
+      expect(response.cookies?.[0]).toMatch(/^__Host-handshake_account=token-1;/);
+    }
+    expect(dynamodb.commandCalls(DeleteCommand)).toHaveLength(0);
   });
 
-  it('refuses a wrong password and an account that signs in with codes', async () => {
-    mockJudgesAccount({ passwordHash: await hashPassword('long-random-password') });
-    const wrong = await passwordSignIn({ email: 'judges@example.com', password: 'guess' });
-    mockJudgesAccount({});
-    const noPassword = await passwordSignIn({ email: 'judges@example.com', password: 'guess' });
+  it('refuses a wrong code for a judge', async () => {
+    mockJudgeAccount();
 
-    for (const response of [wrong, noPassword]) {
-      expect(response.statusCode).toBe(400);
-      expect(JSON.parse(response.body ?? '')).toEqual({
-        error: 'This email and password do not match',
-      });
-    }
+    const response = await verify({ email: 'judge-1@example.com', code: '123456' });
+
+    expect(response.statusCode).toBe(400);
     expect(dynamodb.commandCalls(PutCommand)).toHaveLength(0);
   });
 
-  it('limits tries per email and per network', async () => {
-    dynamodb
-      .on(UpdateCommand)
-      .rejects(new ConditionalCheckFailedException({ message: 'failed', $metadata: {} }));
+  it('limits tries per email and per network before reading the code', async () => {
+    rejectRateLimits();
 
-    const response = await passwordSignIn({ email: 'judges@example.com', password: 'guess' });
+    const response = await verify({ email: 'judge-1@example.com', code: '424242' });
 
     expect(response.statusCode).toBe(429);
     expect(dynamodb.commandCalls(GetCommand)).toHaveLength(0);
+    expect(rateLimitSubjects()).toEqual([
+      `RATE#signin-check-email#${judgeId}`,
+      `RATE#signin-check-ip#${hashToken('203.0.113.7')}`,
+    ]);
   });
 });
 

@@ -52,9 +52,7 @@ function EmailStep({ email, onEmailChange, onCodeSent }: EmailStepProps) {
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
       <h2 className="text-xl font-semibold">Confirm your email</h2>
-      <p className="text-muted text-sm">
-        We send a six-digit code to your email. No password needed.
-      </p>
+      <p className="text-muted text-sm">We send a six-digit code to your email.</p>
       <label className="flex flex-col gap-1 text-sm">
         Email
         <input

@@ -228,9 +228,12 @@ Draft note: fill in the real values after [I-13].
    Email: TBD
    Password: TBD
 4. Submit the sample delivery evidence and watch the verifier capture the payment. Try the "wrong item" evidence to see the payment voided.
-5. Developer console: sign in at https://handshake.radostit.com/sign-in with the judge account (from [I-27]), then open https://handshake.radostit.com/console. Open a deal and select it to read its PayPal calls and webhooks.
-   Email: TBD
-   Password: TBD
+5. Developer console: sign in at https://handshake.radostit.com/sign-in with one of the judge accounts below (from [I-27]). Enter the email, select "Email me a code", and type the fixed code; no email is sent. Then open https://handshake.radostit.com/console. Open a deal and select it to read its PayPal calls and webhooks.
+   judge-1: TBD, code TBD
+   judge-2: TBD, code TBD
+   judge-3: TBD, code TBD
+   judge-4: TBD, code TBD
+   judge-5: TBD, code TBD
 6. Evals: open https://handshake.radostit.com/evals to see the defense rate per attack category.
 7. Red Team Lab: with the same judge account, open /arena and pick a handle. Then write a malicious listing or message and run it. You will see either the blocked action and the reason, or a sandbox bounty and a new regression case. Anyone else can ask for access at /request-access; we check requests every day during judging.
 

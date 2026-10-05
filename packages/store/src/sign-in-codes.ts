@@ -1,5 +1,6 @@
 import { ConditionalCheckFailedException } from '@aws-sdk/client-dynamodb';
 import { DeleteCommand, GetCommand, PutCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
+import { createHash } from 'node:crypto';
 import { z } from 'zod';
 import type { StoreTable } from './table';
 
@@ -9,6 +10,14 @@ const signInCodeKey = (accountId: string) => ({ pk: `SIGNIN#${accountId}`, sk: '
 const MAX_FAILED_CHECKS = 5;
 
 const epochSeconds = (date: Date) => Math.floor(date.getTime() / 1000);
+
+/**
+ * SHA-256 of the code salted with the account, so one table of all six-digit
+ * codes does not work on every account.
+ */
+export function hashSignInCode(accountId: string, code: string): string {
+  return createHash('sha256').update(`${accountId}:${code}`).digest('hex');
+}
 
 export interface SignInCode {
   accountId: string;
@@ -56,30 +65,44 @@ export async function checkSignInCode(
   if (stored.ttl <= epochSeconds(attempt.now)) return 'expired';
   if (stored.failedChecks >= MAX_FAILED_CHECKS) return 'locked';
 
-  if (stored.codeHash !== attempt.codeHash) {
-    await table.client.send(
-      new UpdateCommand({
-        TableName: table.name,
-        Key,
-        UpdateExpression: 'ADD failedChecks :one',
-        ExpressionAttributeValues: { ':one': 1 },
-      }),
-    );
-    return 'wrong';
-  }
-  // The condition makes two requests with the same code race for one sign-in.
+  if (stored.codeHash !== attempt.codeHash) return countWrongCode(table, Key);
+  // The conditions make two requests with the same code race for one sign-in,
+  // and keep a right guess sent alongside many wrong ones from passing the lock.
   try {
     await table.client.send(
       new DeleteCommand({
         TableName: table.name,
         Key,
-        ConditionExpression: 'codeHash = :hash',
-        ExpressionAttributeValues: { ':hash': attempt.codeHash },
+        ConditionExpression: 'codeHash = :hash AND failedChecks < :max',
+        ExpressionAttributeValues: { ':hash': attempt.codeHash, ':max': MAX_FAILED_CHECKS },
       }),
     );
     return 'valid';
   } catch (error) {
     if (error instanceof ConditionalCheckFailedException) return 'expired';
+    throw error;
+  }
+}
+
+// The count and the lock check are one conditional update, so parallel wrong
+// guesses cannot all pass the check before any of them is counted.
+async function countWrongCode(
+  table: StoreTable,
+  Key: ReturnType<typeof signInCodeKey>,
+): Promise<'wrong' | 'locked'> {
+  try {
+    await table.client.send(
+      new UpdateCommand({
+        TableName: table.name,
+        Key,
+        UpdateExpression: 'ADD failedChecks :one',
+        ConditionExpression: 'failedChecks < :max',
+        ExpressionAttributeValues: { ':one': 1, ':max': MAX_FAILED_CHECKS },
+      }),
+    );
+    return 'wrong';
+  } catch (error) {
+    if (error instanceof ConditionalCheckFailedException) return 'locked';
     throw error;
   }
 }
