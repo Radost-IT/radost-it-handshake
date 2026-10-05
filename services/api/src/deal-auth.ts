@@ -59,6 +59,14 @@ export async function findDeveloper(
   return findSessionDeveloper(table, credentials.cookies, now);
 }
 
+/**
+ * True when the request is signed with a developer API key. Agents hold the
+ * key, so the person's decisions on a deal refuse it.
+ */
+export function isSignedWithApiKey(credentials: DealCredentials): boolean {
+  return readBearerToken(credentials.authorization)?.startsWith(API_KEY_PREFIX) ?? false;
+}
+
 /** The error response for a caller who may not act on the deal, or undefined when they may. */
 export async function refuseDealAccess(
   table: StoreTable,
@@ -88,7 +96,7 @@ async function canActOnDeal(
   now: Date,
 ): Promise<boolean> {
   const token = readBearerToken(credentials.authorization);
-  if (token !== undefined && !token.startsWith(API_KEY_PREFIX)) {
+  if (token !== undefined && !isSignedWithApiKey(credentials)) {
     return hasDealAccess(table, dealId, hashToken(token));
   }
   const developer = await findDeveloper(table, credentials, now);

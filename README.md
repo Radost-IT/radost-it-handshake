@@ -50,7 +50,7 @@ Base URL: `https://api-handshake.radostit.com/v1`. Send `authorization: Bearer <
 | `POST /deals/{dealId}/purchase-approval` | `{ "approved": true }` for a price above the mandate's approval threshold. |
 | `POST /deals/{dealId}/human-decision` | A settlement proposal for an escalated deal. Policy still checks it. |
 
-The deal routes also accept the deal's access token, so the buyer can act without your API key. Each key or account opens up to 25 deals a day.
+The deal routes also accept the deal's access token, so the buyer can act without your API key. The two approval routes refuse API keys: the agent that holds the key must not approve its own spending, so only the person, with the deal's access token or a signed-in session, decides there. Each key or account opens up to 25 deals a day.
 
 The developer console at https://handshake.radostit.com/console does the same from a browser: sign in or paste a key, open a deal, and read each deal's PayPal calls (operation, HTTP status, `debug_id`, `PayPal-Request-Id`) and verified webhooks. The buyer follows a deal at `/deals/<id>`, which shows the escrow timeline and the approval buttons.
 

@@ -3,7 +3,7 @@ import type { WaitSignal } from '@handshake/store';
 import { resumeLifecycle, type ResumeContext } from '@handshake/workflows/resume-lifecycle';
 import type { APIGatewayProxyStructuredResultV2 } from 'aws-lambda';
 import { z, type ZodType } from 'zod';
-import { refuseDealAccess, type DealCredentials } from './deal-auth';
+import { isSignedWithApiKey, refuseDealAccess, type DealCredentials } from './deal-auth';
 import { json, parseJson } from './http';
 
 export interface DealRequest extends DealCredentials {
@@ -38,6 +38,10 @@ async function resumeWithDecision(
   signal: WaitSignal,
   decisionSchema: ZodType,
 ): Promise<APIGatewayProxyStructuredResultV2> {
+  // The agent that opened the deal holds the API key; it must not approve its own spending.
+  if (isSignedWithApiKey(request)) {
+    return json(403, { error: 'The person decides on the deal page, not with an API key' });
+  }
   const refusal = await refuseDealAccess(
     context.table,
     request.dealId,

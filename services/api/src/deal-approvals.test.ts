@@ -69,6 +69,18 @@ describe('approvePurchase', () => {
     expect(stepFunctions.commandCalls(SendTaskSuccessCommand)).toHaveLength(0);
   });
 
+  it('refuses the developer API key, which agents hold', async () => {
+    waitingFor('purchase-approval');
+
+    const response = await approvePurchase(
+      context,
+      request({ approved: true }, 'Bearer hs_sandbox_key-1'),
+    );
+
+    expect(response.statusCode).toBe(403);
+    expect(stepFunctions.commandCalls(SendTaskSuccessCommand)).toHaveLength(0);
+  });
+
   it('refuses a body that is not a decision', async () => {
     const response = await approvePurchase(context, request({ approved: 'yes' }));
     expect(response.statusCode).toBe(400);
@@ -91,6 +103,18 @@ describe('decideEscalation', () => {
     expect(stepFunctions.commandCalls(SendTaskSuccessCommand)[0]?.args[0].input.output).toBe(
       JSON.stringify(proposal),
     );
+  });
+
+  it('refuses the developer API key, which agents hold', async () => {
+    waitingFor('human-decision');
+
+    const response = await decideEscalation(
+      context,
+      request({ action: 'CAPTURE', reason: 'Looks fine' }, 'Bearer hs_sandbox_key-1'),
+    );
+
+    expect(response.statusCode).toBe(403);
+    expect(stepFunctions.commandCalls(SendTaskSuccessCommand)).toHaveLength(0);
   });
 
   it('refuses a proposal policy could never accept', async () => {
