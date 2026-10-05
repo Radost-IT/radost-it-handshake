@@ -25,6 +25,7 @@ const arenaRunArn = testArenaRunArn;
 const context = { ...arenaTestContext('2026-10-03T12:30:00Z'), newAttemptId: () => attemptId };
 
 const budgetKey = { pk: 'BUDGET#2026-10-03', sk: 'TOKENS' };
+const arenaBudgetKey = { pk: 'BUDGET#2026-10-03', sk: 'ARENA' };
 const request = (body: unknown) => ({
   body: JSON.stringify(body),
   cookies: sessionCookies,
@@ -41,6 +42,7 @@ beforeEach(() => {
   stepFunctions.reset();
   mockSignedIn(dynamodb);
   dynamodb.on(GetCommand, { Key: budgetKey }).resolves({ Item: { ...budgetKey, used: 400 } });
+  dynamodb.on(GetCommand, { Key: arenaBudgetKey }).resolves({});
   dynamodb.on(UpdateCommand).resolves({});
   dynamodb.on(PutCommand).resolves({});
   stepFunctions.on(StartExecutionCommand).resolves({});
@@ -78,6 +80,26 @@ describe('submitAttempt', () => {
       sk: 'WINDOW#2026-10-03T12',
     });
     expect(JSON.stringify(update)).not.toContain('203.0.113.7');
+  });
+
+  it('counts attempts per challenger and day', async () => {
+    await submitAttempt(context, request(attack));
+
+    expect(dynamodb.commandCalls(UpdateCommand)[1]?.args[0].input.Key).toEqual({
+      pk: 'RATE#challenger:challenger-1',
+      sk: 'WINDOW#2026-10-03',
+    });
+  });
+
+  it('refuses attempts past the daily limit of the challenger', async () => {
+    dynamodb
+      .on(UpdateCommand, { Key: { pk: 'RATE#challenger:challenger-1', sk: 'WINDOW#2026-10-03' } })
+      .rejects(new ConditionalCheckFailedException({ message: 'limit', $metadata: {} }));
+
+    const response = await submitAttempt(context, request(attack));
+
+    expect(response.statusCode).toBe(429);
+    expect(stepFunctions.calls()).toHaveLength(0);
   });
 
   it('plays the daily challenge on request, ignoring a chosen deal', async () => {
@@ -135,6 +157,17 @@ describe('submitAttempt', () => {
 
   it('refuses attempts once the daily token budget is used', async () => {
     dynamodb.on(GetCommand, { Key: budgetKey }).resolves({ Item: { ...budgetKey, used: 1000 } });
+
+    const response = await submitAttempt(context, request(attack));
+
+    expect(response.statusCode).toBe(503);
+    expect(stepFunctions.calls()).toHaveLength(0);
+  });
+
+  it('refuses attempts once the arena used its half of the day', async () => {
+    dynamodb
+      .on(GetCommand, { Key: arenaBudgetKey })
+      .resolves({ Item: { ...arenaBudgetKey, used: 500 } });
 
     const response = await submitAttempt(context, request(attack));
 

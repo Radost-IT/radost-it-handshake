@@ -12,7 +12,7 @@ import {
   type DealAgentsContext,
   type DealAgentsResult,
 } from './deal-agents';
-import { withDailyTokenBudget } from './token-budget';
+import { dealTokenLimits, withDailyTokenBudget } from './token-budget';
 
 const environment = z.object({ TABLE_NAME: z.string().min(1) }).parse(process.env);
 
@@ -44,7 +44,7 @@ const context: DealAgentsContext = {
   table,
   llm: withDailyTokenBudget(bedrock, {
     table,
-    dailyTokenBudget: config.limits.dailyTokenBudget,
+    limits: dealTokenLimits(config.limits.dailyTokenBudget),
     now,
   }),
   catalog: {

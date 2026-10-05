@@ -92,7 +92,7 @@ export {
   type SignInCodeCheck,
 } from './sign-in-codes';
 export type { StoreTable } from './table';
-export { addTokensUsed, getTokensUsed } from './token-budget';
+export { addTokensUsed, arenaTokenLimit, getTokensUsed, type TokenPool } from './token-budget';
 export { saveWait, takeWait, type WaitSignal } from './waits';
 export {
   getSeller,

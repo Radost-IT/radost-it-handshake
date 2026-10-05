@@ -14,7 +14,7 @@ import {
   type ArenaTaskResult,
 } from './arena-run';
 import { publishLiveEvent, type LivePublisher } from './live-events';
-import { withDailyTokenBudget } from './token-budget';
+import { arenaTokenLimits, withDailyTokenBudget } from './token-budget';
 
 const environment = z
   .object({ TABLE_NAME: z.string().min(1), LIVE_CALLBACK_URL: z.url() })
@@ -43,7 +43,7 @@ const context: ArenaRunContext = {
   table,
   llm: withDailyTokenBudget(bedrock, {
     table,
-    dailyTokenBudget: config.limits.dailyTokenBudget,
+    limits: arenaTokenLimits(config.limits.dailyTokenBudget),
     now,
   }),
   paypal: createPayPalClient(config.paypal),

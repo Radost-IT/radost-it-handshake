@@ -8,6 +8,7 @@ import {
   pickDailyChallenge,
 } from '@handshake/arena';
 import {
+  arenaTokenLimit,
   createArenaAttempt,
   getArenaAttempt,
   getTokensUsed,
@@ -22,7 +23,10 @@ import { hashToken, json, parseJson } from './http';
 // Every attempt costs model calls. Judges may share one IP, so the limit
 // leaves room for several of them testing at once.
 const ATTEMPTS_PER_IP_PER_HOUR = 30;
+// Changing networks gets around the IP limit, so each challenger also has a daily one.
+const ATTEMPTS_PER_CHALLENGER_PER_DAY = 40;
 const HOUR_MS = 60 * 60 * 1000;
+const DAY_MS = 24 * HOUR_MS;
 // ArenaRun stops itself after 30 minutes. That timeout cannot mark the attempt,
 // and neither can a run that never started, so an older attempt counts as failed.
 const RUN_DEADLINE_MS = 35 * 60 * 1000;
@@ -75,7 +79,24 @@ export async function submitAttempt(
   }
 
   const today = now.toISOString().slice(0, 10);
-  if ((await getTokensUsed(context.table, today)) >= context.dailyTokenBudget) {
+  const challengerAllowed = await takeRateLimitSlot(context.table, {
+    subject: `challenger:${session.challenger.id}`,
+    window: today,
+    limit: ATTEMPTS_PER_CHALLENGER_PER_DAY,
+    expiresAt: new Date(Date.parse(`${today}T00:00:00Z`) + 2 * DAY_MS),
+  });
+  if (!challengerAllowed) {
+    return json(429, { error: 'You have used your attempts for today. Come back tomorrow' });
+  }
+
+  const [usedToday, usedByArena] = await Promise.all([
+    getTokensUsed(context.table, today, 'all'),
+    getTokensUsed(context.table, today, 'arena'),
+  ]);
+  if (
+    usedToday >= context.dailyTokenBudget ||
+    usedByArena >= arenaTokenLimit(context.dailyTokenBudget)
+  ) {
     return json(503, { error: 'The arena has used its AI budget for today. Come back tomorrow' });
   }
 
