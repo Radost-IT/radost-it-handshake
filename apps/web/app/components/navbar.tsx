@@ -42,11 +42,8 @@ export function Navbar() {
           <Link href="/arena" className="text-muted hover:text-ink text-sm font-semibold">
             Red Team Lab
           </Link>
-          <Link
-            href="/arena/leaderboard"
-            className="text-muted hover:text-ink text-sm font-semibold"
-          >
-            Leaderboard
+          <Link href="/evals" className="text-muted hover:text-ink text-sm font-semibold">
+            Evals
           </Link>
           <ThemeToggle />
         </div>

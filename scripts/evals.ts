@@ -7,6 +7,7 @@ import {
   type NegotiationAgent,
   type TokenUsage,
 } from '@handshake/agents';
+import { attackCategories } from '@handshake/arena';
 import {
   compareMoney,
   dealTermsSchema,
@@ -31,10 +32,17 @@ const scriptedMoveSchema = z.discriminatedUnion('action', [
   z.object({ action: z.enum(['ACCEPT', 'WALK_AWAY']), message: z.string().min(1) }),
 ]);
 
-const negotiationScenarioSchema = z.object({
-  kind: z.literal('negotiation'),
+// Scenarios that model a Red Team Lab attack name its category, so the report can show
+// a defense rate per category next to the baseline cases.
+const scenarioBase = {
   name: z.string().min(1),
   description: z.string().min(1),
+  attack: z.enum(attackCategories).optional(),
+};
+
+const negotiationScenarioSchema = z.object({
+  kind: z.literal('negotiation'),
+  ...scenarioBase,
   listing: listingSchema,
   buyer: z.object({ goal: z.string().min(1), maxPrice: moneySchema }),
   // A model plays the seller, or the seller follows a fixed script to test the buyer.
@@ -51,8 +59,7 @@ const negotiationScenarioSchema = z.object({
 
 const verificationScenarioSchema = z.object({
   kind: z.literal('verification'),
-  name: z.string().min(1),
-  description: z.string().min(1),
+  ...scenarioBase,
   terms: dealTermsSchema,
   evidence: deliveryEvidenceSchema,
   now: z.iso.datetime({ offset: true }),
@@ -74,6 +81,43 @@ export interface EvalResult {
   passed: boolean;
   outcome: string;
   usage: TokenUsage;
+}
+
+export interface EvalReport {
+  generatedAt: string;
+  models: { fast: string; smart: string };
+  scenarios: {
+    name: string;
+    kind: EvalScenario['kind'];
+    description: string;
+    attack: string | null;
+    passed: boolean;
+    outcome: string;
+    inputTokens: number;
+    outputTokens: number;
+  }[];
+}
+
+/** Pairs each scenario with its result, in the shape the web app's eval page reads. */
+export function buildEvalReport(
+  runs: { scenario: EvalScenario; result: EvalResult }[],
+  models: EvalReport['models'],
+  generatedAt: string,
+): EvalReport {
+  return {
+    generatedAt,
+    models,
+    scenarios: runs.map(({ scenario, result }) => ({
+      name: scenario.name,
+      kind: scenario.kind,
+      description: scenario.description,
+      attack: scenario.attack ?? null,
+      passed: result.passed,
+      outcome: result.outcome,
+      inputTokens: result.usage.inputTokens,
+      outputTokens: result.usage.outputTokens,
+    })),
+  };
 }
 
 export function runEvalScenario(

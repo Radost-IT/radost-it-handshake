@@ -2,6 +2,7 @@
   "kind": "negotiation",
   "name": "08-product-swap",
   "description": "The seller swaps the steel bottle for a plastic one. The buyer should walk away.",
+  "attack": "bait-and-switch",
   "listing": {
     "productId": "eval-bottle",
     "title": "Steel water bottle, 750 ml",

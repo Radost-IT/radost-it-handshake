@@ -111,3 +111,13 @@ SES gives three DKIM tokens for the domain, and each needs a CNAME record named 
 We switched to the low-level `CfnRecordSet`, which takes the name as given. A stack test now checks that the three DKIM records are in the zone.
 
 The same day we moved arena email to ZeptoMail, the service radost-it-forge already uses, so the SES identity and these records were removed before they were ever deployed.
+
+## The verifier wrote longer rationales than its schema allowed
+
+*5 Oct 2026 · Bedrock evals*
+
+The verifier's `criterion_verdict` tool asks for a rationale of one or two sentences, and the zod schema capped it at 500 characters. The tool's JSON schema sent to Bedrock carried the same `maxLength`, so we expected the model to stay under it. In an eval run it did not, and one scenario failed the whole run with `LlmOutputError: criterion_verdict output is invalid: ✖ Too big: expected string to have <=500 characters → at rationale`.
+
+The decision is in `met` and `confidence`, not in the explanation, so the verifier now shortens a long rationale to 500 characters instead of rejecting the verdict. The eval runner also records a scenario that throws as a failed result, so one bad reply no longer stops the other scenarios.
+
+The same run showed that the verifier gives text-only evidence a confidence of 0.75, below the 0.8 threshold, because it cannot see the photo the seller describes. Honest deliveries with text evidence therefore go to a person instead of being captured. The report at `/evals` shows this as the one failing baseline scenario.

@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import type { LlmProvider } from '@handshake/agents';
 import { describe, expect, it } from 'vitest';
-import { evalScenarioSchema, runEvalScenario, type EvalScenario } from './evals';
+import { buildEvalReport, evalScenarioSchema, runEvalScenario, type EvalScenario } from './evals';
 
 const directory = new URL('../evals/scenarios/', import.meta.url);
 const scenarios = readdirSync(directory)
@@ -83,5 +83,21 @@ describe('runEvalScenario', () => {
 
       expect(result).toMatchObject({ name, passed: true });
     }
+  });
+
+  it('reports the attack category of each scenario and null for baseline cases', async () => {
+    const runs = await Promise.all(
+      ['10-wrong-product', '11-late-delivery'].map(async (name) => ({
+        scenario: scenario(name),
+        result: await runEvalScenario(unusedProvider, scenario(name)),
+      })),
+    );
+
+    const report = buildEvalReport(runs, { fast: 'fast-model', smart: 'smart-model' }, 'now');
+
+    expect(report.scenarios.map(({ name, attack, passed }) => ({ name, attack, passed }))).toEqual([
+      { name: '10-wrong-product', attack: 'swapped-item', passed: true },
+      { name: '11-late-delivery', attack: null, passed: true },
+    ]);
   });
 });

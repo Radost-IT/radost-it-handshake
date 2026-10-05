@@ -1,10 +1,11 @@
-import { readdir, readFile } from 'node:fs/promises';
+import { readdir, readFile, writeFile } from 'node:fs/promises';
 import { BedrockRuntimeClient } from '@aws-sdk/client-bedrock-runtime';
 import { createBedrockLlmProvider } from '@handshake/agents';
 import { loadConfig } from '@handshake/config';
-import { evalScenarioSchema, runEvalScenario } from './evals';
+import { buildEvalReport, evalScenarioSchema, runEvalScenario, type EvalResult } from './evals';
 
 const directory = new URL('../evals/scenarios/', import.meta.url);
+const reportFile = new URL('../evals/report.json', import.meta.url);
 const files = (await readdir(directory)).filter((file) => file.endsWith('.json')).sort();
 const scenarios = await Promise.all(
   files.map(async (file) =>
@@ -18,7 +19,21 @@ const provider = createBedrockLlmProvider(
   { fast: config.bedrock.modelFast, smart: config.bedrock.modelSmart },
 );
 
-const results = await Promise.all(scenarios.map((scenario) => runEvalScenario(provider, scenario)));
+const runs = await Promise.all(
+  scenarios.map(async (scenario) => ({
+    scenario,
+    result: await runEvalScenario(provider, scenario).catch(
+      // One broken scenario is a failed result, not the end of the run.
+      (error: unknown): EvalResult => ({
+        name: scenario.name,
+        passed: false,
+        outcome: `error: ${error instanceof Error ? error.message : String(error)}`,
+        usage: { inputTokens: 0, outputTokens: 0 },
+      }),
+    ),
+  })),
+);
+const results = runs.map(({ result }) => result);
 
 for (const result of results) {
   console.log(`${result.passed ? 'PASS' : 'FAIL'} ${result.name}: ${result.outcome}`);
@@ -29,4 +44,12 @@ const outputTokens = results.reduce((sum, result) => sum + result.usage.outputTo
 console.log(
   `${String(results.length - failed)} of ${String(results.length)} passed, ${String(inputTokens)} input and ${String(outputTokens)} output tokens`,
 );
+
+const report = buildEvalReport(
+  runs,
+  { fast: config.bedrock.modelFast, smart: config.bedrock.modelSmart },
+  new Date().toISOString(),
+);
+await writeFile(reportFile, `${JSON.stringify(report, null, 2)}\n`);
+console.log('Wrote evals/report.json');
 if (failed > 0) process.exitCode = 1;

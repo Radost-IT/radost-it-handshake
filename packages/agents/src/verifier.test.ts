@@ -25,7 +25,7 @@ const evidence: DeliveryEvidence = {
 
 const now = '2026-10-08T12:00:00Z';
 
-type Verdicts = Record<string, { met: boolean; confidence: number }>;
+type Verdicts = Record<string, { met: boolean; confidence: number; rationale?: string }>;
 
 function providerJudging(verdicts: Verdicts): LlmProvider & { requests: LlmRequest[] } {
   const requests: LlmRequest[] = [];
@@ -41,7 +41,7 @@ function providerJudging(verdicts: Verdicts): LlmProvider & { requests: LlmReque
             type: 'toolUse',
             toolUseId: `call-${id}`,
             name: 'criterion_verdict',
-            input: { ...verdicts[id], rationale: `Checked ${id}.` },
+            input: { rationale: `Checked ${id}.`, ...verdicts[id] },
           },
         ],
         stopReason: 'tool_use',
@@ -71,6 +71,20 @@ describe('verifyDelivery', () => {
       reason: 'Every acceptance criterion is met',
     });
     expect(usage).toEqual({ inputTokens: 800, outputTokens: 80 });
+  });
+
+  it('shortens a rationale longer than asked instead of failing the verification', async () => {
+    const provider = providerJudging({
+      c1: { met: true, confidence: 0.95, rationale: 'The photo shows it. '.repeat(40) },
+      c2: { met: true, confidence: 0.9 },
+    });
+
+    const { proposal } = await verifyDelivery(provider, { terms, evidence, now });
+
+    expect(proposal.action).toBe('CAPTURE');
+    const rationale = proposal.action === 'CAPTURE' ? proposal.criteria[0]?.rationale : '';
+    expect(rationale).toHaveLength(500);
+    expect(rationale?.endsWith('...')).toBe(true);
   });
 
   it('escalates when a verdict is below the confidence threshold', async () => {

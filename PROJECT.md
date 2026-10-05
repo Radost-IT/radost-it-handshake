@@ -387,7 +387,7 @@ Done when a successful attack produces a payout and a regression case, and the p
 - [x] MCP server in `packages/mcp` with setup steps for Claude Desktop.
 - [x] Developer console `/console` with AG Grid deals, audit log and webhook log.
 - [x] Red Team Lab reframe: copy, ranks, badges and styling.
-- [ ] Eval report and defense rate chart (AG Charts Community).
+- [x] Eval report and defense rate chart (AG Charts Community).
 - [ ] README: PayPal API depth table, AP2 / ACP / PayPal Agent Toolkit mapping, API and MCP docs.
 
 ### Phase 5 — Product polish (Nov 3–8)

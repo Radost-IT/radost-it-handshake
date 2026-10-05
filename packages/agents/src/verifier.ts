@@ -20,6 +20,7 @@ type CriterionResult = Extract<SettlementProposal, { action: 'CAPTURE' }>['crite
 
 // One verdict with a short rationale per criterion.
 const MAX_TOKENS_PER_CRITERION = 500;
+const MAX_RATIONALE_LENGTH = 500;
 
 const criterionOutput = {
   name: 'criterion_verdict',
@@ -27,12 +28,14 @@ const criterionOutput = {
   schema: z.object({
     met: z.boolean().describe('True only if the evidence clearly shows the criterion is met.'),
     confidence: z.number().min(0).max(1).describe('How sure you are of your verdict, from 0 to 1.'),
+    // Models sometimes write more than asked. The verdict is in met and confidence, so a
+    // long explanation is shortened rather than failing the whole verification.
     rationale: z
       .string()
       .trim()
       .min(1)
-      .max(500)
-      .describe('One or two sentences on what in the evidence decided it.'),
+      .describe('One or two sentences on what in the evidence decided it.')
+      .transform(shortenRationale),
   }),
 };
 
@@ -124,6 +127,11 @@ async function judgeCriterion(
     output: criterionOutput,
   });
   return { result: { criterionId: criterion.id, ...value }, usage };
+}
+
+function shortenRationale(rationale: string): string {
+  if (rationale.length <= MAX_RATIONALE_LENGTH) return rationale;
+  return `${rationale.slice(0, MAX_RATIONALE_LENGTH - 3).trimEnd()}...`;
 }
 
 function listIds(results: CriterionResult[]): string {

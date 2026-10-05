@@ -33,7 +33,7 @@ pnpm arena:access <table> [approve|reject <email>]  # list or decide requests to
 pnpm api-keys:create <table> <name>  # issue a sandbox Deal API key; shown once
 pnpm mcp                 # MCP server over stdio; needs HANDSHAKE_API_KEY
 pnpm seed:sellers <table> [query ...]  # seller agents from Channel3 products
-pnpm eval                # agent evals in evals/scenarios against Bedrock
+pnpm eval                # agent evals in evals/scenarios against Bedrock; writes evals/report.json
 ```
 
 ## Deal API
@@ -84,11 +84,15 @@ To use it from Claude Desktop, add this to `claude_desktop_config.json` and rest
 
 ## Red Team Lab
 
-Invited researchers play a dishonest seller and try to trick the agents at `/arena`. Each attack runs through the `ArenaRun` state machine; the attempt page at `/arena/attempts/<id>` listens on the WebSocket at wss://ws-handshake.radostit.com and reloads when the judge decides. It also polls every 10 seconds in case a push is lost. The arena page updates its defense counter from the same socket. The leaderboard is at `/arena/leaderboard`.
+Invited researchers act as a dishonest seller and try to make the agents release money they should not at `/arena`. A breach earns a sandbox bounty and becomes a regression test. Each attack runs through the `ArenaRun` state machine; the attempt page at `/arena/attempts/<id>` listens on the WebSocket at wss://ws-handshake.radostit.com and reloads when the judge decides. It also polls every 10 seconds in case a push is lost. The arena page updates its defense counter from the same socket. The leaderboard is at `/arena/leaderboard`.
 
-The arena is open to invited players only, because every attack spends Bedrock tokens. A visitor signs in with a code sent to their email and asks to join with a short reason. Approve or reject requests with `pnpm arena:access`.
+The lab is open to invited researchers only, because every attack spends Bedrock tokens. A visitor signs in with a code sent to their email and asks to join with a short reason. Approve or reject requests with `pnpm arena:access`.
 
-The arena pages call the deployed API at https://api-handshake.radostit.com, which accepts browser calls only from the hosted site. They do not work from `pnpm dev`.
+The lab pages call the deployed API at https://api-handshake.radostit.com, which accepts browser calls only from the hosted site. They do not work from `pnpm dev`.
+
+## Evals
+
+`pnpm eval` runs every scenario in `evals/scenarios/` against the real agents on Bedrock and writes `evals/report.json`. Scenarios that replay a Red Team Lab attack name its category in an `attack` field; the others are baseline deals that must still close and pay. The `/evals` page is built from the committed report and shows the defense rate per attack category in AG Charts and every scenario in AG Grid. Commit the new report after each run, then redeploy.
 
 ## Deploy
 

@@ -2,6 +2,7 @@
   "kind": "verification",
   "name": "10-wrong-product",
   "description": "Evidence for another product voids without asking a model.",
+  "attack": "swapped-item",
   "terms": {
     "dealId": "eval-deal",
     "buyerId": "eval-buyer",

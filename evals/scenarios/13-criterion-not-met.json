@@ -2,6 +2,7 @@
   "kind": "verification",
   "name": "13-criterion-not-met",
   "description": "The evidence shows a 500 ml bottle, so the capacity criterion is not met.",
+  "attack": "swapped-item",
   "terms": {
     "dealId": "eval-deal",
     "buyerId": "eval-buyer",

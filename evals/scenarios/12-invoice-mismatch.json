@@ -2,6 +2,7 @@
   "kind": "verification",
   "name": "12-invoice-mismatch",
   "description": "An invoice total that differs from the contract price voids.",
+  "attack": "bait-and-switch",
   "terms": {
     "dealId": "eval-deal",
     "buyerId": "eval-buyer",
