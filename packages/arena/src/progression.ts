@@ -32,12 +32,12 @@ export function xpForAttempt(outcome: AttemptOutcome): number {
 }
 
 export const ranks = [
-  { name: 'Newcomer', minXp: 0 },
-  { name: 'Explorer', minXp: 50 },
-  { name: 'Investigator', minXp: 200 },
-  { name: 'Puzzle Solver', minXp: 500 },
-  { name: 'Codebreaker', minXp: 1000 },
-  { name: 'Master Tester', minXp: 2500 },
+  { name: 'Observer', minXp: 0 },
+  { name: 'Analyst', minXp: 50 },
+  { name: 'Tester', minXp: 200 },
+  { name: 'Red Teamer', minXp: 500 },
+  { name: 'Senior Red Teamer', minXp: 1000 },
+  { name: 'Principal Red Teamer', minXp: 2500 },
 ] as const;
 
 export type Rank = (typeof ranks)[number]['name'];

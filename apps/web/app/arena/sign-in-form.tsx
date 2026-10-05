@@ -55,8 +55,8 @@ function EmailStep({ email, onEmailChange, onCodeSent }: EmailStepProps) {
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
       <h2 className="text-xl font-semibold">Sign in to join</h2>
       <p className="text-muted text-sm">
-        Every attack runs real AI agents, so the arena is open to invited players only. Sign in with
-        your email, then tell us why you want to play.
+        Every attack runs real AI agents, so the lab is open to invited researchers only. Sign in
+        with your email, then tell us what you want to test.
       </p>
       <label className="flex flex-col gap-1 text-sm">
         Email

@@ -16,7 +16,7 @@ export function ChallengerCard({ challenger, badges }: ChallengerCardProps) {
   return (
     <aside className="border-line bg-surface/70 rounded-card flex flex-col gap-6 border p-6">
       <div>
-        <p className="text-muted text-xs font-semibold tracking-widest uppercase">Challenger</p>
+        <p className="text-muted text-xs font-semibold tracking-widest uppercase">Researcher</p>
         <p className="mt-1 text-xl font-semibold">{challenger.handle}</p>
         <p className="text-accent text-sm font-semibold">{rank.rank}</p>
       </div>

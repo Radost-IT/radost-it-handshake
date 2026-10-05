@@ -19,22 +19,22 @@ describe('unlockedBadges', () => {
   });
 
   it.each([
-    ['eureka', { loopholes: 1 }],
-    ['trailblazer', { firstLoopholeCategories: 1 }],
-    ['map-maker', { categoriesTried: [...attackCategories] }],
-    ['wordsmith', { textLoopholes: 1 }],
-    ['sharp-eye', { evidenceLoopholes: 1 }],
-    ['never-give-up', { longestHeldStreak: 10 }],
-    ['shield-builder', { regressionsHolding: 1 }],
-    ['daily-regular', { dailyChallengeDays: 5 }],
+    ['first-breach', { loopholes: 1 }],
+    ['first-in-category', { firstLoopholeCategories: 1 }],
+    ['full-coverage', { categoriesTried: [...attackCategories] }],
+    ['text-channel', { textLoopholes: 1 }],
+    ['evidence-channel', { evidenceLoopholes: 1 }],
+    ['sustained-testing', { longestHeldStreak: 10 }],
+    ['regression-author', { regressionsHolding: 1 }],
+    ['daily-target', { dailyChallengeDays: 5 }],
   ] as const)('unlocks %s exactly at its threshold', (badge, stats) => {
     expect(unlockedBadges({ ...fresh, ...stats })).toEqual([badge]);
   });
 
   it.each([
-    ['map-maker', { categoriesTried: attackCategories.slice(1) }],
-    ['never-give-up', { longestHeldStreak: 9 }],
-    ['daily-regular', { dailyChallengeDays: 4 }],
+    ['full-coverage', { categoriesTried: attackCategories.slice(1) }],
+    ['sustained-testing', { longestHeldStreak: 9 }],
+    ['daily-target', { dailyChallengeDays: 4 }],
   ] as const)('keeps %s locked just below its threshold', (_badge, stats) => {
     expect(unlockedBadges({ ...fresh, ...stats })).toEqual([]);
   });
@@ -45,6 +45,6 @@ describe('newlyUnlocked', () => {
     const before = { ...fresh, loopholes: 1, textLoopholes: 1 };
     const after = { ...before, loopholes: 2, evidenceLoopholes: 1 };
 
-    expect(newlyUnlocked(before, after)).toEqual(['sharp-eye']);
+    expect(newlyUnlocked(before, after)).toEqual(['evidence-channel']);
   });
 });

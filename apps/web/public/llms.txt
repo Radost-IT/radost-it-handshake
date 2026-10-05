@@ -18,9 +18,9 @@ Teams building AI shopping agents. Their users will not let an agent pay, becaus
 6. A deterministic policy engine checks the proposal against the contract and the mandate. Only then does the settlement code capture or void the PayPal authorization.
 7. Holds near expiry are reauthorized automatically. A deal is marked settled only after a confirmed capture.
 
-## Arena mode
+## Red Team Lab
 
-Visitors play a malicious seller and try to trick the agents: prompt injection in a listing, fake urgency, a price switch after agreement, swapped-item evidence, partial delivery, impersonating the platform, currency confusion and split payments. A judge agent decides whether the attempt found a loophole. A loophole earns a sandbox bounty through PayPal Payouts and becomes a regression test, so every attempt makes the agents harder to fool. Players are called challengers; there is no account, only a handle.
+Security researchers act as a malicious seller and try to make the agents release money they should not: prompt injection in a listing, fake urgency, a price switch after agreement, swapped-item evidence, partial delivery, impersonating the platform, currency confusion and split payments. A judge agent decides whether the attempt is a breach. A breach earns a sandbox bounty through PayPal Payouts and becomes a regression test, so every attempt makes the agents harder to fool. Researchers are invited; each picks a public handle.
 
 ## Technology
 

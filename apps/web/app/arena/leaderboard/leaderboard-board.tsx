@@ -10,7 +10,7 @@ ModuleRegistry.registerModules([ClientSideRowModelModule]);
 
 const columns: ColDef<LeaderboardEntry>[] = [
   { field: 'position', headerName: '#', width: 70 },
-  { field: 'handle', headerName: 'Challenger', flex: 1, minWidth: 140 },
+  { field: 'handle', headerName: 'Researcher', flex: 1, minWidth: 140 },
   { field: 'rank', headerName: 'Rank', flex: 1, minWidth: 130 },
   { field: 'xp', headerName: 'XP', width: 100, type: 'rightAligned' },
 ];
@@ -72,7 +72,7 @@ export function LeaderboardBoard() {
             columnDefs={columns}
             getRowId={({ data }) => data.challengerId}
             loading={state.kind === 'loading'}
-            overlayNoRowsTemplate="No challengers on this board yet."
+            overlayNoRowsTemplate="No researchers on this board yet."
           />
         </div>
       )}

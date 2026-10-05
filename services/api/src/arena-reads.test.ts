@@ -65,8 +65,8 @@ describe('getLeaderboardPage', () => {
       scope: 'all',
       date: '2026-10-03',
       entries: [
-        { position: 1, challengerId: 'c-2', handle: 'ada', xp: 260, rank: 'Investigator' },
-        { position: 2, challengerId: 'c-1', handle: 'bob', xp: 10, rank: 'Newcomer' },
+        { position: 1, challengerId: 'c-2', handle: 'ada', xp: 260, rank: 'Tester' },
+        { position: 2, challengerId: 'c-1', handle: 'bob', xp: 10, rank: 'Observer' },
       ],
     });
     expect(dynamodb.commandCalls(QueryCommand)[0]?.args[0].input.ExpressionAttributeValues).toEqual(

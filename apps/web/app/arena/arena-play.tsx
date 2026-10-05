@@ -77,7 +77,7 @@ export function ArenaPlay({
       });
   }, []);
 
-  if (load.kind === 'loading') return <p className="text-muted mt-12">Loading the arena...</p>;
+  if (load.kind === 'loading') return <p className="text-muted mt-12">Loading the lab...</p>;
   if (load.kind === 'failed') return <p className="text-refused mt-12">{load.message}</p>;
 
   const { account, deals, dailyDealId, stats } = load.data;
@@ -131,7 +131,7 @@ export function ArenaPlay({
       case 'rejected':
         return (
           <Notice title="Your request was not approved">
-            The arena has room for a few players only. You can still watch the leaderboard.
+            The lab has room for a few researchers only. You can still read the leaderboard.
           </Notice>
         );
       case 'approved':
@@ -189,7 +189,11 @@ function DefenseCounter({ stats }: { stats: ArenaStats }) {
     <p className="text-muted text-sm">
       <span className="text-ink font-mono text-base font-semibold">{stats.held}</span> of{' '}
       <span className="text-ink font-mono text-base font-semibold">{stats.attempts}</span> attacks
-      held so far.
+      held. Defense rate{' '}
+      <span className="text-ink font-mono text-base font-semibold">
+        {stats.attempts === 0 ? '-' : `${Math.round((stats.held / stats.attempts) * 100)}%`}
+      </span>
+      .
     </p>
   );
 }

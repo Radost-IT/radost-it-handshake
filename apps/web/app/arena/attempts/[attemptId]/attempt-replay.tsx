@@ -14,7 +14,7 @@ import { ToastStack, useToasts } from '../../toasts';
 const FALLBACK_POLL_INTERVAL_MS = 10_000;
 
 const failureMessages = {
-  budget: 'The arena ran out of its AI budget for today before this attempt finished.',
+  budget: 'The lab ran out of its AI budget for today before this attempt finished.',
   error: 'This attempt stopped before the judge could decide. It earned no XP.',
 };
 
@@ -84,7 +84,7 @@ export function AttemptReplay({ attemptId, badges }: AttemptReplayProps) {
       <ToastStack toasts={toasts} onDismiss={dismissToast} />
       <header>
         <Link href="/arena" className="text-muted hover:text-ink text-sm transition-colors">
-          Back to the arena
+          Back to the lab
         </Link>
         <div className="mt-4 flex flex-wrap items-center gap-3">
           <h1 className="text-3xl font-semibold tracking-tight">
@@ -94,7 +94,7 @@ export function AttemptReplay({ attemptId, badges }: AttemptReplayProps) {
         </div>
         <p className="text-muted mt-2 text-sm">
           Through the {channelName(attempt.channel).toLowerCase()}
-          {attempt.dailyChallengeDate && `, daily challenge of ${attempt.dailyChallengeDate}`}.
+          {attempt.dailyChallengeDate && `, daily target of ${attempt.dailyChallengeDate}`}.
         </p>
       </header>
 
@@ -112,12 +112,12 @@ export function AttemptReplay({ attemptId, badges }: AttemptReplayProps) {
       )}
 
       {result && (
-        <Panel title={result.outcome.result === 'loophole' ? 'Loophole found' : 'The agents held'}>
+        <Panel title={result.outcome.result === 'loophole' ? 'Breach found' : 'The agents held'}>
           <p className="font-mono text-2xl font-semibold">+{result.xpGained} XP</p>
           {result.outcome.result === 'loophole' && (
             <p className="text-muted mt-1 text-sm">
               Severity {result.outcome.severity}.
-              {result.outcome.nearDuplicate && ' Someone found a very similar trick before.'}
+              {result.outcome.nearDuplicate && ' Someone found a very similar breach before.'}
             </p>
           )}
           <p className="mt-3 text-sm">{result.rationale}</p>

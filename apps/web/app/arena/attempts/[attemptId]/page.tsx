@@ -3,8 +3,8 @@ import type { Metadata } from 'next';
 import { AttemptReplay } from './attempt-replay';
 
 export const metadata: Metadata = {
-  title: 'Arena attempt',
-  description: 'How the agents handled one arena attack.',
+  title: 'Red Team Lab attempt',
+  description: 'How the agents handled one attack in the Red Team Lab.',
   robots: { index: false, follow: true },
 };
 

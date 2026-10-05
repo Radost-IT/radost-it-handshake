@@ -32,7 +32,7 @@ describe('createChallengerFromRequest', () => {
       id: 'challenger-1',
       handle: 'Tester',
       xp: 0,
-      rank: { rank: 'Newcomer' },
+      rank: { rank: 'Observer' },
       badges: [],
     });
     const writes = dynamodb.commandCalls(TransactWriteCommand)[0]?.args[0].input.TransactItems;

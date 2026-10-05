@@ -26,7 +26,7 @@ export const metadata: Metadata = {
     'PayPal authorize and capture',
     'agent negotiation',
     'prompt injection defense',
-    'AI red teaming arena',
+    'AI red teaming lab',
     'Radost IT',
   ],
   authors: [{ name: 'Radost IT', url: 'https://radostit.com' }],

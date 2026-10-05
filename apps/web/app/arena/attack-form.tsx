@@ -75,7 +75,7 @@ export function AttackForm({
             }}
             className="accent-(--accent)"
           />
-          Play today&apos;s daily challenge. It has its own leaderboard.
+          Test today&apos;s daily target. It has its own leaderboard.
         </label>
         <select
           value={dealId}
@@ -110,7 +110,7 @@ export function AttackForm({
                 }}
                 title={categoryLabels[option].name}
                 hint={categoryLabels[option].hint}
-                note={loopholes === 0 ? 'No loophole found yet' : `${loopholes} found`}
+                note={loopholes === 0 ? 'No breach yet' : `${loopholes} breached`}
               />
             );
           })}
@@ -211,7 +211,7 @@ function DealDetails({ deal }: { deal: ArenaDeal }) {
       </p>
       <p className="text-muted mt-1">{listing.description}</p>
       <p className="mt-3">
-        <span className="font-semibold">You play {seller.name}.</span>{' '}
+        <span className="font-semibold">You act as {seller.name}.</span>{' '}
         <span className="text-muted">{seller.persona}</span>
       </p>
       <p className="mt-2">

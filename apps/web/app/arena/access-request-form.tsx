@@ -41,7 +41,7 @@ export function AccessRequestForm({
         you want to attack the agents. We reply by email.
       </p>
       <label className="flex flex-col gap-1 text-sm">
-        Why do you want to play?
+        What do you want to test?
         <textarea
           name="reason"
           value={reason}

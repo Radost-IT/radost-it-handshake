@@ -31,7 +31,7 @@ export function NewsletterForm() {
   return (
     <form onSubmit={handleSubmit} className="relative flex max-w-md flex-col gap-3">
       <p className="text-ink font-semibold">Product updates</p>
-      <p>Get an email when the deal room and the arena open.</p>
+      <p>Get an email when the deal room and the Red Team Lab open.</p>
       <div className="flex gap-2">
         <label htmlFor="newsletter-email" className="sr-only">
           Email

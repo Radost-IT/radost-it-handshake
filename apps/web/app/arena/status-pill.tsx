@@ -8,7 +8,7 @@ const pillStyles = {
 const pillLabels = {
   running: 'Running',
   held: 'Agents held',
-  loophole: 'Loophole found',
+  loophole: 'Breach',
   failed: 'Stopped',
 };
 

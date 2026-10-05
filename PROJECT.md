@@ -386,7 +386,7 @@ Done when a successful attack produces a payout and a regression case, and the p
 - [x] Deal page `/deals/[id]` with the escrow timeline.
 - [x] MCP server in `packages/mcp` with setup steps for Claude Desktop.
 - [x] Developer console `/console` with AG Grid deals, audit log and webhook log.
-- [ ] Red Team Lab reframe: copy, ranks, badges and styling.
+- [x] Red Team Lab reframe: copy, ranks, badges and styling.
 - [ ] Eval report and defense rate chart (AG Charts Community).
 - [ ] README: PayPal API depth table, AP2 / ACP / PayPal Agent Toolkit mapping, API and MCP docs.
 

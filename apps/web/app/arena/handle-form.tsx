@@ -48,7 +48,7 @@ export function HandleForm({ onCreated }: { onCreated: (challenger: Challenger) 
         disabled={isSending}
         className="bg-heat text-on-accent self-start rounded-full px-6 py-2 text-sm font-semibold disabled:opacity-50"
       >
-        {isSending ? 'Joining...' : 'Join the arena'}
+        {isSending ? 'Joining...' : 'Join the lab'}
       </button>
     </form>
   );
