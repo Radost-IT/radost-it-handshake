@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, type SyntheticEvent } from 'react';
-import { FORM_INPUT_CLASS } from '../components/form-styles';
-import { messageOf, requestAccess } from './api';
+import { FORM_INPUT_CLASS, SUBMIT_BUTTON_CLASS } from '../components/form-styles';
+import { messageOf, requestAccess } from '../arena/api';
 
 interface AccessRequestFormProps {
   email: string;
@@ -35,13 +35,13 @@ export function AccessRequestForm({
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-      <h2 className="text-xl font-semibold">Ask to join</h2>
+      <h2 className="text-xl font-semibold">Request access</h2>
       <p className="text-muted text-sm">
-        You are signed in as <span className="text-ink">{email}</span>. Tell us who you are and why
-        you want to attack the agents. We reply by email.
+        You are signed in as <span className="text-ink">{email}</span>. Tell us who you are and what
+        you want to build or test. We reply by email.
       </p>
       <label className="flex flex-col gap-1 text-sm">
-        What do you want to test?
+        Who are you, and what do you want to do?
         <textarea
           name="reason"
           value={reason}
@@ -59,11 +59,7 @@ export function AccessRequestForm({
         {reason.trim().length} of {maxReasonLength} characters, at least {minReasonLength}.
       </p>
       {error && <p className="text-refused text-sm">{error}</p>}
-      <button
-        type="submit"
-        disabled={isSending}
-        className="bg-heat text-on-accent self-start rounded-full px-6 py-2 text-sm font-semibold disabled:opacity-50"
-      >
+      <button type="submit" disabled={isSending} className={SUBMIT_BUTTON_CLASS}>
         {isSending ? 'Sending...' : 'Send request'}
       </button>
     </form>

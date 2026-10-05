@@ -4,12 +4,14 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { Panel } from '../../components/panel';
 import {
   API_KEY_STORAGE_KEY,
+  DealApiError,
   fetchDealRecord,
   finalDealStates,
   messageOf,
   sendHumanDecision,
   sendPurchaseApproval,
   type ContractTerms,
+  type DealCredential,
   type DealRecord,
   type Evidence,
   type HumanDecision,
@@ -67,7 +69,8 @@ function takeDealToken(dealId: string): string | null {
       window.history.replaceState(null, '', window.location.pathname);
       return fromLink;
     }
-    // A developer who comes from the console acts with their API key.
+    // A developer who comes from the console acts with their API key. Without
+    // one, null makes the page act as the signed-in account.
     return (
       sessionStorage.getItem(tokenStorageKey(dealId)) ?? sessionStorage.getItem(API_KEY_STORAGE_KEY)
     );
@@ -77,23 +80,26 @@ function takeDealToken(dealId: string): string | null {
   }
 }
 
+// Without a token the page tries the session, which fails for anyone but the deal's developer.
+const isRefused = (error: unknown) =>
+  error instanceof DealApiError && (error.status === 401 || error.status === 404);
+
 export function DealView({ dealId }: { dealId: string }) {
   const [state, setState] = useState<ViewState>({ kind: 'loading' });
-  const [token, setToken] = useState<string | null>(null);
+  // Undefined until the page has looked for a token.
+  const [credential, setCredential] = useState<DealCredential | undefined>(undefined);
   const [refreshes, setRefreshes] = useState(0);
 
   useEffect(() => {
-    const found = takeDealToken(dealId);
-    if (found) setToken(found);
-    else setState({ kind: 'no-token' });
+    setCredential(takeDealToken(dealId));
   }, [dealId]);
 
   useEffect(() => {
-    if (!token) return;
+    if (credential === undefined) return;
     let timer: ReturnType<typeof setTimeout> | undefined;
     let isActive = true;
     const poll = () => {
-      fetchDealRecord(dealId, token)
+      fetchDealRecord(dealId, credential)
         .then((record) => {
           if (!isActive) return;
           setState({ kind: 'ready', record });
@@ -102,7 +108,12 @@ export function DealView({ dealId }: { dealId: string }) {
           }
         })
         .catch((error: unknown) => {
-          if (isActive) setState({ kind: 'failed', message: messageOf(error) });
+          if (!isActive) return;
+          setState(
+            credential === null && isRefused(error)
+              ? { kind: 'no-token' }
+              : { kind: 'failed', message: messageOf(error) },
+          );
         });
     };
     poll();
@@ -110,14 +121,14 @@ export function DealView({ dealId }: { dealId: string }) {
       isActive = false;
       clearTimeout(timer);
     };
-  }, [dealId, token, refreshes]);
+  }, [dealId, credential, refreshes]);
 
   if (state.kind === 'loading') return <p className="text-muted">Loading the deal...</p>;
   if (state.kind === 'no-token') {
     return (
       <p className="text-muted">
-        Open this page from the buyer link you got when the deal was created. The link holds the key
-        to this deal.
+        Open this page from the buyer link you got when the deal was created, or sign in with the
+        account that opened the deal.
       </p>
     );
   }
@@ -145,7 +156,9 @@ export function DealView({ dealId }: { dealId: string }) {
         </p>
       </header>
 
-      {token && <NextAction record={record} token={token} onDone={refresh} />}
+      {credential !== undefined && (
+        <NextAction record={record} credential={credential} onDone={refresh} />
+      )}
 
       <Panel title="Escrow">
         <ol className="flex flex-col gap-4">
@@ -278,11 +291,11 @@ function PayPalLog({ record }: { record: DealRecord }) {
 
 interface NextActionProps {
   record: DealRecord;
-  token: string;
+  credential: DealCredential;
   onDone: () => void;
 }
 
-function NextAction({ record, token, onDone }: NextActionProps) {
+function NextAction({ record, credential, onDone }: NextActionProps) {
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { deal } = record;
@@ -311,14 +324,14 @@ function NextAction({ record, token, onDone }: NextActionProps) {
             label="Approve"
             disabled={isSending}
             onClick={() => {
-              send(() => sendPurchaseApproval(deal.id, token, true));
+              send(() => sendPurchaseApproval(deal.id, credential, true));
             }}
           />
           <ActionButton
             label="Decline"
             disabled={isSending}
             onClick={() => {
-              send(() => sendPurchaseApproval(deal.id, token, false));
+              send(() => sendPurchaseApproval(deal.id, credential, false));
             }}
           />
         </ActionPanel>
@@ -350,7 +363,7 @@ function NextAction({ record, token, onDone }: NextActionProps) {
             label="Release payment"
             disabled={isSending}
             onClick={() => {
-              send(() => sendHumanDecision(deal.id, token, release));
+              send(() => sendHumanDecision(deal.id, credential, release));
             }}
           />
           <ActionButton
@@ -358,7 +371,7 @@ function NextAction({ record, token, onDone }: NextActionProps) {
             disabled={isSending}
             onClick={() => {
               send(() =>
-                sendHumanDecision(deal.id, token, {
+                sendHumanDecision(deal.id, credential, {
                   action: 'VOID',
                   reason: 'The buyer refused the delivery',
                 }),

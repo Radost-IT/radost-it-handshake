@@ -1,7 +1,8 @@
 'use client';
 
 import type { AttackCategory } from '@handshake/arena';
-import { useEffect, useState, type ReactNode } from 'react';
+import Link from 'next/link';
+import { useEffect, useState } from 'react';
 import {
   fetchAccount,
   fetchDeals,
@@ -15,13 +16,13 @@ import {
   type AttemptSummary,
   type Challenger,
 } from './api';
-import { AccessRequestForm } from './access-request-form';
+import { AccessRequestForm } from '../account/access-request-form';
+import { Notice } from '../components/notice';
 import { AttackForm } from './attack-form';
 import { AttemptHistory } from './attempt-history';
 import { ChallengerCard, type BadgeInfo } from './challenger-card';
 import { HandleForm } from './handle-form';
 import { ARENA_TOPIC, useLiveEvents } from './live-events';
-import { SignInForm } from './sign-in-form';
 
 interface ArenaData {
   account: Account | null;
@@ -92,11 +93,17 @@ export function ArenaPlay({
   const panel = () => {
     if (!account) {
       return (
-        <SignInForm
-          onSignedIn={() => {
-            fetchAccount().then(setAccount).catch(showError);
-          }}
-        />
+        <Notice title="Sign in to attack">
+          Every attack runs real AI agents, so the lab is open to invited researchers only.{' '}
+          <Link href="/sign-in?next=/arena" className="text-ink underline">
+            Sign in
+          </Link>{' '}
+          or{' '}
+          <Link href="/request-access" className="text-ink underline">
+            request access
+          </Link>
+          .
+        </Notice>
       );
     }
     if (challenger) {
@@ -171,15 +178,6 @@ export function ArenaPlay({
         {challenger && <ChallengerCard challenger={challenger} badges={badges} />}
       </div>
       {challenger && <AttemptHistory attempts={attempts} />}
-    </div>
-  );
-}
-
-function Notice({ title, children }: { title: string; children: ReactNode }) {
-  return (
-    <div className="flex flex-col gap-2">
-      <h2 className="text-xl font-semibold">{title}</h2>
-      <p className="text-muted text-sm">{children}</p>
     </div>
   );
 }

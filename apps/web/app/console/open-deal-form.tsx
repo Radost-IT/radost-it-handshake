@@ -2,14 +2,14 @@
 
 import { useState, type SyntheticEvent } from 'react';
 import { FORM_INPUT_CLASS } from '../components/form-styles';
-import { messageOf, openDeal } from '../deals/api';
+import { messageOf, openDeal, type DealCredential } from '../deals/api';
 
 interface OpenDealFormProps {
-  apiKey: string;
+  credential: DealCredential;
   onOpened: (dealId: string) => void;
 }
 
-export function OpenDealForm({ apiKey, onOpened }: OpenDealFormProps) {
+export function OpenDealForm({ credential, onOpened }: OpenDealFormProps) {
   const [goal, setGoal] = useState('');
   const [maxPrice, setMaxPrice] = useState('60.00');
   const [approvalThreshold, setApprovalThreshold] = useState('50.00');
@@ -22,7 +22,7 @@ export function OpenDealForm({ apiKey, onOpened }: OpenDealFormProps) {
     event.preventDefault();
     setIsSending(true);
     setError(null);
-    openDeal(apiKey, {
+    openDeal(credential, {
       goal,
       mandate: {
         maxPrice: { currency: 'USD', value: maxPrice },

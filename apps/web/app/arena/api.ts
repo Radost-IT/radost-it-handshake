@@ -187,6 +187,16 @@ export async function verifySignInCode(email: string, code: string): Promise<Acc
   return verified.access;
 }
 
+/** For accounts the operator created with a password, such as the judges' account. */
+export async function signInWithPassword(email: string, password: string): Promise<AccessStatus> {
+  const signedIn = await request(
+    '/arena/sign-in/password',
+    z.object({ access: accessStatusSchema }),
+    { email, password },
+  );
+  return signedIn.access;
+}
+
 export async function requestAccess(reason: string): Promise<void> {
   await request('/arena/access-requests', z.object({ access: z.literal('pending') }), { reason });
 }

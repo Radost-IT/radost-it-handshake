@@ -13,8 +13,8 @@ export default function ConsolePage() {
       <p className="text-accent text-sm font-semibold tracking-widest uppercase">Developers</p>
       <h1 className="mt-4 text-4xl font-semibold tracking-tight">Console</h1>
       <p className="text-muted mt-4 max-w-2xl">
-        Open sandbox deals with your API key and see every PayPal call and webhook behind them, with
-        the PayPal <span className="font-mono">debug_id</span> of each call.
+        Open sandbox deals with your account or API key and see every PayPal call and webhook behind
+        them, with the PayPal <span className="font-mono">debug_id</span> of each call.
       </p>
       <ConsoleView />
     </main>

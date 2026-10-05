@@ -45,6 +45,9 @@ export function Navbar() {
           <Link href="/evals" className="text-muted hover:text-ink text-sm font-semibold">
             Evals
           </Link>
+          <Link href="/sign-in" className="text-muted hover:text-ink text-sm font-semibold">
+            Sign in
+          </Link>
           <ThemeToggle />
         </div>
       </nav>

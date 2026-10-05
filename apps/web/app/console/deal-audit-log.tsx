@@ -8,6 +8,7 @@ import { gridTheme } from '../components/grid-theme';
 import {
   fetchDealRecord,
   messageOf,
+  type DealCredential,
   type DealRecord,
   type PayPalCall,
   type Webhook,
@@ -47,12 +48,17 @@ const webhookColumns: ColDef<Webhook>[] = [
 type AuditState =
   { kind: 'loading' } | { kind: 'failed'; message: string } | { kind: 'ready'; record: DealRecord };
 
-export function DealAuditLog({ apiKey, dealId }: { apiKey: string; dealId: string }) {
+interface DealAuditLogProps {
+  credential: DealCredential;
+  dealId: string;
+}
+
+export function DealAuditLog({ credential, dealId }: DealAuditLogProps) {
   const [state, setState] = useState<AuditState>({ kind: 'loading' });
 
   useEffect(() => {
     let isActive = true;
-    fetchDealRecord(dealId, apiKey)
+    fetchDealRecord(dealId, credential)
       .then((record) => {
         if (isActive) setState({ kind: 'ready', record });
       })
@@ -62,7 +68,7 @@ export function DealAuditLog({ apiKey, dealId }: { apiKey: string; dealId: strin
     return () => {
       isActive = false;
     };
-  }, [apiKey, dealId]);
+  }, [credential, dealId]);
 
   if (state.kind === 'failed') return <p className="text-refused text-sm">{state.message}</p>;
   const record = state.kind === 'ready' ? state.record : null;

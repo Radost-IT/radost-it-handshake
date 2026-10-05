@@ -137,19 +137,24 @@ export class DealApiError extends Error {
   }
 }
 
+/** A deal access token or an API key, or null to act as the signed-in account. */
+export type DealCredential = string | null;
+
 /**
- * Calls the Deal API with a deal access token or an API key. Sends a POST
- * with `body` as JSON when one is given, a GET otherwise.
+ * Calls the Deal API with `credential`. Sends a POST with `body` as JSON when
+ * one is given, a GET otherwise.
  */
 export async function callDealApi<T>(
   path: string,
-  credential: string,
+  credential: DealCredential,
   schema: z.ZodType<T>,
   body?: unknown,
 ): Promise<T> {
   const response = await fetch(`${API_URL}/v1${path}`, {
+    // The session cookie lives on the API domain, so the call must send it.
+    credentials: 'include',
     headers: {
-      authorization: `Bearer ${credential}`,
+      ...(credential === null ? {} : { authorization: `Bearer ${credential}` }),
       ...(body === undefined ? {} : { 'content-type': 'application/json' }),
     },
     ...(body === undefined ? {} : { method: 'POST', body: JSON.stringify(body) }),
@@ -170,7 +175,7 @@ const acceptedSchema = z.object({ status: z.literal('accepted') });
 /** The developer console keeps the API key here for the tab; the deal page reads it too. */
 export const API_KEY_STORAGE_KEY = 'handshake-api-key';
 
-export async function fetchDeals(apiKey: string): Promise<Deal[]> {
+export async function fetchDeals(apiKey: DealCredential): Promise<Deal[]> {
   const { deals } = await callDealApi('/deals', apiKey, z.object({ deals: z.array(dealSchema) }));
   return deals;
 }
@@ -184,19 +189,19 @@ export interface NewDeal {
 const openedDealSchema = z.object({ deal: dealSchema, buyerUrl: z.url() });
 
 export function openDeal(
-  apiKey: string,
+  apiKey: DealCredential,
   newDeal: NewDeal,
 ): Promise<z.infer<typeof openedDealSchema>> {
   return callDealApi('/deals', apiKey, openedDealSchema, newDeal);
 }
 
-export function fetchDealRecord(dealId: string, credential: string): Promise<DealRecord> {
+export function fetchDealRecord(dealId: string, credential: DealCredential): Promise<DealRecord> {
   return callDealApi(`/deals/${encodeURIComponent(dealId)}`, credential, dealRecordSchema);
 }
 
 export async function sendPurchaseApproval(
   dealId: string,
-  credential: string,
+  credential: DealCredential,
   approved: boolean,
 ): Promise<void> {
   await callDealApi(
@@ -220,7 +225,7 @@ export type HumanDecision =
 
 export async function sendHumanDecision(
   dealId: string,
-  credential: string,
+  credential: DealCredential,
   decision: HumanDecision,
 ): Promise<void> {
   await callDealApi(

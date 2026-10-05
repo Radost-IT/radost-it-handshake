@@ -1,13 +1,11 @@
 'use client';
 
 import { useState, type SyntheticEvent } from 'react';
-import { FORM_INPUT_CLASS } from '../components/form-styles';
-import { messageOf, requestSignInCode, verifySignInCode } from './api';
+import { FORM_INPUT_CLASS, SUBMIT_BUTTON_CLASS } from '../components/form-styles';
+import { messageOf, requestSignInCode, verifySignInCode, type AccessStatus } from '../arena/api';
 
-const SUBMIT_CLASS =
-  'bg-heat text-on-accent self-start rounded-full px-6 py-2 text-sm font-semibold disabled:opacity-50';
-
-export function SignInForm({ onSignedIn }: { onSignedIn: () => void }) {
+/** Signs in with a one-time code sent to the email, so anyone can prove their address. */
+export function CodeSignInForm({ onSignedIn }: { onSignedIn: (access: AccessStatus) => void }) {
   const [email, setEmail] = useState('');
   const [codeSentTo, setCodeSentTo] = useState<string | null>(null);
 
@@ -53,10 +51,9 @@ function EmailStep({ email, onEmailChange, onCodeSent }: EmailStepProps) {
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-      <h2 className="text-xl font-semibold">Sign in to join</h2>
+      <h2 className="text-xl font-semibold">Confirm your email</h2>
       <p className="text-muted text-sm">
-        Every attack runs real AI agents, so the lab is open to invited researchers only. Sign in
-        with your email, then tell us what you want to test.
+        We send a six-digit code to your email. No password needed.
       </p>
       <label className="flex flex-col gap-1 text-sm">
         Email
@@ -73,7 +70,7 @@ function EmailStep({ email, onEmailChange, onCodeSent }: EmailStepProps) {
         />
       </label>
       {error && <p className="text-refused text-sm">{error}</p>}
-      <button type="submit" disabled={isSending} className={SUBMIT_CLASS}>
+      <button type="submit" disabled={isSending} className={SUBMIT_BUTTON_CLASS}>
         {isSending ? 'Sending...' : 'Email me a code'}
       </button>
     </form>
@@ -82,7 +79,7 @@ function EmailStep({ email, onEmailChange, onCodeSent }: EmailStepProps) {
 
 interface CodeStepProps {
   email: string;
-  onSignedIn: () => void;
+  onSignedIn: (access: AccessStatus) => void;
   onChangeEmail: () => void;
 }
 
@@ -128,7 +125,7 @@ function CodeStep({ email, onSignedIn, onChangeEmail }: CodeStepProps) {
       </label>
       {error && <p className="text-refused text-sm">{error}</p>}
       <div className="flex flex-wrap items-center gap-4">
-        <button type="submit" disabled={isSending} className={SUBMIT_CLASS}>
+        <button type="submit" disabled={isSending} className={SUBMIT_BUTTON_CLASS}>
           {isSending ? 'Checking...' : 'Sign in'}
         </button>
         <button type="button" onClick={onChangeEmail} className="text-muted text-sm underline">
