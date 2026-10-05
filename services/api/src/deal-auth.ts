@@ -1,53 +1,96 @@
 import {
   API_KEY_PREFIX,
   findApiKey,
+  findSessionAccountId,
+  getAccount,
   hasDealAccess,
   isDealOwner,
-  type ApiKey,
   type StoreTable,
 } from '@handshake/store';
 import type { APIGatewayProxyStructuredResultV2 } from 'aws-lambda';
+import { readSessionToken } from './arena-session';
 import { hashToken, json } from './http';
+
+/** What a Deal API request carries to prove who sends it. */
+export interface DealCredentials {
+  /** The Authorization header: an API key or a deal access token. */
+  authorization: string | undefined;
+  /** The console sends the session cookie of a signed-in, approved account instead. */
+  cookies: readonly string[];
+}
+
+export interface Developer {
+  developerId: string;
+}
 
 export function readBearerToken(authorization: string | undefined): string | undefined {
   const match = /^Bearer (\S+)$/.exec(authorization ?? '');
   return match?.[1];
 }
 
-/** The developer whose API key is in the Authorization header. */
+// Account developers get their own prefix, so they never share deals with an API key.
+const accountDeveloperId = (accountId: string) => `account:${accountId}`;
+
+async function findSessionDeveloper(
+  table: StoreTable,
+  cookies: readonly string[],
+  now: Date,
+): Promise<Developer | undefined> {
+  const token = readSessionToken(cookies);
+  if (!token) return undefined;
+  const accountId = await findSessionAccountId(table, hashToken(token), now);
+  const account = accountId ? await getAccount(table, accountId) : undefined;
+  return account?.access === 'approved'
+    ? { developerId: accountDeveloperId(account.id) }
+    : undefined;
+}
+
+/**
+ * The developer behind the request: the owner of the API key in the
+ * Authorization header, or else the approved account of the session cookie.
+ */
 export async function findDeveloper(
   table: StoreTable,
-  authorization: string | undefined,
-): Promise<ApiKey | undefined> {
-  const token = readBearerToken(authorization);
-  return token === undefined ? undefined : findApiKey(table, token);
+  credentials: DealCredentials,
+  now: Date,
+): Promise<Developer | undefined> {
+  const token = readBearerToken(credentials.authorization);
+  if (token !== undefined) return findApiKey(table, token);
+  return findSessionDeveloper(table, credentials.cookies, now);
 }
 
 /** The error response for a caller who may not act on the deal, or undefined when they may. */
 export async function refuseDealAccess(
   table: StoreTable,
   dealId: string,
-  authorization: string | undefined,
+  credentials: DealCredentials,
+  now: Date,
 ): Promise<APIGatewayProxyStructuredResultV2 | undefined> {
-  const token = readBearerToken(authorization);
-  if (token === undefined) {
+  const token = readBearerToken(credentials.authorization);
+  if (token === undefined && readSessionToken(credentials.cookies) === undefined) {
     return json(401, { error: 'Send an API key or the deal access token' });
   }
   // A wrong token and an unknown deal look the same, so tokens cannot be used to find deals.
-  if (!(await canActOnDeal(table, dealId, token))) {
+  if (!(await canActOnDeal(table, dealId, credentials, now))) {
     return json(404, { error: 'Deal not found' });
   }
   return undefined;
 }
 
 /**
- * The developer who opened the deal acts with their API key; the buyer acts
- * with the deal's access token.
+ * The developer who opened the deal acts with their API key or session; the
+ * buyer acts with the deal's access token.
  */
-async function canActOnDeal(table: StoreTable, dealId: string, token: string): Promise<boolean> {
-  if (!token.startsWith(API_KEY_PREFIX)) {
+async function canActOnDeal(
+  table: StoreTable,
+  dealId: string,
+  credentials: DealCredentials,
+  now: Date,
+): Promise<boolean> {
+  const token = readBearerToken(credentials.authorization);
+  if (token !== undefined && !token.startsWith(API_KEY_PREFIX)) {
     return hasDealAccess(table, dealId, hashToken(token));
   }
-  const developer = await findApiKey(table, token);
+  const developer = await findDeveloper(table, credentials, now);
   return developer !== undefined && isDealOwner(table, dealId, developer.developerId);
 }

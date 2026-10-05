@@ -27,17 +27,17 @@ const context: DealApiContext = {
 };
 
 export function handler(event: APIGatewayProxyEventV2): Promise<APIGatewayProxyStructuredResultV2> {
-  const authorization = event.headers.authorization;
+  const credentials = { authorization: event.headers.authorization, cookies: event.cookies ?? [] };
   switch (event.routeKey) {
     case 'POST /v1/deals':
-      return openDeal(context, { authorization, body: readBody(event) });
+      return openDeal(context, { ...credentials, body: readBody(event) });
     case 'GET /v1/deals':
-      return listDeals(context, { authorization });
+      return listDeals(context, credentials);
   }
 
   const dealId = event.pathParameters?.dealId;
   if (!dealId) return Promise.resolve(json(404, { error: 'Deal not found' }));
-  const request = { dealId, authorization, body: readBody(event) };
+  const request = { ...credentials, dealId, body: readBody(event) };
   switch (event.routeKey) {
     case 'GET /v1/deals/{dealId}':
       return readDeal(context, request);

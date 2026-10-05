@@ -29,6 +29,21 @@ const context: DealApiContext = {
 const apiKey = 'hs_sandbox_key-1';
 const developer = { developerId: 'dev-1', name: 'Shop bot', createdAt: '2026-10-01T00:00:00Z' };
 const withKey = `Bearer ${apiKey}`;
+const sessionCookies = ['__Host-handshake_account=session-1'];
+
+function signedInAs(access: 'approved' | 'pending'): void {
+  dynamodb
+    .on(GetCommand, { Key: { pk: `SESSION#${hashToken('session-1')}`, sk: 'META' } })
+    .resolves({ Item: { accountId: 'account-1', ttl: 1_900_000_000 } });
+  dynamodb.on(GetCommand, { Key: { pk: 'ACCOUNT#account-1', sk: 'META' } }).resolves({
+    Item: {
+      id: 'account-1',
+      email: 'judges@example.com',
+      createdAt: '2026-10-01T00:00:00Z',
+      access,
+    },
+  });
+}
 const evidence = {
   productId: 'prod-1',
   deliveredAt: '2026-10-05T10:00:00Z',
@@ -58,7 +73,7 @@ describe('openDeal', () => {
   const body = JSON.stringify({ goal: 'A steel water bottle', mandate });
 
   it('saves a negotiating deal, starts its lifecycle and returns the buyer link', async () => {
-    const response = await openDeal(context, { authorization: withKey, body });
+    const response = await openDeal(context, { authorization: withKey, cookies: [], body });
 
     expect(response.statusCode).toBe(201);
     const opened = JSON.parse(String(response.body)) as {
@@ -85,13 +100,47 @@ describe('openDeal', () => {
   });
 
   it('refuses a caller without an API key', async () => {
-    const response = await openDeal(context, { authorization: 'Bearer token-1', body });
+    const response = await openDeal(context, {
+      authorization: 'Bearer token-1',
+      cookies: [],
+      body,
+    });
     expect(response.statusCode).toBe(401);
+  });
+
+  it('opens the deal for the approved account of the session', async () => {
+    signedInAs('approved');
+
+    const response = await openDeal(context, {
+      authorization: undefined,
+      cookies: sessionCookies,
+      body,
+    });
+
+    expect(response.statusCode).toBe(201);
+    const saved = dynamodb.commandCalls(PutCommand).map((call) => call.args[0].input.Item);
+    expect(saved).toContainEqual(
+      expect.objectContaining({ sk: 'OWNER', developerId: 'account:account-1' }),
+    );
+  });
+
+  it('refuses a session whose account is not approved', async () => {
+    signedInAs('pending');
+
+    const response = await openDeal(context, {
+      authorization: undefined,
+      cookies: sessionCookies,
+      body,
+    });
+
+    expect(response.statusCode).toBe(401);
+    expect(stepFunctions.commandCalls(StartExecutionCommand)).toHaveLength(0);
   });
 
   it('refuses a deal without a mandate', async () => {
     const response = await openDeal(context, {
       authorization: withKey,
+      cookies: [],
       body: JSON.stringify({ goal: 'A bottle' }),
     });
     expect(response.statusCode).toBe(400);
@@ -102,7 +151,7 @@ describe('openDeal', () => {
       .on(UpdateCommand)
       .rejects(new ConditionalCheckFailedException({ message: 'limit', $metadata: {} }));
 
-    const response = await openDeal(context, { authorization: withKey, body });
+    const response = await openDeal(context, { authorization: withKey, cookies: [], body });
 
     expect(response.statusCode).toBe(429);
     expect(stepFunctions.commandCalls(StartExecutionCommand)).toHaveLength(0);
@@ -118,11 +167,31 @@ describe('readDeal', () => {
     const response = await readDeal(context, {
       dealId: 'deal-1',
       authorization: withKey,
+      cookies: [],
       body: '',
     });
 
     expect(response.statusCode).toBe(404);
     expect(dynamodb.commandCalls(QueryCommand)).toHaveLength(0);
+  });
+
+  it('returns the deal to the signed-in account that opened it', async () => {
+    signedInAs('approved');
+    dynamodb
+      .on(GetCommand, { Key: { pk: 'DEAL#deal-1', sk: 'OWNER' } })
+      .resolves({ Item: { developerId: 'account:account-1' } });
+    dynamodb.on(QueryCommand).resolves({
+      Items: [{ pk: 'DEAL#deal-1', sk: 'META', ...verifyingDeal() }],
+    });
+
+    const response = await readDeal(context, {
+      dealId: 'deal-1',
+      authorization: undefined,
+      cookies: sessionCookies,
+      body: '',
+    });
+
+    expect(response.statusCode).toBe(200);
   });
 
   it('returns the deal record to its developer', async () => {
@@ -132,6 +201,7 @@ describe('readDeal', () => {
     const response = await readDeal(context, {
       dealId: 'deal-1',
       authorization: withKey,
+      cookies: [],
       body: '',
     });
 
@@ -141,7 +211,12 @@ describe('readDeal', () => {
 });
 
 describe('submitEvidence', () => {
-  const request = { dealId: 'deal-1', authorization: withKey, body: JSON.stringify(evidence) };
+  const request = {
+    dealId: 'deal-1',
+    authorization: withKey,
+    cookies: [],
+    body: JSON.stringify(evidence),
+  };
 
   function dealIs(deal: Deal): void {
     dynamodb.on(GetCommand, { Key: { pk: 'DEAL#deal-1', sk: 'META' } }).resolves({ Item: deal });

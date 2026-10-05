@@ -19,6 +19,7 @@ const accessKey = { pk: 'DEAL#deal-1', sk: `ACCESS#${hashToken('token-1')}` };
 const request = (body: unknown, authorization = 'Bearer token-1') => ({
   dealId: 'deal-1',
   authorization,
+  cookies: [],
   body: JSON.stringify(body),
 });
 

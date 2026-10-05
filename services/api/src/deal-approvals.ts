@@ -3,13 +3,11 @@ import type { WaitSignal } from '@handshake/store';
 import { resumeLifecycle, type ResumeContext } from '@handshake/workflows/resume-lifecycle';
 import type { APIGatewayProxyStructuredResultV2 } from 'aws-lambda';
 import { z, type ZodType } from 'zod';
-import { refuseDealAccess } from './deal-auth';
+import { refuseDealAccess, type DealCredentials } from './deal-auth';
 import { json, parseJson } from './http';
 
-export interface DealRequest {
+export interface DealRequest extends DealCredentials {
   dealId: string;
-  /** The Authorization header: the developer's API key or the deal access token. */
-  authorization: string | undefined;
   body: string;
 }
 
@@ -40,7 +38,12 @@ async function resumeWithDecision(
   signal: WaitSignal,
   decisionSchema: ZodType,
 ): Promise<APIGatewayProxyStructuredResultV2> {
-  const refusal = await refuseDealAccess(context.table, request.dealId, request.authorization);
+  const refusal = await refuseDealAccess(
+    context.table,
+    request.dealId,
+    request,
+    new Date(context.now()),
+  );
   if (refusal) return refusal;
   const decision = decisionSchema.safeParse(parseJson(request.body));
   if (!decision.success) return json(400, { error: 'The decision is not valid' });

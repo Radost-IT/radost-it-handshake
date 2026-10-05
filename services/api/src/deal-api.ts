@@ -18,7 +18,7 @@ import type { APIGatewayProxyStructuredResultV2 } from 'aws-lambda';
 import { randomBytes, randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import type { DealRequest } from './deal-approvals';
-import { findDeveloper, refuseDealAccess } from './deal-auth';
+import { findDeveloper, refuseDealAccess, type DealCredentials } from './deal-auth';
 import { hashToken, json, parseJson } from './http';
 
 export interface DealApiContext extends ResumeContext {
@@ -46,10 +46,10 @@ const openDealSchema = z.object({
  */
 export async function openDeal(
   context: DealApiContext,
-  request: { authorization: string | undefined; body: string },
+  request: DealCredentials & { body: string },
 ): Promise<Response> {
-  const developer = await findDeveloper(context.table, request.authorization);
-  if (!developer) return json(401, { error: 'Send a valid API key' });
+  const developer = await findDeveloper(context.table, request, new Date(context.now()));
+  if (!developer) return json(401, { error: 'Send a valid API key or sign in' });
   const input = openDealSchema.safeParse(parseJson(request.body));
   if (!input.success) return json(400, { error: z.prettifyError(input.error) });
 
@@ -61,7 +61,7 @@ export async function openDeal(
     limit: DEALS_PER_DEVELOPER_PER_DAY,
     expiresAt: tomorrow,
   });
-  if (!allowed) return json(429, { error: 'This API key opened its deals for today' });
+  if (!allowed) return json(429, { error: 'You have opened all your deals for today' });
 
   const created = createDeal(randomUUID(), input.data.mandate, now);
   const opened = transitionDeal(created.deal, { to: 'NEGOTIATING' }, now, 'Opened through the API');
@@ -96,17 +96,22 @@ export async function openDeal(
 
 export async function listDeals(
   context: DealApiContext,
-  request: { authorization: string | undefined },
+  request: DealCredentials,
 ): Promise<Response> {
-  const developer = await findDeveloper(context.table, request.authorization);
-  if (!developer) return json(401, { error: 'Send a valid API key' });
+  const developer = await findDeveloper(context.table, request, new Date(context.now()));
+  if (!developer) return json(401, { error: 'Send a valid API key or sign in' });
   const deals = await listDeveloperDeals(context.table, developer.developerId, MAX_LISTED_DEALS);
   return json(200, { deals });
 }
 
 /** The deal with its events, negotiation, PayPal calls and webhooks. */
 export async function readDeal(context: DealApiContext, request: DealRequest): Promise<Response> {
-  const refusal = await refuseDealAccess(context.table, request.dealId, request.authorization);
+  const refusal = await refuseDealAccess(
+    context.table,
+    request.dealId,
+    request,
+    new Date(context.now()),
+  );
   if (refusal) return refusal;
   const record = await getDealRecord(context.table, request.dealId);
   return record ? json(200, record) : json(404, { error: 'Deal not found' });
@@ -120,7 +125,12 @@ export async function submitEvidence(
   context: DealApiContext,
   request: DealRequest,
 ): Promise<Response> {
-  const refusal = await refuseDealAccess(context.table, request.dealId, request.authorization);
+  const refusal = await refuseDealAccess(
+    context.table,
+    request.dealId,
+    request,
+    new Date(context.now()),
+  );
   if (refusal) return refusal;
   const evidence = deliveryEvidenceSchema.safeParse(parseJson(request.body));
   if (!evidence.success) return json(400, { error: z.prettifyError(evidence.error) });
