@@ -1,7 +1,14 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { DynamoDBDocumentClient, GetCommand, TransactWriteCommand } from '@aws-sdk/lib-dynamodb';
+import { ConditionalCheckFailedException } from '@aws-sdk/client-dynamodb';
+import {
+  DynamoDBDocumentClient,
+  GetCommand,
+  TransactWriteCommand,
+  UpdateCommand,
+} from '@aws-sdk/lib-dynamodb';
 import { mockClient } from 'aws-sdk-client-mock';
 import { beforeEach, describe, expect, it } from 'vitest';
+import { hashToken } from './http';
 import { handleLiveEvent } from './live-connections';
 
 const dynamodb = mockClient(DynamoDBDocumentClient);
@@ -13,13 +20,18 @@ const context = {
 const attemptId = '0b7e1d8a-4c3f-4a7e-9f21-6d5c8b3a2e10';
 
 const connectEvent = (topics?: string) => ({
-  requestContext: { routeKey: '$connect', connectionId: 'c1' },
+  requestContext: {
+    routeKey: '$connect',
+    connectionId: 'c1',
+    identity: { sourceIp: '203.0.113.7' },
+  },
   ...(topics === undefined ? {} : { queryStringParameters: { topics } }),
 });
 
 beforeEach(() => {
   dynamodb.reset();
   dynamodb.on(TransactWriteCommand).resolves({});
+  dynamodb.on(UpdateCommand).resolves({});
 });
 
 describe('handleLiveEvent', () => {
@@ -49,6 +61,21 @@ describe('handleLiveEvent', () => {
       expect(dynamodb.commandCalls(TransactWriteCommand)).toHaveLength(0);
     },
   );
+
+  it('refuses a network that opened too many connections this hour', async () => {
+    dynamodb
+      .on(UpdateCommand)
+      .rejects(new ConditionalCheckFailedException({ message: 'failed', $metadata: {} }));
+
+    const response = await handleLiveEvent(context, connectEvent('arena'));
+
+    expect(response).toEqual({ statusCode: 429 });
+    expect(dynamodb.commandCalls(UpdateCommand)[0]?.args[0].input.Key).toEqual({
+      pk: `RATE#live-connect-ip#${hashToken('203.0.113.7')}`,
+      sk: 'WINDOW#2026-10-03T12',
+    });
+    expect(dynamodb.commandCalls(TransactWriteCommand)).toHaveLength(0);
+  });
 
   it('removes the subscriptions when the connection closes', async () => {
     dynamodb.on(GetCommand).resolves({ Item: { topics: ['arena'] } });
