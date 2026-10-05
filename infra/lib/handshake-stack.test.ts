@@ -84,6 +84,7 @@ describe('HandshakeStack', () => {
       Replicas: [
         Match.objectLike({
           PointInTimeRecoverySpecification: { PointInTimeRecoveryEnabled: true },
+          DeletionProtectionEnabled: true,
         }),
       ],
     });

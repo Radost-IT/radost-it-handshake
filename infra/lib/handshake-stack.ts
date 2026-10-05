@@ -79,6 +79,8 @@ export class HandshakeStack extends Stack {
       timeToLiveAttribute: 'ttl',
       billing: Billing.onDemand(),
       pointInTimeRecoverySpecification: { pointInTimeRecoveryEnabled: true },
+      // The table holds every deal and its PayPal audit log; a stray delete must fail.
+      deletionProtection: true,
       globalSecondaryIndexes: [
         {
           indexName: 'GSI1',
