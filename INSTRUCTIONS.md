@@ -264,6 +264,14 @@ Optional, for the demo. Needs a Deal API key from [I-24].
 - [ ] In Claude Desktop, open Settings > Developer > Edit Config and add the `handshake` server from the README section "MCP server", with the full path to this repo and your key.
 - [ ] Restart Claude Desktop and ask: "Use Handshake to buy a steel water bottle under 60 USD, approval above 50 USD." Check that it calls `open_deal` and shows you the `buyerUrl`.
 
+### [I-26] Publish the console, evals and Red Team Lab pages
+The web app now has `/console`, `/evals` and the Red Team Lab copy. No new `.env` keys are needed.
+- [ ] Run `AWS_PROFILE=handshake pnpm cdk:deploy`.
+- [ ] Open https://handshake.radostit.com/evals and check that the chart and the scenario table show the committed `evals/report.json`.
+- [ ] Open https://handshake.radostit.com/console, paste your key from [I-24], open a deal and select it. The PayPal calls and webhooks grids should fill in once the deal reaches PayPal.
+- [ ] Create a separate key for judges with `AWS_PROFILE=handshake pnpm api-keys:create <table> "Judges"` and keep it in your password manager. It goes into the testing instructions in `docs/submission.md` at [I-16]. Each key opens up to 25 deals a day.
+- [ ] After any change to agent prompts or policy, run `AWS_PROFILE=handshake pnpm eval`, commit the new `evals/report.json`, and deploy again.
+
 ---
 
 ## During Phase 5
