@@ -70,6 +70,6 @@ it('wraps the listing as untrusted data', async () => {
   await draftDealTerms(provider, input);
 
   const prompt = JSON.stringify(provider.requests[0]?.messages);
-  expect(prompt).toContain("The buyer's goal: A bottle for hiking");
+  expect(prompt).toMatch(/<untrusted-data-\w+ source=\\"buyer goal\\">\\nA bottle for hiking/);
   expect(prompt).toMatch(/<untrusted-data-\w+ source=\\"product listing\\">\\nSteel water bottle/);
 });

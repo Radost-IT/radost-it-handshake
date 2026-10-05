@@ -119,5 +119,8 @@ describe('decideBuyerMove', () => {
 
     expect(move).toEqual({ action: 'OFFER', price: usd('38.50'), message: 'Would 38.50 work?' });
     expect(provider.requests[0]?.system).toContain('maximum price is 46.00 USD');
+    expect(provider.requests[0]?.system).toMatch(
+      /<untrusted-data-\w+ source="buyer goal">\nA kettle for the office/,
+    );
   });
 });

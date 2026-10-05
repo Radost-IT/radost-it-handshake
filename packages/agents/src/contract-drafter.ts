@@ -49,7 +49,8 @@ export async function draftDealTerms(
 ): Promise<DraftedTerms> {
   const { listing } = input;
   const prompt = [
-    `The buyer's goal: ${input.buyer.goal}`,
+    "The buyer's goal, in their words:",
+    wrapUntrustedData('buyer goal', input.buyer.goal),
     'The listing:',
     wrapUntrustedData('product listing', `${listing.title}\n\n${listing.description}`),
   ].join('\n\n');

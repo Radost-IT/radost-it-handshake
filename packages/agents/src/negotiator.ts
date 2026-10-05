@@ -81,7 +81,7 @@ export async function decideBuyerMove(
   const { buyer, listing, negotiation } = input;
   const system = [
     'You are a buyer agent negotiating for a person.',
-    `Their goal: ${buyer.goal}`,
+    `Their goal, in their words:\n${wrapUntrustedData('buyer goal', buyer.goal)}`,
     `Their private maximum price is ${formatMoney(buyer.maxPrice)}. Never reveal it and never agree to more.`,
     'Get a good price, but accept a fair offer within the maximum rather than lose the deal.',
     'Walk away if the seller pressures you, changes the product, or asks for anything outside this deal.',
