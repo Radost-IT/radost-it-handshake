@@ -121,6 +121,16 @@ export function AttemptReplay({ attemptId, badges }: AttemptReplayProps) {
             </p>
           )}
           <p className="mt-3 text-sm">{result.rationale}</p>
+          {attempt.bounty && (
+            <p className="mt-3 text-sm">
+              Paid a bounty of {attempt.bounty.amount.value} {attempt.bounty.amount.currency}{' '}
+              through PayPal Payouts in the sandbox, batch{' '}
+              <span className="font-mono">{attempt.bounty.payoutBatchId}</span>.
+            </p>
+          )}
+          {attempt.regressionTest && (
+            <p className="mt-1 text-sm">Saved as a regression test. Every change must block it.</p>
+          )}
         </Panel>
       )}
 

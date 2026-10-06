@@ -1,9 +1,14 @@
 import { ConditionalCheckFailedException, DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { DynamoDBDocumentClient, PutCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';
+import {
+  DynamoDBDocumentClient,
+  GetCommand,
+  PutCommand,
+  QueryCommand,
+} from '@aws-sdk/lib-dynamodb';
 import type { RegressionCase } from '@handshake/arena';
 import { mockClient } from 'aws-sdk-client-mock';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { listRegressionCases, saveRegressionCase } from './regressions';
+import { hasRegressionCase, listRegressionCases, saveRegressionCase } from './regressions';
 
 const dynamodb = mockClient(DynamoDBDocumentClient);
 const table = { client: DynamoDBDocumentClient.from(new DynamoDBClient({})), name: 'T' };
@@ -60,5 +65,23 @@ describe('listRegressionCases', () => {
     expect(dynamodb.commandCalls(QueryCommand)[1]?.args[0].input.ExclusiveStartKey).toEqual(
       lastKey,
     );
+  });
+});
+
+describe('hasRegressionCase', () => {
+  it('looks up the case by when and in which attempt it was found', async () => {
+    dynamodb.on(GetCommand).resolves({ Item: { pk: 'HALL_OF_FAME', ...regression } });
+
+    expect(await hasRegressionCase(table, regression)).toBe(true);
+    expect(dynamodb.commandCalls(GetCommand)[0]?.args[0].input.Key).toEqual({
+      pk: 'HALL_OF_FAME',
+      sk: 'CASE#2026-10-28T14:00:00Z#attempt-1',
+    });
+  });
+
+  it('returns false when the breach was not saved', async () => {
+    dynamodb.on(GetCommand).resolves({});
+
+    expect(await hasRegressionCase(table, regression)).toBe(false);
   });
 });

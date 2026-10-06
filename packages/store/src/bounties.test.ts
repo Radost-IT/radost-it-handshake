@@ -2,6 +2,7 @@ import { ConditionalCheckFailedException, DynamoDBClient } from '@aws-sdk/client
 import {
   DeleteCommand,
   DynamoDBDocumentClient,
+  GetCommand,
   PutCommand,
   QueryCommand,
   UpdateCommand,
@@ -9,7 +10,7 @@ import {
 import { money } from '@handshake/core';
 import { mockClient } from 'aws-sdk-client-mock';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { markBountyPaid, releaseBounty, reserveBounty } from './bounties';
+import { getPaidBounty, markBountyPaid, releaseBounty, reserveBounty } from './bounties';
 
 const dynamodb = mockClient(DynamoDBDocumentClient);
 const table = { client: DynamoDBDocumentClient.from(new DynamoDBClient({})), name: 'T' };
@@ -77,5 +78,38 @@ describe('releaseBounty and markBountyPaid', () => {
       Key: key,
       ExpressionAttributeValues: { ':paid': 'paid', ':batch': 'BATCH-1' },
     });
+  });
+});
+
+describe('getPaidBounty', () => {
+  const key = { date: '2026-10-28', attemptId: 'attempt-1' };
+
+  it('returns the amount and payout batch of a paid bounty', async () => {
+    dynamodb
+      .on(GetCommand)
+      .resolves({ Item: { ...item('attempt-1', '3.00'), payoutBatchId: 'B-1' } });
+
+    expect(await getPaidBounty(table, key)).toEqual({
+      amount: money('3.00', 'USD'),
+      payoutBatchId: 'B-1',
+    });
+    expect(dynamodb.commandCalls(GetCommand)[0]?.args[0].input.Key).toEqual({
+      pk: 'BOUNTIES#2026-10-28',
+      sk: 'ATTEMPT#attempt-1',
+    });
+  });
+
+  it('returns null for a bounty that is only reserved', async () => {
+    dynamodb
+      .on(GetCommand)
+      .resolves({ Item: { ...item('attempt-1', '3.00'), status: 'reserved' } });
+
+    expect(await getPaidBounty(table, key)).toBeNull();
+  });
+
+  it('returns null when no bounty was reserved', async () => {
+    dynamodb.on(GetCommand).resolves({});
+
+    expect(await getPaidBounty(table, key)).toBeNull();
   });
 });

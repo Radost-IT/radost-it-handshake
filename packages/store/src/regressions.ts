@@ -1,11 +1,11 @@
 import { ConditionalCheckFailedException } from '@aws-sdk/client-dynamodb';
-import { PutCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';
+import { GetCommand, PutCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';
 import { regressionCaseSchema, type RegressionCase } from '@handshake/arena';
 import type { StoreTable } from './table';
 
 const HALL_OF_FAME = 'HALL_OF_FAME';
 
-const regressionKey = (regression: RegressionCase) => ({
+const regressionKey = (regression: Pick<RegressionCase, 'foundAt' | 'attemptId'>) => ({
   pk: HALL_OF_FAME,
   sk: `CASE#${regression.foundAt}#${regression.attemptId}`,
 });
@@ -27,6 +27,16 @@ export async function saveRegressionCase(
     if (error instanceof ConditionalCheckFailedException) return;
     throw error;
   }
+}
+
+export async function hasRegressionCase(
+  table: StoreTable,
+  regression: Pick<RegressionCase, 'foundAt' | 'attemptId'>,
+): Promise<boolean> {
+  const { Item } = await table.client.send(
+    new GetCommand({ TableName: table.name, Key: regressionKey(regression) }),
+  );
+  return Item !== undefined;
 }
 
 /** Every case, oldest first. */

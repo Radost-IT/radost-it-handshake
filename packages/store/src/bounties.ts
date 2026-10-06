@@ -1,5 +1,11 @@
 import { ConditionalCheckFailedException } from '@aws-sdk/client-dynamodb';
-import { DeleteCommand, PutCommand, QueryCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
+import {
+  DeleteCommand,
+  GetCommand,
+  PutCommand,
+  QueryCommand,
+  UpdateCommand,
+} from '@aws-sdk/lib-dynamodb';
 import { addMoney, money, moneySchema, type Money } from '@handshake/core';
 import { z } from 'zod';
 import type { StoreTable } from './table';
@@ -92,4 +98,31 @@ export async function markBountyPaid(
       ExpressionAttributeValues: { ':paid': 'paid', ':batch': payoutBatchId },
     }),
   );
+}
+
+const paidBountySchema = z.object({
+  status: z.literal('paid'),
+  amount: moneySchema,
+  payoutBatchId: z.string().min(1),
+});
+
+export interface PaidBounty {
+  amount: Money;
+  payoutBatchId: string;
+}
+
+/** The bounty PayPal paid for an attempt; null while it is only reserved, or when none was paid. */
+export async function getPaidBounty(
+  table: StoreTable,
+  reservation: Pick<BountyReservation, 'date' | 'attemptId'>,
+): Promise<PaidBounty | null> {
+  const { Item } = await table.client.send(
+    new GetCommand({
+      TableName: table.name,
+      Key: bountyKey(reservation.date, reservation.attemptId),
+    }),
+  );
+  if (Item?.status !== 'paid') return null;
+  const { amount, payoutBatchId } = paidBountySchema.parse(Item);
+  return { amount, payoutBatchId };
 }

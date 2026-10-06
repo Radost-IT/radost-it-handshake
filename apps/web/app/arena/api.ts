@@ -91,6 +91,8 @@ const attemptSchema = z.object({
       nearDuplicateOf: z.string().nullable(),
     })
     .nullable(),
+  bounty: z.object({ amount: moneySchema, payoutBatchId: z.string() }).nullable(),
+  regressionTest: z.boolean(),
 });
 
 export type Attempt = z.infer<typeof attemptSchema>;

@@ -273,6 +273,55 @@ describe('getAttempt', () => {
     });
   });
 
+  it('shows the paid bounty and regression test of a breach', async () => {
+    const recordedAt = '2026-10-03T12:31:00.000Z';
+    dynamodb.on(GetCommand, { Key: { pk: `ATTEMPT#${attemptId}`, sk: 'META' } }).resolves({
+      Item: {
+        ...stored,
+        run: { transcript: 'verifier CAPTURE: All criteria met.', policyDecisions: [] },
+        result: {
+          outcome: { result: 'loophole', severity: 'high', novelty: 0.9, nearDuplicate: false },
+          xpGained: 120,
+          before: newChallengerProgress,
+          after: newChallengerProgress,
+          rationale: 'The verifier followed the note.',
+          nearDuplicateOf: null,
+          recordedAt,
+        },
+      },
+    });
+    dynamodb
+      .on(GetCommand, { Key: { pk: 'BOUNTIES#2026-10-03', sk: `ATTEMPT#${attemptId}` } })
+      .resolves({
+        Item: {
+          attemptId,
+          amount: { value: '5.00', currency: 'USD' },
+          status: 'paid',
+          payoutBatchId: 'BATCH-1',
+        },
+      });
+    dynamodb
+      .on(GetCommand, { Key: { pk: 'HALL_OF_FAME', sk: `CASE#${recordedAt}#${attemptId}` } })
+      .resolves({ Item: { attemptId } });
+
+    expect(JSON.parse((await getAttempt(context, attemptId)).body ?? '')).toMatchObject({
+      bounty: { amount: { value: '5.00', currency: 'USD' }, payoutBatchId: 'BATCH-1' },
+      regressionTest: true,
+    });
+  });
+
+  it('skips the bounty lookup when the agents held', async () => {
+    dynamodb.on(GetCommand, { Key: { pk: `ATTEMPT#${attemptId}`, sk: 'META' } }).resolves({
+      Item: stored,
+    });
+
+    expect(JSON.parse((await getAttempt(context, attemptId)).body ?? '')).toMatchObject({
+      bounty: null,
+      regressionTest: false,
+    });
+    expect(dynamodb.commandCalls(GetCommand)).toHaveLength(1);
+  });
+
   it('answers 404 without a lookup for an ID that is not a UUID', async () => {
     const response = await getAttempt(context, 'ATTEMPT#x');
 

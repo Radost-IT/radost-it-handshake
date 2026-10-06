@@ -19,7 +19,14 @@ export {
 } from './arena-results';
 export { UnprocessedWritesError } from './batch-writes';
 export { getArenaStats, type ArenaStats, type CategoryStats } from './arena-stats';
-export { markBountyPaid, releaseBounty, reserveBounty, type BountyReservation } from './bounties';
+export {
+  getPaidBounty,
+  markBountyPaid,
+  releaseBounty,
+  reserveBounty,
+  type BountyReservation,
+  type PaidBounty,
+} from './bounties';
 export { saveFixedCodeAccount, type FixedCodeAccount } from './fixed-code-accounts';
 export {
   accessStatuses,
@@ -82,7 +89,7 @@ export {
   type LiveConnection,
 } from './live-connections';
 export { clearRateLimitWindow, takeRateLimitSlot, type RateLimitWindow } from './rate-limits';
-export { listRegressionCases, saveRegressionCase } from './regressions';
+export { hasRegressionCase, listRegressionCases, saveRegressionCase } from './regressions';
 export { closeSession, findSessionAccountId, openSession, type NewSession } from './sessions';
 export {
   checkSignInCode,

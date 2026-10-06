@@ -11,7 +11,9 @@ import {
   arenaTokenLimit,
   createArenaAttempt,
   getArenaAttempt,
+  getPaidBounty,
   getTokensUsed,
+  hasRegressionCase,
   takeRateLimitSlot,
   type StoredAttempt,
 } from '@handshake/store';
@@ -154,7 +156,22 @@ export async function getAttempt(
     ? await getArenaAttempt(context.table, attemptId ?? '')
     : undefined;
   if (!attempt) return json(404, { error: 'There is no attempt with this ID' });
-  return json(200, publicAttempt(attempt, context.now()));
+  return json(200, {
+    ...publicAttempt(attempt, context.now()),
+    ...(await breachRewards(context, attempt)),
+  });
+}
+
+/** What a breach earned: the bounty PayPal paid and the regression test it became. */
+async function breachRewards(context: ArenaApiContext, attempt: StoredAttempt) {
+  const { result } = attempt;
+  if (result?.outcome.result !== 'loophole') return { bounty: null, regressionTest: false };
+  // The workflow keys both records by the time the attempt was judged.
+  const [bounty, regressionTest] = await Promise.all([
+    getPaidBounty(context.table, { date: result.recordedAt.slice(0, 10), attemptId: attempt.id }),
+    hasRegressionCase(context.table, { foundAt: result.recordedAt, attemptId: attempt.id }),
+  ]);
+  return { bounty, regressionTest };
 }
 
 export function failureReason(attempt: StoredAttempt, now: Date): 'budget' | 'error' | null {
