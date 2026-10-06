@@ -298,7 +298,8 @@ Who signs in how:
 
 Steps:
 - [ ] Check that `ARENA_EMAIL_FROM` in `.env` is an address on a domain ZeptoMail has verified. [I-22] verified `radostit.hr`, but the example value `arena@handshake.radostit.com` is on another domain, and ZeptoMail refuses mail from an unverified domain. If they differ, set it to, for example, `arena@radostit.hr` and run `pnpm ssm:put prod`.
-- [ ] Run `AWS_PROFILE=handshake pnpm cdk:deploy`. It adds `POST /arena/session/refresh` and makes sign-out revoke the session.
+- [ ] Add `CHANNEL3_API_KEY` to `.env` if it is not there, and run `pnpm ssm:put prod`. On Oct 6 the parameter `/handshake/prod/channel3/api-key` was missing, so every deal opened without a seller ID ended as "No deal" within seconds, with `ConfigError: Invalid configuration: CHANNEL3_API_KEY is missing` in the DealAgents logs.
+- [x] Run `AWS_PROFILE=handshake pnpm cdk:deploy`. It adds `POST /arena/session/refresh` and makes sign-out revoke the session.
 - [ ] Run `AWS_PROFILE=handshake pnpm accounts:judges <table> <domain>` if you have not done it in [I-27]. Keep the five codes in your password manager.
 - [ ] Judge walkthrough, in a private window:
   1. Open https://handshake.radostit.com/sign-in and enter `judge-1@<domain>`. Select **Email me a code**. No email arrives; that is expected.
