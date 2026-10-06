@@ -222,35 +222,35 @@ The webhook endpoint is built in Phase 2. After the first deploy that includes i
 ### [I-21] Try the arena pages
 The arena pages call the deployed API, which accepts browser calls only from https://handshake.radostit.com. They do not work from `pnpm dev` on localhost.
 - [x] Run `pnpm cdk:deploy`. It ships the arena pages, the `GET /arena/deals`, `/arena/stats`, `/arena/leaderboard` and `/arena/challengers/me/attempts` routes, and the ArenaRun step that marks failed attempts.
-- [ ] Open https://handshake.radostit.com/arena, pick a handle, and launch one attack. The attempt page should switch from running to a result within about a minute.
-- [ ] Open https://handshake.radostit.com/arena/leaderboard and check that your handle is listed under All time.
+- [x] Open https://handshake.radostit.com/arena, pick a handle, and launch one attack. The attempt page should switch from running to a result within about a minute.
+- [x] Open https://handshake.radostit.com/arena/leaderboard and check that your handle is listed under All time.
 ### [I-22] Turn on email sign-in for the arena
 The arena now asks for an email sign-in and an approved request before anyone can play. The API sends the codes through ZeptoMail, the same service radost-it-forge uses.
-- [ ] In ZeptoMail, add and verify the domain `handshake.radostit.com` (or use a domain already verified there, and set `ARENA_EMAIL_FROM` to an address on it). Add the DNS records ZeptoMail shows in Route 53.
-- [ ] In ZeptoMail, open the Mail Agent, then **SMTP/API → API**, and copy the Send Mail token. It starts with `Zoho-enczapikey`. Check that the account has enough credits to last past Dec 21, 2026.
-- [ ] Add these to `.env`, then run `pnpm ssm:put prod`:
+- [x] In ZeptoMail, verify the domain `radostit.hr` (or use a domain already verified there, and set `ARENA_EMAIL_FROM` to an address on it). Add the DNS records ZeptoMail shows in Route 53.
+- [x] In ZeptoMail, open the Mail Agent, then **SMTP/API → API**, and copy the Send Mail token. It starts with `Zoho-enczapikey`. Check that the account has enough credits to last past Dec 21, 2026.
+- [x] Add these to `.env`, then run `pnpm ssm:put prod`:
   - `ARENA_EMAIL_FROM=arena@handshake.radostit.com`
   - `ARENA_ADMIN_EMAIL=<your email>`
   - `ZEPTOMAIL_API_URL=https://api.zeptomail.<region>`, the same host as `OTP_ENDPOINT` in radost-it-forge, with `https://` in front.
   - `ZEPTOMAIL_TOKEN=<the Send Mail token>`, the whole value including the prefix.
-- [ ] Open **IAM → Policies → HandshakeDeveloper → Edit → JSON** and replace it with the current `infra/iam/developer-policy.json`. It lets `pnpm arena:access` read requests.
-- [ ] If you pasted the policies while they still allowed SES, replace **HandshakeWorkloadBoundary** and **HandshakeCdkExecution** with the current `infra/iam/workload-boundary.json` and `infra/iam/cdk-execution-policy.json` too. The SES statements are gone.
-- [ ] Run `AWS_PROFILE=handshake pnpm cdk:deploy`.
-- [ ] Open https://handshake.radostit.com/arena, sign in with your email and send a request to join. The request arrives at `ARENA_ADMIN_EMAIL`.
-- [ ] Run `pnpm arena:access <table>` to list pending requests, then `pnpm arena:access <table> approve <email>`. Refresh the arena, pick a handle and play. Handles picked before this change belong to old sessions and can no longer be used.
+- [x] Open **IAM → Policies → HandshakeDeveloper → Edit → JSON** and replace it with the current `infra/iam/developer-policy.json`. It lets `pnpm arena:access` read requests.
+- [x] If you pasted the policies while they still allowed SES, replace **HandshakeWorkloadBoundary** and **HandshakeCdkExecution** with the current `infra/iam/workload-boundary.json` and `infra/iam/cdk-execution-policy.json` too. The SES statements are gone.
+- [x] Run `AWS_PROFILE=handshake pnpm cdk:deploy`.
+- [x] Open https://handshake.radostit.com/arena, sign in with your email and send a request to join. The request arrives at `ARENA_ADMIN_EMAIL`.
+- [x] Run `pnpm arena:access <table>` to list pending requests, then `pnpm arena:access <table> approve <email>`. Refresh the arena, pick a handle and play. Handles picked before this change belong to old sessions and can no longer be used.
 
 ### [I-23] Turn on live arena updates
 The arena now pushes results over a WebSocket API at `ws-handshake.radostit.com`. In the console, logged in as your Identity Center admin:
-- [ ] Open **IAM → Policies → HandshakeWorkloadBoundary → Edit → JSON** and replace it with the current `infra/iam/workload-boundary.json`. It lets the arena workflow push messages to open connections.
-- [ ] Do the same for **HandshakeCdkExecution** with `infra/iam/cdk-execution-policy.json`. It may create the DNS record for the new hostname.
-- [ ] Run `AWS_PROFILE=handshake pnpm cdk:deploy`. The `LiveUrl` output should read `wss://ws-handshake.radostit.com`.
+- [x] Open **IAM → Policies → HandshakeWorkloadBoundary → Edit → JSON** and replace it with the current `infra/iam/workload-boundary.json`. It lets the arena workflow push messages to open connections.
+- [x] Do the same for **HandshakeCdkExecution** with `infra/iam/cdk-execution-policy.json`. It may create the DNS record for the new hostname.
+- [x] Run `AWS_PROFILE=handshake pnpm cdk:deploy`. The `LiveUrl` output should read `wss://ws-handshake.radostit.com`.
 - [ ] Open an attempt page and launch an attack in another tab. The page should switch to the result without a reload, and the defense counter on `/arena` should go up by one.
 
 ### [I-23b] Turn on live deal updates
 The deal page now refreshes as soon as a negotiation turn or state change is saved. The table gets a DynamoDB stream, and a new `DealUpdates` Lambda reads it. In the console, logged in as your Identity Center admin:
-- [ ] Open **IAM → Policies → HandshakeWorkloadBoundary → Edit → JSON** and replace it with the current `infra/iam/workload-boundary.json`. It lets the Lambda read the table stream.
-- [ ] Do the same for **HandshakeCdkExecution** with `infra/iam/cdk-execution-policy.json`. It lets CloudFormation connect the stream to the Lambda.
-- [ ] Run `AWS_PROFILE=handshake pnpm cdk:deploy`.
+- [x] Open **IAM → Policies → HandshakeWorkloadBoundary → Edit → JSON** and replace it with the current `infra/iam/workload-boundary.json`. It lets the Lambda read the table stream.
+- [x] Do the same for **HandshakeCdkExecution** with `infra/iam/cdk-execution-policy.json`. It lets CloudFormation connect the stream to the Lambda.
+- [x] Run `AWS_PROFILE=handshake pnpm cdk:deploy`.
 - [ ] Open a new deal page from the console. Negotiation turns should appear one by one without a reload.
 
 ### [I-24] Turn on the Deal API
@@ -281,12 +281,39 @@ The web app now has `/console`, `/evals` and the Red Team Lab copy. No new `.env
 
 ### [I-27] Give judges a sign-in account
 Judges sign in at `/sign-in` with one of five emails and a fixed six-digit code that you create. No email is sent to these accounts. Everyone else requests access at `/request-access`, and you approve them with `pnpm arena:access`. No new `.env` keys are needed.
-- [ ] Run `AWS_PROFILE=handshake pnpm cdk:deploy`. It removes the password route and adds the limits on code checks.
+- [x] Run `AWS_PROFILE=handshake pnpm cdk:deploy`. It removes the password route and adds the limits on code checks.
 - [ ] Run `AWS_PROFILE=handshake pnpm accounts:judges <table> <email-domain>`, for example your own domain. It creates `judge-1` to `judge-5` at that domain, approved straight away, and prints each fixed code once. Keep them in your password manager. Running the command again sets new codes.
 - [ ] If you made the shared judges' password account earlier, it can no longer sign in, because passwords are gone. Reject or ignore it.
 - [ ] Open https://handshake.radostit.com/sign-in in a private window, enter `judge-1@<domain>`, ask for a code, and type the fixed code. Check that the console lists deals and opens one. Then open `/arena` and check that you can pick a handle.
 - [ ] Put the five emails and codes in the testing instructions in `docs/submission.md` at [I-16]. Each judge has their own 25 deals and 40 arena attempts a day.
 - [ ] Open https://handshake.radostit.com/request-access in another private window, confirm a test email with the code, and send a request. It should reach `ARENA_ADMIN_EMAIL`. Approve it with `pnpm arena:access <table> approve <email>`.
+
+### [I-28] Switch sign-in to access and refresh tokens
+Sign-in now works like radost-it-forge. The API returns a 1 hour access token and a 30 day refresh token, and the browser keeps them in local storage. The browser renews them on its own; each refresh token works once. Sign-out revokes the session on the server. Everyone who signed in with the old cookie has to sign in again. No new `.env` keys are needed.
+
+Who signs in how:
+- **Judges** use `judge-1@<domain>` to `judge-5@<domain>` and a fixed code you hand them. No email is sent. They are approved from the start, so they go straight to the console and the arena.
+- **Everyone else** opens `/request-access`, types an email, gets a code by email, confirms it, and sends a request. The request is pending until you approve it. Until then the page shows "Your request is waiting", not "You have access".
+- **You** approve or reject requests from the terminal with `pnpm arena:access`.
+
+Steps:
+- [ ] Check that `ARENA_EMAIL_FROM` in `.env` is an address on a domain ZeptoMail has verified. [I-22] verified `radostit.hr`, but the example value `arena@handshake.radostit.com` is on another domain, and ZeptoMail refuses mail from an unverified domain. If they differ, set it to, for example, `arena@radostit.hr` and run `pnpm ssm:put prod`.
+- [ ] Run `AWS_PROFILE=handshake pnpm cdk:deploy`. It adds `POST /arena/session/refresh` and makes sign-out revoke the session.
+- [ ] Run `AWS_PROFILE=handshake pnpm accounts:judges <table> <domain>` if you have not done it in [I-27]. Keep the five codes in your password manager.
+- [ ] Judge walkthrough, in a private window:
+  1. Open https://handshake.radostit.com/sign-in and enter `judge-1@<domain>`. Select **Email me a code**. No email arrives; that is expected.
+  2. Type the fixed code for judge-1 and select **Sign in**. You land on the console, and the navbar shows **Sign out**.
+  3. In the console, open a deal and check that its page loads.
+  4. Open `/arena`, pick a handle, and launch one attack. The attempt page shows a result within about a minute.
+  5. Reload the page. You are still signed in.
+  6. Select **Sign out** in the navbar. The navbar shows **Sign in** again, and `/console` asks you to sign in.
+- [ ] Request-access walkthrough, in a new private window:
+  1. Open https://handshake.radostit.com/request-access and enter an email you can read that has no account yet.
+  2. The code arrives by email within a minute. If it does not, check the spam folder, then the `ArenaApiFunction` logs in CloudWatch for a ZeptoMail error.
+  3. Type the code and send the request with a short reason. The page shows "Your request is waiting". It must not show "You have access".
+  4. The request arrives at `ARENA_ADMIN_EMAIL`.
+  5. Run `pnpm arena:access <table>` to list it, then `pnpm arena:access <table> approve <email>`.
+  6. Reload `/arena`. You can now pick a handle.
 
 ---
 
@@ -301,7 +328,7 @@ Judges sign in at `/sign-in` with one of five emails and a fixed six-digit code 
 ## Submission (Nov 9–12)
 
 ### [I-14] Record the demo video
-- [ ] Open **IAM → Policies → HandshakeDeveloper → Edit → JSON** and replace it with the current `infra/iam/developer-policy.json`. It lets `pnpm demo:reset` delete demo deals and stop their workflows.
+- [x] Open **IAM → Policies → HandshakeDeveloper → Edit → JSON** and replace it with the current `infra/iam/developer-policy.json`. It lets `pnpm demo:reset` delete demo deals and stop their workflows.
 - [ ] Create a key for the recording with `pnpm api-keys:create <table> demo` and note the developer ID it prints. Before each take, run `AWS_PROFILE=handshake pnpm demo:reset prod <developer-id>`. It deletes that key's deals that hold no money, clears its daily deal count, and re-seeds the sellers. Deals that hold an authorization are kept and listed; settle them from the deal page first.
 - [ ] Follow `docs/demo-script.md` (under 3 minutes).
 - [ ] Record the real hosted app, not mockups. Hide the browser bookmarks bar and any personal tabs.
