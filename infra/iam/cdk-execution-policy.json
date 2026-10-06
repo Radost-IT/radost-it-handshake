@@ -125,6 +125,7 @@
         "scheduler:*",
         "sqs:*",
         "sns:*",
+        "lambda:CreateEventSourceMapping",
         "lambda:GetEventSourceMapping",
         "lambda:ListEventSourceMappings",
         "application-autoscaling:DescribeScalableTargets",

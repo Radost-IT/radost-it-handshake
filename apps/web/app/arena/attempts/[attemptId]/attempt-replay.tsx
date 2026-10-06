@@ -6,7 +6,7 @@ import { Panel } from '../../../components/panel';
 import { fetchAccount, fetchAttempt, messageOf, type Attempt } from '../../api';
 import type { BadgeInfo } from '../../challenger-card';
 import { categoryName, channelName } from '../../labels';
-import { attemptTopic, useLiveEvents, type LiveEvent } from '../../live-events';
+import { attemptTopic, useLiveEvents, type LiveEvent } from '../../../live-events';
 import { pillStateFor, StatusPill } from '../../status-pill';
 import { ToastStack, useToasts } from '../../toasts';
 

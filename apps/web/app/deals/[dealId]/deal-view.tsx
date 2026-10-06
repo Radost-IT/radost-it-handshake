@@ -2,6 +2,7 @@
 
 import { useEffect, useState, type ReactNode } from 'react';
 import { Panel } from '../../components/panel';
+import { dealTopic, useLiveEvents } from '../../live-events';
 import {
   API_KEY_STORAGE_KEY,
   DealApiError,
@@ -19,7 +20,8 @@ import {
 } from '../api';
 import { escrowSteps, paypalActivity, type StepStatus } from './timeline';
 
-const POLL_INTERVAL_MS = 4_000;
+// Live events refetch at once; polling only covers a dropped WebSocket.
+const POLL_INTERVAL_MS = 15_000;
 
 type ViewState =
   | { kind: 'loading' }
@@ -93,6 +95,10 @@ export function DealView({ dealId }: { dealId: string }) {
   useEffect(() => {
     setCredential(takeDealToken(dealId));
   }, [dealId]);
+
+  useLiveEvents([dealTopic(dealId)], () => {
+    setRefreshes((count) => count + 1);
+  });
 
   useEffect(() => {
     if (credential === undefined) return;

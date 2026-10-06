@@ -12,11 +12,19 @@ import {
   WebSocketLambdaIntegration,
 } from 'aws-cdk-lib/aws-apigatewayv2-integrations';
 import { Certificate } from 'aws-cdk-lib/aws-certificatemanager';
-import { AttributeType, Billing, TableV2 } from 'aws-cdk-lib/aws-dynamodb';
+import { AttributeType, Billing, StreamViewType, TableV2 } from 'aws-cdk-lib/aws-dynamodb';
 import { EventBus, Rule } from 'aws-cdk-lib/aws-events';
 import { LambdaFunction } from 'aws-cdk-lib/aws-events-targets';
 import { PolicyStatement } from 'aws-cdk-lib/aws-iam';
-import { Architecture, type IFunction, Runtime } from 'aws-cdk-lib/aws-lambda';
+import {
+  Architecture,
+  FilterCriteria,
+  FilterRule,
+  type IFunction,
+  Runtime,
+  StartingPosition,
+} from 'aws-cdk-lib/aws-lambda';
+import { DynamoEventSource } from 'aws-cdk-lib/aws-lambda-event-sources';
 import { NodejsFunction, OutputFormat } from 'aws-cdk-lib/aws-lambda-nodejs';
 import { LogGroup, RetentionDays } from 'aws-cdk-lib/aws-logs';
 import { AaaaRecord, ARecord, HostedZone, RecordTarget } from 'aws-cdk-lib/aws-route53';
@@ -81,6 +89,8 @@ export class HandshakeStack extends Stack {
       pointInTimeRecoverySpecification: { pointInTimeRecoveryEnabled: true },
       // The table holds every deal and its PayPal audit log; a stray delete must fail.
       deletionProtection: true,
+      // Deal pages hear about changes from this stream; the keys say which deal changed.
+      dynamoStream: StreamViewType.KEYS_ONLY,
       globalSecondaryIndexes: [
         {
           indexName: 'GSI1',
@@ -245,7 +255,7 @@ export class HandshakeStack extends Stack {
     });
     table.grant(liveFunction, 'dynamodb:GetItem', 'dynamodb:PutItem', 'dynamodb:DeleteItem');
     const liveIntegration = new WebSocketLambdaIntegration('LiveIntegration', liveFunction);
-    // Browsers only listen; ArenaRun pushes through the management API.
+    // Browsers only listen; ArenaRun and the deal stream push through the management API.
     const liveApi = new WebSocketApi(this, 'LiveApi', {
       connectRouteOptions: { integration: liveIntegration },
       disconnectRouteOptions: { integration: liveIntegration },
@@ -360,6 +370,38 @@ export class HandshakeStack extends Stack {
     });
     arenaRunFunction.addEnvironment('LIVE_CALLBACK_URL', liveStage.callbackUrl);
     liveApi.grantManageConnections(arenaRunFunction);
+
+    const dealUpdatesFunction = new NodejsFunction(this, 'DealUpdatesFunction', {
+      entry: serviceSource('workflows', 'deal-updates-handler.ts'),
+      runtime: Runtime.NODEJS_22_X,
+      architecture: Architecture.ARM_64,
+      memorySize: 256,
+      timeout: Duration.seconds(10),
+      logGroup: new LogGroup(this, 'DealUpdatesFunctionLogs', {
+        retention: RetentionDays.ONE_MONTH,
+      }),
+      bundling: esmBundling,
+      environment: { TABLE_NAME: table.tableName, LIVE_CALLBACK_URL: liveStage.callbackUrl },
+    });
+    table.grant(dealUpdatesFunction, 'dynamodb:GetItem', 'dynamodb:DeleteItem', 'dynamodb:Query');
+    liveApi.grantManageConnections(dealUpdatesFunction);
+    dealUpdatesFunction.addEventSource(
+      new DynamoEventSource(table, {
+        startingPosition: StartingPosition.LATEST,
+        // Updates are hints and the page also polls, so a failing batch is not retried for long.
+        retryAttempts: 2,
+        filters: [
+          FilterCriteria.filter({
+            dynamodb: {
+              Keys: {
+                pk: { S: FilterRule.beginsWith('DEAL#') },
+                sk: { S: FilterRule.or('META', 'NEGOTIATION') },
+              },
+            },
+          }),
+        ],
+      }),
+    );
 
     const arenaApiIntegration = new HttpLambdaIntegration('ArenaApiIntegration', arenaApiFunction);
     for (const path of [

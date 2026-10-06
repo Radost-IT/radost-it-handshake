@@ -41,7 +41,8 @@ const topicsSchema = z
 /**
  * Handles the WebSocket routes. The browser names the topics it wants in the
  * connect URL (`?topics=arena,attempt:<id>`) and only listens afterwards.
- * Every event is public arena data, so connecting needs no session.
+ * Events are public arena data or a bare "deal changed" hint that the page
+ * must refetch with its own credential, so connecting needs no session.
  */
 export async function handleLiveEvent(
   context: LiveContext,

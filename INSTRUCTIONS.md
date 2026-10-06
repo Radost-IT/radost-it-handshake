@@ -246,6 +246,13 @@ The arena now pushes results over a WebSocket API at `ws-handshake.radostit.com`
 - [ ] Run `AWS_PROFILE=handshake pnpm cdk:deploy`. The `LiveUrl` output should read `wss://ws-handshake.radostit.com`.
 - [ ] Open an attempt page and launch an attack in another tab. The page should switch to the result without a reload, and the defense counter on `/arena` should go up by one.
 
+### [I-23b] Turn on live deal updates
+The deal page now refreshes as soon as a negotiation turn or state change is saved. The table gets a DynamoDB stream, and a new `DealUpdates` Lambda reads it. In the console, logged in as your Identity Center admin:
+- [ ] Open **IAM → Policies → HandshakeWorkloadBoundary → Edit → JSON** and replace it with the current `infra/iam/workload-boundary.json`. It lets the Lambda read the table stream.
+- [ ] Do the same for **HandshakeCdkExecution** with `infra/iam/cdk-execution-policy.json`. It lets CloudFormation connect the stream to the Lambda.
+- [ ] Run `AWS_PROFILE=handshake pnpm cdk:deploy`.
+- [ ] Open a new deal page from the console. Negotiation turns should appear one by one without a reload.
+
 ### [I-24] Turn on the Deal API
 Developers now open deals through `https://api-handshake.radostit.com/v1/deals`. Agents negotiate and verify in a new `DealAgents` Lambda. No new `.env` keys are needed; deals without a `sellerId` shop Channel3, so they need `CHANNEL3_API_KEY` ([I-5]).
 - [ ] Run `AWS_PROFILE=handshake pnpm cdk:deploy`. The old `/deals/{dealId}/…` routes are replaced by `/v1/deals/{dealId}/…`.

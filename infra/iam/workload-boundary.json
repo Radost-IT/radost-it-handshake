@@ -22,6 +22,7 @@
         "dynamodb:BatchWriteItem",
         "dynamodb:ConditionCheckItem",
         "dynamodb:DeleteItem",
+        "dynamodb:DescribeStream",
         "dynamodb:DescribeTable",
         "dynamodb:GetItem",
         "dynamodb:GetRecords",
@@ -35,6 +36,12 @@
         "arn:aws:dynamodb:eu-west-1:*:table/Handshake-*",
         "arn:aws:dynamodb:eu-west-1:*:table/Handshake-*/*"
       ]
+    },
+    {
+      "Sid": "ListTableStreams",
+      "Effect": "Allow",
+      "Action": "dynamodb:ListStreams",
+      "Resource": "*"
     },
     {
       "Sid": "UseHandshakeBuckets",

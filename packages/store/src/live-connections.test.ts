@@ -10,6 +10,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import {
   attemptTopic,
   closeLiveConnection,
+  dealTopic,
   listLiveConnections,
   liveTopicSchema,
   openLiveConnection,
@@ -25,9 +26,11 @@ const nowSeconds = now.getTime() / 1000;
 beforeEach(() => dynamodb.reset());
 
 describe('liveTopicSchema', () => {
-  it('accepts the arena topic and attempt topics only', () => {
+  it('accepts the arena topic, attempt topics and deal topics only', () => {
     expect(liveTopicSchema.safeParse('arena').success).toBe(true);
     expect(liveTopicSchema.safeParse(attemptTopic(attemptId)).success).toBe(true);
+    expect(liveTopicSchema.safeParse(dealTopic(attemptId)).success).toBe(true);
+    expect(liveTopicSchema.safeParse('deal:arena-1').success).toBe(false);
     expect(liveTopicSchema.safeParse('attempt:../other').success).toBe(false);
     expect(liveTopicSchema.safeParse('deals').success).toBe(false);
   });

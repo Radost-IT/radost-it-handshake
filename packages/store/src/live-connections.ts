@@ -8,9 +8,13 @@ export const ARENA_TOPIC = 'arena';
 /** The person waiting for one attempt's result. */
 export const attemptTopic = (attemptId: string) => `attempt:${attemptId}`;
 
+/** The pages showing one deal. Events on it carry only the deal ID, so the topic exposes nothing else. */
+export const dealTopic = (dealId: string) => `deal:${dealId}`;
+
 export const liveTopicSchema = z.union([
   z.literal(ARENA_TOPIC),
   z.string().regex(/^attempt:[0-9a-f-]{36}$/),
+  z.string().regex(/^deal:[0-9a-f-]{36}$/),
 ]);
 
 // One connection writes its topics in one transaction, which caps the item count.

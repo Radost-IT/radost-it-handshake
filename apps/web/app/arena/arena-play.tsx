@@ -22,7 +22,7 @@ import { AttackForm } from './attack-form';
 import { AttemptHistory } from './attempt-history';
 import { ChallengerCard, type BadgeInfo } from './challenger-card';
 import { HandleForm } from './handle-form';
-import { ARENA_TOPIC, useLiveEvents } from './live-events';
+import { ARENA_TOPIC, useLiveEvents } from '../live-events';
 
 interface ArenaData {
   account: Account | null;

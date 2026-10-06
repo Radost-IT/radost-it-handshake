@@ -18,7 +18,8 @@ export type LiveEvent =
       rankUp: boolean;
       newBadges: BadgeId[];
     }
-  | { type: 'arena.stats'; attempts: number; held: number };
+  | { type: 'arena.stats'; attempts: number; held: number }
+  | { type: 'deal.updated'; dealId: string };
 
 export type PublishLiveEvent = (topic: string, event: LiveEvent) => Promise<void>;
 

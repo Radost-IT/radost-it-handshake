@@ -444,6 +444,26 @@ describe('HandshakeStack', () => {
     expect(grantedActions(template)).toContain('execute-api:ManageConnections');
   });
 
+  it('streams changed deal keys to the function that tells deal pages to refetch', () => {
+    template.hasResourceProperties('AWS::DynamoDB::GlobalTable', {
+      StreamSpecification: { StreamViewType: 'KEYS_ONLY' },
+    });
+    template.hasResourceProperties('AWS::Lambda::EventSourceMapping', {
+      StartingPosition: 'LATEST',
+      FilterCriteria: {
+        Filters: [
+          {
+            Pattern: JSON.stringify({
+              dynamodb: {
+                Keys: { pk: { S: [{ prefix: 'DEAL#' }] }, sk: { S: ['META', 'NEGOTIATION'] } },
+              },
+            }),
+          },
+        ],
+      },
+    });
+  });
+
   it('runs Lambdas on Node 22 with a managed log group', () => {
     template.hasResourceProperties('AWS::Lambda::Function', {
       Runtime: 'nodejs22.x',

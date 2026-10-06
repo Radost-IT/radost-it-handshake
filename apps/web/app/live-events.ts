@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import { z } from 'zod';
-import { LIVE_URL } from '../site';
+import { LIVE_URL } from './site';
 
 const liveEventSchema = z.discriminatedUnion('type', [
   z.object({
@@ -20,17 +20,19 @@ const liveEventSchema = z.discriminatedUnion('type', [
     newBadges: z.array(z.string()),
   }),
   z.object({ type: z.literal('arena.stats'), attempts: z.number(), held: z.number() }),
+  z.object({ type: z.literal('deal.updated'), dealId: z.string() }),
 ]);
 
 export type LiveEvent = z.infer<typeof liveEventSchema>;
 
 export const ARENA_TOPIC = 'arena';
 export const attemptTopic = (attemptId: string) => `attempt:${attemptId}`;
+export const dealTopic = (dealId: string) => `deal:${dealId}`;
 
 const MAX_RECONNECT_DELAY_MS = 30_000;
 
 /**
- * Listens to arena events on the given topics and reconnects with backoff
+ * Listens to live events on the given topics and reconnects with backoff
  * when the socket drops. Events are hints only: callers refetch from the API.
  */
 export function useLiveEvents(topics: string[], onEvent: (event: LiveEvent) => void): void {
@@ -75,7 +77,7 @@ function parseJson(data: unknown): unknown {
   try {
     return JSON.parse(data);
   } catch {
-    // A message that is not JSON is not an arena event; the page keeps polling.
+    // A message that is not JSON is not a live event; the page keeps polling.
     return undefined;
   }
 }

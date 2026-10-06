@@ -344,7 +344,7 @@ Done when both integration paths pass against the sandbox, triggered through the
   - Access is a per-deal token sent as `Authorization: Bearer <token>`. Whatever starts a deal must create the token, return it once, and store its hash with `grantDealAccess`.
 - [x] Verifier agent: deterministic checks first (price, currency, product ID, deadline), then per-criterion LLM checks; low confidence escalates.
 - [x] Untrusted-data wrapping for all third-party text in prompts.
-- [ ] WebSocket streaming of negotiation messages and state changes.
+- [x] WebSocket streaming of negotiation messages and state changes: a DynamoDB stream on deal items sends `deal.updated` to the `deal:<dealId>` topic, and the deal page refetches.
 - [x] `evals/`: at least 15 scripted scenarios (honest deals, hard bargains, bad evidence) with expected outcomes.
 
 Done when an AI-driven deal completes end to end in the deployed app and evals pass.

@@ -74,6 +74,7 @@ export {
   ARENA_TOPIC,
   attemptTopic,
   closeLiveConnection,
+  dealTopic,
   listLiveConnections,
   liveTopicSchema,
   MAX_TOPICS_PER_CONNECTION,
