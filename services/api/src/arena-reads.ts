@@ -51,9 +51,9 @@ export async function getLeaderboardPage(
 /** The session challenger's own attempts, newest first, without transcripts. */
 export async function getMyAttempts(
   context: ArenaApiContext,
-  cookies: readonly string[],
+  authorization: string | undefined,
 ): Promise<APIGatewayProxyStructuredResultV2> {
-  const session = await findSessionChallenger(context, cookies);
+  const session = await findSessionChallenger(context, authorization);
   if (!session.found) return session.response;
   const attempts = await listChallengerAttempts(context.table, session.challenger.id, HISTORY_SIZE);
   const now = context.now();

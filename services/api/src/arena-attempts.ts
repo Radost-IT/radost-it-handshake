@@ -45,7 +45,7 @@ const attemptBodySchema = z.object({
 
 export interface AttemptRequest {
   body: string;
-  cookies: readonly string[];
+  authorization: string | undefined;
   sourceIp: string;
 }
 
@@ -54,7 +54,7 @@ export async function submitAttempt(
   context: ArenaApiContext,
   request: AttemptRequest,
 ): Promise<APIGatewayProxyStructuredResultV2> {
-  const session = await findSessionChallenger(context, request.cookies);
+  const session = await findSessionChallenger(context, request.authorization);
   if (!session.found) return session.response;
 
   const parsed = attemptBodySchema.safeParse(parseJson(request.body));

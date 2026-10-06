@@ -90,7 +90,14 @@ export {
 } from './live-connections';
 export { clearRateLimitWindow, takeRateLimitSlot, type RateLimitWindow } from './rate-limits';
 export { hasRegressionCase, listRegressionCases, saveRegressionCase } from './regressions';
-export { closeSession, findSessionAccountId, openSession, type NewSession } from './sessions';
+export {
+  closeSession,
+  findAccessTokenAccountId,
+  openSession,
+  rotateSession,
+  type SessionRotation,
+  type SessionTokens,
+} from './sessions';
 export {
   checkSignInCode,
   hashSignInCode,

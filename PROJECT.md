@@ -96,7 +96,7 @@ Scoring, XP, ranks and badges are pure functions in `packages/arena`, unit teste
 
 **Mechanics**
 
-- **Invited players only.** Every attack runs real agents and spends Bedrock tokens, so the arena and the console are not open to everyone. There is no sign-up: a visitor requests access at `/request-access`, confirms their email with a six-digit code, and says why. Judges get one of five approved accounts with a fixed code, created by the operator with `pnpm accounts:judges`, and no email is sent to them. There are no passwords. Code checks are limited to 20 per email a day and 30 per IP an hour, and sign-in emails stop after 300 a day. The admin approves or rejects the request with `pnpm arena:access`, which emails the answer. Codes are stored hashed, work once, expire after 10 minutes and lock after five wrong tries. The session token sits in an HTTP-only cookie and only its hash is stored.
+- **Invited players only.** Every attack runs real agents and spends Bedrock tokens, so the arena and the console are not open to everyone. There is no sign-up: a visitor requests access at `/request-access`, confirms their email with a six-digit code, and says why. Judges get one of five approved accounts with a fixed code, created by the operator with `pnpm accounts:judges`, and no email is sent to them. There are no passwords. Code checks are limited to 20 per email a day and 30 per IP an hour, and sign-in emails stop after 300 a day. The admin approves or rejects the request with `pnpm arena:access`, which emails the answer. Codes are stored hashed, work once, expire after 10 minutes and lock after five wrong tries. A session is a one-hour access token plus a 30-day refresh token that is swapped on every renewal; only their hashes are stored.
 - **Handle.** An approved player picks a handle, which shows on the leaderboard instead of the email. The handle passes a length, charset and blocklist check.
 - **XP.** Every attempt earns XP: 10 for a held attempt, 100 for a loophole, plus a bonus for severity and novelty. Near-duplicates of a known loophole earn the held amount only.
 - **Ranks** from XP: Observer, Analyst, Tester, Red Teamer, Senior Red Teamer, Principal Red Teamer. The rank shows next to the handle and on the leaderboard.
@@ -139,14 +139,14 @@ apps/web/app/arena                /arena, /arena/leaderboard, /arena/hall-of-fam
 
 **Flow of one attempt**
 
-1. `POST /arena/attempts` checks the session cookie, input limits and per-IP rate limit, stores the attempt with the chosen deal (`dealId`, or the daily deal) and starts the `ArenaRun` state machine.
+1. `POST /arena/attempts` checks the session access token, input limits and per-IP rate limit, stores the attempt with the chosen deal (`dealId`, or the daily deal) and starts the `ArenaRun` state machine.
 2. `ArenaRun` runs the deal with the challenger's text as the seller, then the arena judge agent returns a structured verdict.
 3. `recordArenaResult` scores the attempt and writes everything in one DynamoDB `TransactWriteItems`: attempt result, challenger stats (with an optimistic `version` check), the leaderboard entry (delete old score item, put new), the daily leaderboard entry, category stats, and global and daily stats.
 4. For a loophole, `ArenaRun` builds a bounty proposal. Policy checks it, settlement pays it through Payouts, and the regression generator writes the case.
 5. If a step still fails after its retries, `MarkFailed` stores why (`budget` when the daily token budget ran out, `error` otherwise) and `GET /arena/attempts/{id}` shows the attempt as `failed`. An attempt older than the 30-minute run timeout without a result also counts as failed.
 6. The WebSocket pushes `arena.result` (verdict, policy reason), `challenger.progress` (XP gained, rank change, new badges) and `arena.stats` (defense counter) to connected clients.
 
-**Account endpoints:** `POST /arena/sign-in` (email a code), `POST /arena/sign-in/verify` (check the code, set the session cookie), `POST /arena/sign-out`, `GET /arena/account` (email, access status and challenger), `POST /arena/access-requests` (ask to join with a reason), `POST /arena/challengers` (pick a handle once approved).
+**Account endpoints:** `POST /arena/sign-in` (email a code), `POST /arena/sign-in/verify` (check the code, return the access and refresh tokens), `POST /arena/session/refresh` (swap the refresh token for a new pair), `POST /arena/sign-out` (end the session), `GET /arena/account` (email, access status and challenger), `POST /arena/access-requests` (ask to join with a reason), `POST /arena/challengers` (pick a handle once approved).
 
 **Read endpoints:** `GET /arena/deals` (the deals a challenger can pick, without private prices, and today's daily deal), `GET /arena/challengers/me/attempts` (the challenger's history), `GET /arena/leaderboard?scope=all|daily`, `GET /arena/stats` (defense counter and loopholes per category, which drives the open bounties), `GET /arena/hall-of-fame`, `GET /arena/attempts/{id}`.
 

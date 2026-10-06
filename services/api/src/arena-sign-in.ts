@@ -6,6 +6,7 @@ import {
   getAccount,
   hashSignInCode,
   openSession,
+  rotateSession,
   saveSignInCode,
   takeRateLimitSlot,
   upsertAccount,
@@ -16,11 +17,10 @@ import type { APIGatewayProxyStructuredResultV2 } from 'aws-lambda';
 import { z } from 'zod';
 import { hashToken, json, parseJson } from './http';
 import {
-  expiredSessionCookie,
-  readSessionToken,
-  SESSION_DAYS,
-  sessionCookie,
+  issueSessionTokens,
+  readRefreshToken,
   type ArenaApiContext,
+  type IssuedTokens,
 } from './arena-session';
 
 const CODE_VALID_MINUTES = 10;
@@ -78,18 +78,14 @@ async function takeSlots(
   return slots.every(Boolean);
 }
 
-async function openSessionCookie(
+async function startSession(
   context: ArenaApiContext,
   accountId: string,
   now: Date,
-): Promise<string> {
-  const token = context.newSessionToken();
-  await openSession(context.table, {
-    tokenHash: hashToken(token),
-    accountId,
-    expiresAt: new Date(now.getTime() + SESSION_DAYS * 24 * HOUR_MS),
-  });
-  return sessionCookie(token);
+): Promise<IssuedTokens> {
+  const { issued, stored } = issueSessionTokens(context, context.newSessionId(), now);
+  await openSession(context.table, accountId, stored);
+  return issued;
 }
 
 const signInBodySchema = z.object({ email: emailSchema });
@@ -201,18 +197,50 @@ export async function verifySignInCode(
   });
   if (check !== 'valid') return json(400, { error: codeErrors[check] });
 
-  const [signedIn, cookie] = await Promise.all([
+  const [signedIn, session] = await Promise.all([
     upsertAccount(context.table, { accountId, email, signedInAt: now }),
-    openSessionCookie(context, accountId, now),
+    startSession(context, accountId, now),
   ]);
-  return { ...json(200, { access: signedIn.access }), cookies: [cookie] };
+  return json(200, { access: signedIn.access, session });
 }
 
+const refreshBodySchema = z.object({ refreshToken: z.string() });
+
+function readRefreshBody(body: string) {
+  const parsed = refreshBodySchema.safeParse(parseJson(body));
+  return parsed.success ? readRefreshToken(parsed.data.refreshToken) : undefined;
+}
+
+/**
+ * Swaps a refresh token for a new pair of tokens. 401 tells the browser to
+ * sign in again; any other failure leaves its tokens in place for a retry.
+ */
+export async function refreshSession(
+  context: ArenaApiContext,
+  body: string,
+): Promise<APIGatewayProxyStructuredResultV2> {
+  const refreshToken = readRefreshBody(body);
+  if (!refreshToken) return json(401, { error: 'Sign in again' });
+  const now = context.now();
+  const { issued, stored } = issueSessionTokens(context, refreshToken.sessionId, now);
+  const rotation = await rotateSession(context.table, hashToken(refreshToken.token), stored, now);
+  if (!rotation.rotated) return json(401, { error: 'Your session has ended. Sign in again' });
+  return json(200, { session: issued });
+}
+
+/** Ends the session of the refresh token, so neither of its tokens works any more. */
 export async function signOut(
   context: ArenaApiContext,
-  cookies: readonly string[],
+  body: string,
 ): Promise<APIGatewayProxyStructuredResultV2> {
-  const token = readSessionToken(cookies);
-  if (token) await closeSession(context.table, hashToken(token));
-  return { statusCode: 204, cookies: [expiredSessionCookie] };
+  const refreshToken = readRefreshBody(body);
+  if (refreshToken) {
+    await closeSession(
+      context.table,
+      refreshToken.sessionId,
+      hashToken(refreshToken.token),
+      context.now(),
+    );
+  }
+  return { statusCode: 204 };
 }

@@ -29,11 +29,13 @@ const context: DealApiContext = {
 const apiKey = 'hs_sandbox_key-1';
 const developer = { developerId: 'dev-1', name: 'Shop bot', createdAt: '2026-10-01T00:00:00Z' };
 const withKey = `Bearer ${apiKey}`;
-const sessionCookies = ['__Host-handshake_account=session-1'];
+const sessionAuthorization = 'Bearer hs_session_session-1';
 
 function signedInAs(access: 'approved' | 'pending'): void {
   dynamodb
-    .on(GetCommand, { Key: { pk: `SESSION#${hashToken('session-1')}`, sk: 'META' } })
+    .on(GetCommand, {
+      Key: { pk: `ACCESS_TOKEN#${hashToken('hs_session_session-1')}`, sk: 'META' },
+    })
     .resolves({ Item: { accountId: 'account-1', ttl: 1_900_000_000 } });
   dynamodb.on(GetCommand, { Key: { pk: 'ACCOUNT#account-1', sk: 'META' } }).resolves({
     Item: {
@@ -73,7 +75,7 @@ describe('openDeal', () => {
   const body = JSON.stringify({ goal: 'A steel water bottle', mandate });
 
   it('saves a negotiating deal, starts its lifecycle and returns the buyer link', async () => {
-    const response = await openDeal(context, { authorization: withKey, cookies: [], body });
+    const response = await openDeal(context, { authorization: withKey, body });
 
     expect(response.statusCode).toBe(201);
     const opened = JSON.parse(String(response.body)) as {
@@ -102,7 +104,6 @@ describe('openDeal', () => {
   it('refuses a caller without an API key', async () => {
     const response = await openDeal(context, {
       authorization: 'Bearer token-1',
-      cookies: [],
       body,
     });
     expect(response.statusCode).toBe(401);
@@ -112,8 +113,7 @@ describe('openDeal', () => {
     signedInAs('approved');
 
     const response = await openDeal(context, {
-      authorization: undefined,
-      cookies: sessionCookies,
+      authorization: sessionAuthorization,
       body,
     });
 
@@ -128,8 +128,7 @@ describe('openDeal', () => {
     signedInAs('pending');
 
     const response = await openDeal(context, {
-      authorization: undefined,
-      cookies: sessionCookies,
+      authorization: sessionAuthorization,
       body,
     });
 
@@ -140,7 +139,6 @@ describe('openDeal', () => {
   it('refuses a deal without a mandate', async () => {
     const response = await openDeal(context, {
       authorization: withKey,
-      cookies: [],
       body: JSON.stringify({ goal: 'A bottle' }),
     });
     expect(response.statusCode).toBe(400);
@@ -151,7 +149,7 @@ describe('openDeal', () => {
       .on(UpdateCommand)
       .rejects(new ConditionalCheckFailedException({ message: 'limit', $metadata: {} }));
 
-    const response = await openDeal(context, { authorization: withKey, cookies: [], body });
+    const response = await openDeal(context, { authorization: withKey, body });
 
     expect(response.statusCode).toBe(429);
     expect(stepFunctions.commandCalls(StartExecutionCommand)).toHaveLength(0);
@@ -167,7 +165,6 @@ describe('readDeal', () => {
     const response = await readDeal(context, {
       dealId: 'deal-1',
       authorization: withKey,
-      cookies: [],
       body: '',
     });
 
@@ -186,8 +183,7 @@ describe('readDeal', () => {
 
     const response = await readDeal(context, {
       dealId: 'deal-1',
-      authorization: undefined,
-      cookies: sessionCookies,
+      authorization: sessionAuthorization,
       body: '',
     });
 
@@ -201,7 +197,6 @@ describe('readDeal', () => {
     const response = await readDeal(context, {
       dealId: 'deal-1',
       authorization: withKey,
-      cookies: [],
       body: '',
     });
 
@@ -214,7 +209,6 @@ describe('submitEvidence', () => {
   const request = {
     dealId: 'deal-1',
     authorization: withKey,
-    cookies: [],
     body: JSON.stringify(evidence),
   };
 

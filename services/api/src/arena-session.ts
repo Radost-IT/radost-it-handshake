@@ -1,22 +1,25 @@
 import type { ArenaMailConfig } from '@handshake/config';
 import type { SFNClient } from '@aws-sdk/client-sfn';
 import {
-  findSessionAccountId,
+  findAccessTokenAccountId,
   getAccount,
   getChallenger,
   type Account,
   type Challenger,
+  type SessionTokens,
   type StoreTable,
 } from '@handshake/store';
 import type { APIGatewayProxyStructuredResultV2 } from 'aws-lambda';
-import { hashToken, json } from './http';
+import { z } from 'zod';
+import { hashToken, json, readBearerToken } from './http';
 
 export interface ArenaApiContext {
   table: StoreTable;
   now: () => Date;
   newChallengerId: () => string;
-  /** A random, unguessable token. Only its hash is stored. */
+  /** A random, unguessable secret for session tokens. Only hashes of the tokens are stored. */
   newSessionToken: () => string;
+  newSessionId: () => string;
   /** Six random digits for the sign-in email. Only their hash is stored. */
   newSignInCode: () => string;
   newAttemptId: () => string;
@@ -27,22 +30,54 @@ export interface ArenaApiContext {
   mail: ArenaMailConfig;
 }
 
-// The __Host- prefix makes browsers refuse the cookie unless it is Secure,
-// host-only and set for the whole path, so no other subdomain can plant one.
-export const SESSION_COOKIE = '__Host-handshake_account';
-export const SESSION_DAYS = 90;
-const DAY_SECONDS = 24 * 60 * 60;
+/** Access tokens carry this prefix, so the Deal API can tell them from API keys and deal tokens. */
+export const ACCESS_TOKEN_PREFIX = 'hs_session_';
+const ACCESS_TOKEN_MS = 60 * 60 * 1000;
+const REFRESH_TOKEN_MS = 30 * 24 * 60 * 60 * 1000;
 
-export function sessionCookie(token: string): string {
-  return `${SESSION_COOKIE}=${token}; Max-Age=${SESSION_DAYS * DAY_SECONDS}; Path=/; Secure; HttpOnly; SameSite=Lax`;
+/** What the browser keeps after signing in. */
+export interface IssuedTokens {
+  accessToken: string;
+  refreshToken: string;
+  accessTokenExpiresAt: string;
 }
 
-export const expiredSessionCookie = `${SESSION_COOKIE}=; Max-Age=0; Path=/; Secure; HttpOnly; SameSite=Lax`;
+/** New tokens for the session, and the hashes the store keeps of them. */
+export function issueSessionTokens(
+  context: ArenaApiContext,
+  sessionId: string,
+  now: Date,
+): { issued: IssuedTokens; stored: SessionTokens } {
+  const accessToken = `${ACCESS_TOKEN_PREFIX}${context.newSessionToken()}`;
+  const refreshToken = `${sessionId}.${context.newSessionToken()}`;
+  const accessExpiresAt = new Date(now.getTime() + ACCESS_TOKEN_MS);
+  return {
+    issued: { accessToken, refreshToken, accessTokenExpiresAt: accessExpiresAt.toISOString() },
+    stored: {
+      sessionId,
+      refreshTokenHash: hashToken(refreshToken),
+      refreshExpiresAt: new Date(now.getTime() + REFRESH_TOKEN_MS),
+      accessTokenHash: hashToken(accessToken),
+      accessExpiresAt,
+    },
+  };
+}
 
-/** API Gateway passes cookies as `name=value` strings. */
-export function readSessionToken(cookies: readonly string[]): string | undefined {
-  const prefix = `${SESSION_COOKIE}=`;
-  return cookies.find((cookie) => cookie.startsWith(prefix))?.slice(prefix.length) || undefined;
+const refreshTokenSchema = z
+  .string()
+  .regex(/^[\w-]{1,64}\.[\w-]{1,128}$/)
+  .transform((token) => ({ sessionId: token.slice(0, token.indexOf('.')), token }));
+
+/** The session a refresh token belongs to, or undefined for a malformed one. */
+export function readRefreshToken(token: unknown): { sessionId: string; token: string } | undefined {
+  const parsed = refreshTokenSchema.safeParse(token);
+  return parsed.success ? parsed.data : undefined;
+}
+
+/** The access token in an `Authorization: Bearer` header, or undefined for any other credential. */
+export function readAccessToken(authorization: string | undefined): string | undefined {
+  const token = readBearerToken(authorization);
+  return token?.startsWith(ACCESS_TOKEN_PREFIX) ? token : undefined;
 }
 
 type Lookup<T> = { found: true } & T;
@@ -55,11 +90,11 @@ const refuse = (statusCode: number, error: string): Refusal => ({
 
 export async function findSessionAccount(
   context: ArenaApiContext,
-  cookies: readonly string[],
+  authorization: string | undefined,
 ): Promise<Lookup<{ account: Account }> | Refusal> {
-  const token = readSessionToken(cookies);
+  const token = readAccessToken(authorization);
   if (!token) return refuse(401, 'Sign in with your email first');
-  const accountId = await findSessionAccountId(context.table, hashToken(token), context.now());
+  const accountId = await findAccessTokenAccountId(context.table, hashToken(token), context.now());
   const account = accountId ? await getAccount(context.table, accountId) : undefined;
   if (!account) return refuse(401, 'Your session has ended. Sign in again');
   return { found: true, account };
@@ -68,9 +103,9 @@ export async function findSessionAccount(
 /** The challenger of a signed-in, approved account that has picked a handle. */
 export async function findSessionChallenger(
   context: ArenaApiContext,
-  cookies: readonly string[],
+  authorization: string | undefined,
 ): Promise<Lookup<{ challenger: Challenger }> | Refusal> {
-  const session = await findSessionAccount(context, cookies);
+  const session = await findSessionAccount(context, authorization);
   if (!session.found) return session;
   const { account } = session;
   if (account.access !== 'approved') return refuse(403, 'Your arena access is not approved');

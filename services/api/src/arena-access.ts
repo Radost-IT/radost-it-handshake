@@ -10,9 +10,9 @@ import { findSessionAccount, type ArenaApiContext } from './arena-session';
 /** The signed-in account, its access status and its challenger once it has one. */
 export async function getAccountFromSession(
   context: ArenaApiContext,
-  cookies: readonly string[],
+  authorization: string | undefined,
 ): Promise<APIGatewayProxyStructuredResultV2> {
-  const session = await findSessionAccount(context, cookies);
+  const session = await findSessionAccount(context, authorization);
   if (!session.found) return session.response;
   const { account } = session;
   const challenger = account.challengerId
@@ -30,9 +30,9 @@ const accessRequestBodySchema = z.object({ reason: z.string().max(MAX_ACCESS_REA
 /** Stores why the person wants to join and emails the request to the admin. */
 export async function requestAccessFromSession(
   context: ArenaApiContext,
-  request: { body: string; cookies: readonly string[] },
+  request: { body: string; authorization: string | undefined },
 ): Promise<APIGatewayProxyStructuredResultV2> {
-  const session = await findSessionAccount(context, request.cookies);
+  const session = await findSessionAccount(context, request.authorization);
   if (!session.found) return session.response;
   const parsed = accessRequestBodySchema.safeParse(parseJson(request.body));
   if (!parsed.success) return json(400, { error: 'Send a JSON body with a reason' });

@@ -336,7 +336,6 @@ export class HandshakeStack extends Stack {
         allowOrigins: [`https://${props.domains.web}`],
         allowMethods: [CorsHttpMethod.GET, CorsHttpMethod.POST],
         allowHeaders: ['authorization', 'content-type'],
-        allowCredentials: true,
         maxAge: Duration.hours(1),
       },
     });
@@ -407,6 +406,7 @@ export class HandshakeStack extends Stack {
     for (const path of [
       '/arena/sign-in',
       '/arena/sign-in/verify',
+      '/arena/session/refresh',
       '/arena/sign-out',
       '/arena/access-requests',
       '/arena/challengers',

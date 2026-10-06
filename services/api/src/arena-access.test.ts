@@ -6,7 +6,7 @@ import { getAccountFromSession, requestAccessFromSession } from './arena-access'
 import {
   arenaTestContext,
   mockSignedIn,
-  sessionCookies,
+  sessionAuthorization,
   testAccount,
   stubZeptoMail,
 } from './arena-test-context';
@@ -21,7 +21,10 @@ const newAccount = {
   access: 'none',
 };
 const ask = (reason: string) =>
-  requestAccessFromSession(context, { body: JSON.stringify({ reason }), cookies: sessionCookies });
+  requestAccessFromSession(context, {
+    body: JSON.stringify({ reason }),
+    authorization: sessionAuthorization,
+  });
 
 beforeEach(() => {
   dynamodb.reset();
@@ -36,7 +39,7 @@ describe('getAccountFromSession', () => {
   it('returns the access status and the challenger', async () => {
     mockSignedIn(dynamodb);
 
-    const response = await getAccountFromSession(context, sessionCookies);
+    const response = await getAccountFromSession(context, sessionAuthorization);
 
     expect(JSON.parse(response.body ?? '')).toMatchObject({
       email: 'ada@example.com',
@@ -48,13 +51,13 @@ describe('getAccountFromSession', () => {
   it('returns no challenger before a handle is picked', async () => {
     mockSignedIn(dynamodb, newAccount);
 
-    const response = await getAccountFromSession(context, sessionCookies);
+    const response = await getAccountFromSession(context, sessionAuthorization);
 
     expect(JSON.parse(response.body ?? '')).toMatchObject({ access: 'none', challenger: null });
   });
 
   it('asks to sign in without a session', async () => {
-    const response = await getAccountFromSession(context, []);
+    const response = await getAccountFromSession(context, undefined);
 
     expect(response.statusCode).toBe(401);
   });

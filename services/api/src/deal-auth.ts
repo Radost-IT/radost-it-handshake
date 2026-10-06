@@ -1,31 +1,27 @@
 import {
   API_KEY_PREFIX,
+  findAccessTokenAccountId,
   findApiKey,
-  findSessionAccountId,
   getAccount,
   hasDealAccess,
   isDealOwner,
   type StoreTable,
 } from '@handshake/store';
 import type { APIGatewayProxyStructuredResultV2 } from 'aws-lambda';
-import { readSessionToken } from './arena-session';
-import { hashToken, json } from './http';
+import { readAccessToken } from './arena-session';
+import { hashToken, json, readBearerToken } from './http';
 
 /** What a Deal API request carries to prove who sends it. */
 export interface DealCredentials {
-  /** The Authorization header: an API key or a deal access token. */
+  /**
+   * The Authorization header: an API key, a deal access token, or the console's
+   * session access token for a signed-in, approved account.
+   */
   authorization: string | undefined;
-  /** The console sends the session cookie of a signed-in, approved account instead. */
-  cookies: readonly string[];
 }
 
 export interface Developer {
   developerId: string;
-}
-
-export function readBearerToken(authorization: string | undefined): string | undefined {
-  const match = /^Bearer (\S+)$/.exec(authorization ?? '');
-  return match?.[1];
 }
 
 // Account developers get their own prefix, so they never share deals with an API key.
@@ -33,12 +29,10 @@ const accountDeveloperId = (accountId: string) => `account:${accountId}`;
 
 async function findSessionDeveloper(
   table: StoreTable,
-  cookies: readonly string[],
+  token: string,
   now: Date,
 ): Promise<Developer | undefined> {
-  const token = readSessionToken(cookies);
-  if (!token) return undefined;
-  const accountId = await findSessionAccountId(table, hashToken(token), now);
+  const accountId = await findAccessTokenAccountId(table, hashToken(token), now);
   const account = accountId ? await getAccount(table, accountId) : undefined;
   return account?.access === 'approved'
     ? { developerId: accountDeveloperId(account.id) }
@@ -46,17 +40,18 @@ async function findSessionDeveloper(
 }
 
 /**
- * The developer behind the request: the owner of the API key in the
- * Authorization header, or else the approved account of the session cookie.
+ * The developer behind the request: the approved account of a session access
+ * token, or else the owner of the API key.
  */
 export async function findDeveloper(
   table: StoreTable,
   credentials: DealCredentials,
   now: Date,
 ): Promise<Developer | undefined> {
+  const sessionToken = readAccessToken(credentials.authorization);
+  if (sessionToken !== undefined) return findSessionDeveloper(table, sessionToken, now);
   const token = readBearerToken(credentials.authorization);
-  if (token !== undefined) return findApiKey(table, token);
-  return findSessionDeveloper(table, credentials.cookies, now);
+  return token === undefined ? undefined : findApiKey(table, token);
 }
 
 /**
@@ -75,7 +70,7 @@ export async function refuseDealAccess(
   now: Date,
 ): Promise<APIGatewayProxyStructuredResultV2 | undefined> {
   const token = readBearerToken(credentials.authorization);
-  if (token === undefined && readSessionToken(credentials.cookies) === undefined) {
+  if (token === undefined) {
     return json(401, { error: 'Send an API key or the deal access token' });
   }
   // A wrong token and an unknown deal look the same, so tokens cannot be used to find deals.
@@ -96,9 +91,11 @@ async function canActOnDeal(
   now: Date,
 ): Promise<boolean> {
   const token = readBearerToken(credentials.authorization);
-  if (token !== undefined && !isSignedWithApiKey(credentials)) {
-    return hasDealAccess(table, dealId, hashToken(token));
-  }
+  const isDealToken =
+    token !== undefined &&
+    !isSignedWithApiKey(credentials) &&
+    readAccessToken(credentials.authorization) === undefined;
+  if (isDealToken) return hasDealAccess(table, dealId, hashToken(token));
   const developer = await findDeveloper(table, credentials, now);
   return developer !== undefined && isDealOwner(table, dealId, developer.developerId);
 }

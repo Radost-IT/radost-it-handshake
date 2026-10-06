@@ -1,4 +1,11 @@
 import { z } from 'zod';
+import {
+  clearSession,
+  fetchWithSession,
+  readSession,
+  sessionTokensSchema,
+  storeSession,
+} from '../account/session';
 import { API_URL } from '../site';
 
 const attemptStatusSchema = z.enum(['running', 'judged', 'failed']);
@@ -129,9 +136,7 @@ export class ArenaApiError extends Error {
 
 /** Sends a POST with `body` as JSON when one is given, a GET otherwise. */
 async function request<T>(path: string, schema: z.ZodType<T>, body?: unknown): Promise<T> {
-  // The session cookie lives on the API domain, so every call must send it.
-  const response = await fetch(`${API_URL}${path}`, {
-    credentials: 'include',
+  const response = await fetchWithSession(`${API_URL}${path}`, {
     ...(body === undefined
       ? {}
       : {
@@ -180,12 +185,10 @@ export async function requestSignInCode(email: string): Promise<void> {
 export async function verifySignInCode(email: string, code: string): Promise<AccessStatus> {
   const verified = await request(
     '/arena/sign-in/verify',
-    z.object({ access: accessStatusSchema }),
-    {
-      email,
-      code,
-    },
+    z.object({ access: accessStatusSchema, session: sessionTokensSchema }),
+    { email, code },
   );
+  storeSession(verified.session);
   return verified.access;
 }
 
@@ -193,9 +196,13 @@ export async function requestAccess(reason: string): Promise<void> {
   await request('/arena/access-requests', z.object({ access: z.literal('pending') }), { reason });
 }
 
+/** Forgets the tokens in this browser at once, then ends the session on the API. */
 export async function signOut(): Promise<void> {
+  const session = readSession();
+  clearSession();
+  if (session === null) return;
   // The API answers 204 with no body.
-  await request('/arena/sign-out', z.null(), {});
+  await request('/arena/sign-out', z.null(), { refreshToken: session.refreshToken });
 }
 
 export function createChallenger(handle: string): Promise<Challenger> {

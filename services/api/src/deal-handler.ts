@@ -27,7 +27,7 @@ const context: DealApiContext = {
 };
 
 export function handler(event: APIGatewayProxyEventV2): Promise<APIGatewayProxyStructuredResultV2> {
-  const credentials = { authorization: event.headers.authorization, cookies: event.cookies ?? [] };
+  const credentials = { authorization: event.headers.authorization };
   switch (event.routeKey) {
     case 'POST /v1/deals':
       return openDeal(context, { ...credentials, body: readBody(event) });

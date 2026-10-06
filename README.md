@@ -40,7 +40,7 @@ pnpm eval                # agent evals in evals/scenarios against Bedrock; write
 
 ## Deal API
 
-Base URL: `https://api-handshake.radostit.com/v1`. Send `authorization: Bearer <key>` and, with a body, `content-type: application/json`; other bodies are ignored, so a cross-site form cannot act with a signed-in session. Create a sandbox key with `pnpm api-keys:create`. The console calls the same routes with the session cookie of a signed-in, approved account instead of a key.
+Base URL: `https://api-handshake.radostit.com/v1`. Send `authorization: Bearer <key>` and, with a body, `content-type: application/json`; other bodies are ignored. Create a sandbox key with `pnpm api-keys:create`. The console calls the same routes with the session access token of a signed-in, approved account instead of a key.
 
 | Route | What it does |
 | --- | --- |
@@ -131,7 +131,7 @@ The console and the lab are open to approved accounts only, because every deal a
 - A visitor goes to `/request-access`, confirms their email with a one-time code, and says what they want to do. Approve or reject requests with `pnpm arena:access`; the visitor gets an email either way.
 - The operator creates five judge accounts with `pnpm accounts:judges`. They are approved from the start and have a fixed code, so no email is sent to them.
 
-Everyone signs in at `/sign-in` with an email and a six-digit code; there are no passwords. Emailed codes work once, expire after 10 minutes and lock after five wrong tries. Each email may check 20 codes a day and each network 30 an hour, which keeps guessing a judge's fixed code hopeless. Sign-in emails stop for the day after 300. The session is an `HttpOnly` cookie on the API domain that lasts 90 days.
+Everyone signs in at `/sign-in` with an email and a six-digit code; there are no passwords. Emailed codes work once, expire after 10 minutes and lock after five wrong tries. Each email may check 20 codes a day and each network 30 an hour, which keeps guessing a judge's fixed code hopeless. Sign-in emails stop for the day after 300. Signing in returns two tokens, the same way radost-it-forge does it. An access token signs each API call and lasts one hour. A refresh token lasts 30 days and is swapped for a new pair at `POST /arena/session/refresh` whenever the access token runs out. A refresh token that was already swapped ends the whole session, because only a stolen copy would come back. Signing out deletes the session on the API, so neither token works afterwards. The API stores only hashes of the tokens.
 
 The lab pages call the deployed API at https://api-handshake.radostit.com, which accepts browser calls only from the hosted site. They do not work from `pnpm dev`.
 

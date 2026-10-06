@@ -1,6 +1,11 @@
 import type { APIGatewayProxyEventV2, APIGatewayProxyStructuredResultV2 } from 'aws-lambda';
 import { createHash } from 'node:crypto';
 
+export function readBearerToken(authorization: string | undefined): string | undefined {
+  const match = /^Bearer (\S+)$/.exec(authorization ?? '');
+  return match?.[1];
+}
+
 /** Session and deal access tokens are stored only as this hash. */
 export function hashToken(token: string): string {
   return createHash('sha256').update(token).digest('hex');
@@ -9,7 +14,7 @@ export function hashToken(token: string): string {
 /**
  * The body of a JSON request, or an empty string for any other content type.
  * A cross-site HTML form can only send form or plain-text bodies without a
- * CORS preflight, so ignoring them stops it from acting with the session cookie.
+ * CORS preflight, so ignoring them keeps such forms from calling the API.
  */
 export function readBody(event: APIGatewayProxyEventV2): string {
   const contentType = event.headers['content-type'] ?? '';

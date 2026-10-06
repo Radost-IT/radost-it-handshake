@@ -251,6 +251,7 @@ describe('HandshakeStack', () => {
     for (const routeKey of [
       'POST /arena/sign-in',
       'POST /arena/sign-in/verify',
+      'POST /arena/session/refresh',
       'POST /arena/sign-out',
       'GET /arena/account',
       'POST /arena/access-requests',
@@ -261,7 +262,7 @@ describe('HandshakeStack', () => {
     template.hasResourceProperties('AWS::ApiGatewayV2::Api', {
       CorsConfiguration: Match.objectLike({
         AllowOrigins: ['https://test-handshake.radostit.com'],
-        AllowCredentials: true,
+        AllowHeaders: ['authorization', 'content-type'],
       }),
     });
   });

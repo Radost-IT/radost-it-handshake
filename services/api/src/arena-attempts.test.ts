@@ -14,7 +14,7 @@ import { hashToken } from './http';
 import {
   arenaTestContext,
   mockSignedIn,
-  sessionCookies,
+  sessionAuthorization,
   testArenaRunArn,
 } from './arena-test-context';
 
@@ -28,7 +28,7 @@ const budgetKey = { pk: 'BUDGET#2026-10-03', sk: 'TOKENS' };
 const arenaBudgetKey = { pk: 'BUDGET#2026-10-03', sk: 'ARENA' };
 const request = (body: unknown) => ({
   body: JSON.stringify(body),
-  cookies: sessionCookies,
+  authorization: sessionAuthorization,
   sourceIp: '203.0.113.7',
 });
 const attack = {
@@ -127,7 +127,7 @@ describe('submitAttempt', () => {
   });
 
   it('asks for a handle without a session', async () => {
-    const response = await submitAttempt(context, { ...request(attack), cookies: [] });
+    const response = await submitAttempt(context, { ...request(attack), authorization: undefined });
 
     expect(response.statusCode).toBe(401);
     expect(stepFunctions.calls()).toHaveLength(0);

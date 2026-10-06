@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { API_URL } from '../site';
+import { fetchWithSession } from '../account/session';
 
 const moneySchema = z.object({ currency: z.string(), value: z.string() });
 
@@ -150,15 +151,17 @@ export async function callDealApi<T>(
   schema: z.ZodType<T>,
   body?: unknown,
 ): Promise<T> {
-  const response = await fetch(`${API_URL}/v1${path}`, {
-    // The session cookie lives on the API domain, so the call must send it.
-    credentials: 'include',
+  const init = {
     headers: {
       ...(credential === null ? {} : { authorization: `Bearer ${credential}` }),
       ...(body === undefined ? {} : { 'content-type': 'application/json' }),
     },
     ...(body === undefined ? {} : { method: 'POST', body: JSON.stringify(body) }),
-  });
+  };
+  const url = `${API_URL}/v1${path}`;
+  const response = await (credential === null
+    ? fetchWithSession(url, init)
+    : fetch(url, { ...init, cache: 'no-store' }));
   const responseBody: unknown = await response.json().catch(() => null);
   if (!response.ok) {
     const error = errorBodySchema.safeParse(responseBody);

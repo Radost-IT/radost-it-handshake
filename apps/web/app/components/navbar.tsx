@@ -2,7 +2,45 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import { onSessionChange, readSession } from '../account/session';
+import { signOut } from '../arena/api';
 import { ThemeToggle } from './theme-toggle';
+
+const NAV_LINK_CLASS = 'text-muted hover:text-ink text-sm font-semibold';
+
+function SessionLink() {
+  const [isSignedIn, setIsSignedIn] = useState(false);
+
+  useEffect(() => {
+    const update = () => {
+      setIsSignedIn(readSession() !== null);
+    };
+    update();
+    return onSessionChange(update);
+  }, []);
+
+  if (!isSignedIn) {
+    return (
+      <Link href="/sign-in" className={NAV_LINK_CLASS}>
+        Sign in
+      </Link>
+    );
+  }
+  return (
+    <button
+      type="button"
+      className={NAV_LINK_CLASS}
+      onClick={() => {
+        // A full page load drops every view that still shows the signed-in account.
+        void signOut().finally(() => {
+          window.location.assign('/');
+        });
+      }}
+    >
+      Sign out
+    </button>
+  );
+}
 
 export function Navbar() {
   const [scrolled, setScrolled] = useState(false);
@@ -45,9 +83,7 @@ export function Navbar() {
           <Link href="/evals" className="text-muted hover:text-ink text-sm font-semibold">
             Evals
           </Link>
-          <Link href="/sign-in" className="text-muted hover:text-ink text-sm font-semibold">
-            Sign in
-          </Link>
+          <SessionLink />
           <ThemeToggle />
         </div>
       </nav>

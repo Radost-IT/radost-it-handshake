@@ -5,7 +5,7 @@ import { newChallengerProgress } from '@handshake/arena';
 import type { AwsClientStub } from 'aws-sdk-client-mock';
 import { vi } from 'vitest';
 import { hashToken } from './http';
-import { SESSION_COOKIE, type ArenaApiContext } from './arena-session';
+import type { ArenaApiContext } from './arena-session';
 
 export const testArenaRunArn =
   'arn:aws:states:eu-west-1:123456789012:stateMachine:Handshake-prod-ArenaRun';
@@ -16,6 +16,7 @@ export function arenaTestContext(now: string): ArenaApiContext {
     now: () => new Date(now),
     newChallengerId: () => 'challenger-1',
     newSessionToken: () => 'token-1',
+    newSessionId: () => 'session-1',
     newSignInCode: () => '123456',
     newAttemptId: () => 'attempt-1',
     stepFunctions: new SFNClient({}),
@@ -29,7 +30,7 @@ export function arenaTestContext(now: string): ArenaApiContext {
   };
 }
 
-export const sessionCookies = [`${SESSION_COOKIE}=token-1`];
+export const sessionAuthorization = 'Bearer hs_session_token-1';
 
 export const testAccount = {
   id: 'account-1',
@@ -39,13 +40,13 @@ export const testAccount = {
   challengerId: 'challenger-1',
 };
 
-/** Mocks the reads behind `token-1`: its session, the account and the account's challenger. */
+/** Mocks the reads behind `hs_session_token-1`: its access token, the account and the account's challenger. */
 export function mockSignedIn(
   dynamodb: AwsClientStub<DynamoDBDocumentClient>,
   account: Record<string, unknown> = testAccount,
 ): void {
   dynamodb
-    .on(GetCommand, { Key: { pk: `SESSION#${hashToken('token-1')}`, sk: 'META' } })
+    .on(GetCommand, { Key: { pk: `ACCESS_TOKEN#${hashToken('hs_session_token-1')}`, sk: 'META' } })
     .resolves({ Item: { accountId: 'account-1', ttl: 1_900_000_000 } });
   dynamodb
     .on(GetCommand, { Key: { pk: 'ACCOUNT#account-1', sk: 'META' } })

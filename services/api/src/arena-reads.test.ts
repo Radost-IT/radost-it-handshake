@@ -2,7 +2,7 @@ import { BatchGetCommand, DynamoDBDocumentClient, QueryCommand } from '@aws-sdk/
 import { mockClient } from 'aws-sdk-client-mock';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { getLeaderboardPage, getMyAttempts, getStats } from './arena-reads';
-import { arenaTestContext, mockSignedIn, sessionCookies } from './arena-test-context';
+import { arenaTestContext, mockSignedIn, sessionAuthorization } from './arena-test-context';
 
 const dynamodb = mockClient(DynamoDBDocumentClient);
 const context = arenaTestContext('2026-10-03T12:30:00Z');
@@ -101,7 +101,7 @@ describe('getMyAttempts', () => {
       Items: [attempt, { ...attempt, id: 'attempt-0', createdAt: '2026-10-03T10:00:00.000Z' }],
     });
 
-    const response = await getMyAttempts(context, sessionCookies);
+    const response = await getMyAttempts(context, sessionAuthorization);
 
     expect(body(response)).toEqual({
       attempts: [
@@ -121,6 +121,6 @@ describe('getMyAttempts', () => {
   });
 
   it('asks for a handle without a session', async () => {
-    expect((await getMyAttempts(context, [])).statusCode).toBe(401);
+    expect((await getMyAttempts(context, undefined)).statusCode).toBe(401);
   });
 });

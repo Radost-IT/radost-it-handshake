@@ -3,12 +3,17 @@ import { DynamoDBDocumentClient, TransactWriteCommand } from '@aws-sdk/lib-dynam
 import { mockClient } from 'aws-sdk-client-mock';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { createChallengerFromRequest } from './arena-challengers';
-import { arenaTestContext, mockSignedIn, sessionCookies, testAccount } from './arena-test-context';
+import {
+  arenaTestContext,
+  mockSignedIn,
+  sessionAuthorization,
+  testAccount,
+} from './arena-test-context';
 
 const dynamodb = mockClient(DynamoDBDocumentClient);
 const context = arenaTestContext('2026-10-02T12:00:00Z');
 const pick = (body: string) =>
-  createChallengerFromRequest(context, { body, cookies: sessionCookies });
+  createChallengerFromRequest(context, { body, authorization: sessionAuthorization });
 const cancelled = (codes: string[]) =>
   new TransactionCanceledException({
     message: 'Transaction cancelled',
@@ -42,7 +47,7 @@ describe('createChallengerFromRequest', () => {
   it('asks to sign in without a session', async () => {
     const response = await createChallengerFromRequest(context, {
       body: '{"handle":"Tester"}',
-      cookies: [],
+      authorization: undefined,
     });
 
     expect(response.statusCode).toBe(401);

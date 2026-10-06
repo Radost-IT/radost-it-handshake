@@ -4,13 +4,14 @@ import {
   DynamoDBDocumentClient,
   GetCommand,
   PutCommand,
+  TransactWriteCommand,
   UpdateCommand,
 } from '@aws-sdk/lib-dynamodb';
 import { mockClient } from 'aws-sdk-client-mock';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { accountIdForEmail, hashSignInCode } from '@handshake/store';
-import { requestSignInCode, signOut, verifySignInCode } from './arena-sign-in';
-import { arenaTestContext, sessionCookies, testAccount, stubZeptoMail } from './arena-test-context';
+import { refreshSession, requestSignInCode, signOut, verifySignInCode } from './arena-sign-in';
+import { arenaTestContext, testAccount, stubZeptoMail } from './arena-test-context';
 import { hashToken } from './http';
 
 const dynamodb = mockClient(DynamoDBDocumentClient);
@@ -109,27 +110,46 @@ describe('requestSignInCode', () => {
   });
 });
 
+const issuedTokens = {
+  accessToken: 'hs_session_token-1',
+  refreshToken: 'session-1.token-1',
+  accessTokenExpiresAt: '2026-10-03T13:30:00.000Z',
+};
+
 describe('verifySignInCode', () => {
   const live = { codeHash: hashToken(`${accountId}:123456`), failedChecks: 0, ttl: 1_900_000_000 };
 
-  it('opens a session for a valid code and sets the cookie', async () => {
+  it('opens a session for a valid code and returns its tokens', async () => {
     dynamodb.on(GetCommand, { Key: { pk: `SIGNIN#${accountId}`, sk: 'META' } }).resolves({
       Item: live,
     });
     dynamodb.on(DeleteCommand).resolves({});
     dynamodb.on(UpdateCommand).resolves({ Attributes: { ...testAccount, access: 'none' } });
+    dynamodb.on(TransactWriteCommand).resolves({});
 
     const response = await verify({ email: 'ada@example.com', code: '123456' });
 
     expect(response.statusCode).toBe(200);
-    expect(JSON.parse(response.body ?? '')).toEqual({ access: 'none' });
-    expect(response.cookies?.[0]).toMatch(
-      /^__Host-handshake_account=token-1; Max-Age=7776000; Path=\/; Secure; HttpOnly/,
-    );
-    expect(dynamodb.commandCalls(PutCommand)[0]?.args[0].input.Item).toMatchObject({
-      pk: `SESSION#${hashToken('token-1')}`,
-      accountId,
-    });
+    expect(response.cookies).toBeUndefined();
+    expect(JSON.parse(response.body ?? '')).toEqual({ access: 'none', session: issuedTokens });
+    const writes = dynamodb.commandCalls(TransactWriteCommand)[0]?.args[0].input.TransactItems;
+    expect(writes?.map((write) => write.Put?.Item)).toEqual([
+      {
+        pk: 'SESSION#session-1',
+        sk: 'META',
+        accountId,
+        refreshTokenHash: hashToken('session-1.token-1'),
+        accessTokenHash: hashToken('hs_session_token-1'),
+        ttl: Date.parse('2026-11-02T12:30:00Z') / 1000,
+      },
+      {
+        pk: `ACCESS_TOKEN#${hashToken('hs_session_token-1')}`,
+        sk: 'META',
+        accountId,
+        sessionId: 'session-1',
+        ttl: Date.parse('2026-10-03T13:30:00Z') / 1000,
+      },
+    ]);
   });
 
   it('explains a wrong code without opening a session', async () => {
@@ -141,19 +161,23 @@ describe('verifySignInCode', () => {
 
     expect(response.statusCode).toBe(400);
     expect(JSON.parse(response.body ?? '')).toEqual({ error: 'This code is wrong' });
-    expect(dynamodb.commandCalls(PutCommand)).toHaveLength(0);
+    expect(dynamodb.commandCalls(TransactWriteCommand)).toHaveLength(0);
   });
 
   it('signs a judge in with the fixed code, which works again', async () => {
     mockJudgeAccount();
     dynamodb.on(UpdateCommand).resolves({ Attributes: { ...testAccount, access: 'approved' } });
+    dynamodb.on(TransactWriteCommand).resolves({});
 
     const first = await verify({ email: 'Judge-1@Example.com', code: '424242' });
     const second = await verify({ email: 'judge-1@example.com', code: '424242' });
 
     for (const response of [first, second]) {
       expect(response.statusCode).toBe(200);
-      expect(response.cookies?.[0]).toMatch(/^__Host-handshake_account=token-1;/);
+      expect(JSON.parse(response.body ?? '')).toEqual({
+        access: 'approved',
+        session: issuedTokens,
+      });
     }
     expect(dynamodb.commandCalls(DeleteCommand)).toHaveLength(0);
   });
@@ -164,7 +188,7 @@ describe('verifySignInCode', () => {
     const response = await verify({ email: 'judge-1@example.com', code: '123456' });
 
     expect(response.statusCode).toBe(400);
-    expect(dynamodb.commandCalls(PutCommand)).toHaveLength(0);
+    expect(dynamodb.commandCalls(TransactWriteCommand)).toHaveLength(0);
   });
 
   it('limits tries per email and per network before reading the code', async () => {
@@ -181,17 +205,81 @@ describe('verifySignInCode', () => {
   });
 });
 
-describe('signOut', () => {
-  it('deletes the session and clears the cookie', async () => {
-    dynamodb.on(DeleteCommand).resolves({});
+const mockStoredSession = (refreshToken = 'session-1.token-1') => {
+  dynamodb.on(GetCommand, { Key: { pk: 'SESSION#session-1', sk: 'META' } }).resolves({
+    Item: {
+      accountId,
+      refreshTokenHash: hashToken(refreshToken),
+      accessTokenHash: 'old-access-hash',
+      ttl: 1_900_000_000,
+    },
+  });
+};
+const refresh = (refreshToken: unknown) =>
+  refreshSession(context, JSON.stringify({ refreshToken }));
 
-    const response = await signOut(context, sessionCookies);
+describe('refreshSession', () => {
+  it('swaps the refresh token for a new pair and drops the old access token', async () => {
+    mockStoredSession('session-1.old-secret');
+    dynamodb.on(TransactWriteCommand).resolves({});
+
+    const response = await refresh('session-1.old-secret');
+
+    expect(response.statusCode).toBe(200);
+    expect(JSON.parse(response.body ?? '')).toEqual({ session: issuedTokens });
+    const writes = dynamodb.commandCalls(TransactWriteCommand)[0]?.args[0].input.TransactItems;
+    expect(writes?.[0]?.Update?.ConditionExpression).toBe('refreshTokenHash = :presented');
+    expect(writes?.[0]?.Update?.ExpressionAttributeValues).toMatchObject({
+      ':presented': hashToken('session-1.old-secret'),
+      ':next': hashToken('session-1.token-1'),
+    });
+    expect(writes?.[2]?.Delete?.Key).toEqual({ pk: 'ACCESS_TOKEN#old-access-hash', sk: 'META' });
+  });
+
+  it('ends the whole session when an old refresh token comes back', async () => {
+    mockStoredSession('session-1.current-secret');
+    dynamodb.on(TransactWriteCommand).resolves({});
+
+    const response = await refresh('session-1.stolen-secret');
+
+    expect(response.statusCode).toBe(401);
+    const writes = dynamodb.commandCalls(TransactWriteCommand)[0]?.args[0].input.TransactItems;
+    expect(writes?.map((write) => write.Delete?.Key)).toEqual([
+      { pk: 'SESSION#session-1', sk: 'META' },
+      { pk: 'ACCESS_TOKEN#old-access-hash', sk: 'META' },
+    ]);
+  });
+
+  it('refuses an unknown session and a malformed token', async () => {
+    dynamodb.on(GetCommand).resolves({});
+
+    expect((await refresh('session-1.token-1')).statusCode).toBe(401);
+    expect((await refresh('not a token')).statusCode).toBe(401);
+    expect(dynamodb.commandCalls(TransactWriteCommand)).toHaveLength(0);
+  });
+});
+
+describe('signOut', () => {
+  it('deletes the session and its access token', async () => {
+    mockStoredSession();
+    dynamodb.on(TransactWriteCommand).resolves({});
+
+    const response = await signOut(context, JSON.stringify({ refreshToken: 'session-1.token-1' }));
 
     expect(response.statusCode).toBe(204);
-    expect(response.cookies?.[0]).toContain('Max-Age=0');
-    expect(dynamodb.commandCalls(DeleteCommand)[0]?.args[0].input.Key).toEqual({
-      pk: `SESSION#${hashToken('token-1')}`,
-      sk: 'META',
-    });
+    const writes = dynamodb.commandCalls(TransactWriteCommand)[0]?.args[0].input.TransactItems;
+    expect(writes?.map((write) => write.Delete?.Key)).toEqual([
+      { pk: 'SESSION#session-1', sk: 'META' },
+      { pk: 'ACCESS_TOKEN#old-access-hash', sk: 'META' },
+    ]);
+  });
+
+  it('leaves the session alone for a refresh token that is not its current one', async () => {
+    mockStoredSession();
+
+    const response = await signOut(context, JSON.stringify({ refreshToken: 'session-1.guess' }));
+
+    expect(response.statusCode).toBe(204);
+    expect(dynamodb.commandCalls(TransactWriteCommand)).toHaveLength(0);
   });
 });

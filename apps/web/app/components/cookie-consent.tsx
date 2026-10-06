@@ -53,9 +53,9 @@ export function CookieConsent() {
             Cookie settings
           </p>
           <p className="text-muted mt-2 text-sm">
-            We only use functional cookies to run the app, keep your Red Team Lab session and
-            protect it from abuse. Our page statistics use no cookies. We use no preference or
-            marketing cookies.
+            We only use functional cookies and browser storage to run the app, keep you signed in
+            and protect the app from abuse. Our page statistics use no cookies. We use no preference
+            or marketing cookies.
           </p>
           <div className="mt-4 flex justify-end">
             <button

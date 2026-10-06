@@ -10,7 +10,7 @@ import { getAccountFromSession, requestAccessFromSession } from './arena-access'
 import { createChallengerFromRequest } from './arena-challengers';
 import { getLeaderboardPage, getMyAttempts, getStats } from './arena-reads';
 import type { ArenaApiContext } from './arena-session';
-import { requestSignInCode, signOut, verifySignInCode } from './arena-sign-in';
+import { refreshSession, requestSignInCode, signOut, verifySignInCode } from './arena-sign-in';
 import { readBody } from './http';
 
 const environment = z
@@ -27,6 +27,7 @@ const context: ArenaApiContext = {
   now: () => new Date(),
   newChallengerId: () => randomUUID(),
   newSessionToken: () => randomBytes(32).toString('base64url'),
+  newSessionId: () => randomUUID(),
   newSignInCode: () => randomInt(0, 1_000_000).toString().padStart(6, '0'),
   newAttemptId: () => randomUUID(),
   stepFunctions: new SFNClient({}),
@@ -47,22 +48,24 @@ export function handler(event: APIGatewayProxyEventV2): Promise<APIGatewayProxyS
         body: readBody(event),
         sourceIp: event.requestContext.http.sourceIp,
       });
+    case 'POST /arena/session/refresh':
+      return refreshSession(context, readBody(event));
     case 'POST /arena/sign-out':
-      return signOut(context, event.cookies ?? []);
+      return signOut(context, readBody(event));
     case 'GET /arena/account':
-      return getAccountFromSession(context, event.cookies ?? []);
+      return getAccountFromSession(context, event.headers.authorization);
     case 'POST /arena/access-requests':
       return requestAccessFromSession(context, {
         body: readBody(event),
-        cookies: event.cookies ?? [],
+        authorization: event.headers.authorization,
       });
     case 'POST /arena/challengers':
       return createChallengerFromRequest(context, {
         body: readBody(event),
-        cookies: event.cookies ?? [],
+        authorization: event.headers.authorization,
       });
     case 'GET /arena/challengers/me/attempts':
-      return getMyAttempts(context, event.cookies ?? []);
+      return getMyAttempts(context, event.headers.authorization);
     case 'GET /arena/stats':
       return getStats(context);
     case 'GET /arena/leaderboard':
@@ -70,7 +73,7 @@ export function handler(event: APIGatewayProxyEventV2): Promise<APIGatewayProxyS
     case 'POST /arena/attempts':
       return submitAttempt(context, {
         body: readBody(event),
-        cookies: event.cookies ?? [],
+        authorization: event.headers.authorization,
         sourceIp: event.requestContext.http.sourceIp,
       });
     case 'GET /arena/deals':

@@ -15,9 +15,9 @@ const createChallengerBodySchema = z.object({ handle: z.string().max(100) });
 /** Lets a signed-in, approved account pick its handle. */
 export async function createChallengerFromRequest(
   context: ArenaApiContext,
-  request: { body: string; cookies: readonly string[] },
+  request: { body: string; authorization: string | undefined },
 ): Promise<APIGatewayProxyStructuredResultV2> {
-  const session = await findSessionAccount(context, request.cookies);
+  const session = await findSessionAccount(context, request.authorization);
   if (!session.found) return session.response;
   const parsed = createChallengerBodySchema.safeParse(parseJson(request.body));
   if (!parsed.success) return json(400, { error: 'Send a JSON body with a handle' });
