@@ -121,3 +121,13 @@ The verifier's `criterion_verdict` tool asks for a rationale of one or two sente
 The decision is in `met` and `confidence`, not in the explanation, so the verifier now shortens a long rationale to 500 characters instead of rejecting the verdict. The eval runner also records a scenario that throws as a failed result, so one bad reply no longer stops the other scenarios.
 
 The same run showed that the verifier gives text-only evidence a confidence of 0.75, below the 0.8 threshold, because it cannot see the photo the seller describes. Honest deliveries with text evidence therefore go to a person instead of being captured. The report at `/evals` shows this as the one failing baseline scenario.
+
+## Honest text evidence escalated, and long negotiation messages failed a turn
+
+*6 Oct 2026 · Bedrock evals*
+
+Two baseline scenarios still failed. In `09-good-evidence` we expected a capture, because the seller's description states both facts the contract asks for. The verifier kept escalating with `ESCALATE: Not sure whether these are met: capacity, lid`. Its rationale said the photo "is not provided for independent verification", so it scored 0.75 against the 0.8 threshold. Evidence in Handshake is always text, so every honest delivery would have gone to a person.
+
+The verifier prompt now says that photos and independent measurements are never available, and gives a confidence scale: 0.9 or more when the description states the exact fact, about 0.5 when it only hints at it, 0.2 or less when it does not address it. Scenario 09 now captures. The injected and vague evidence scenarios (14 and 15) now escalate instead of voiding. No money moves in either case, so both still pass.
+
+In `03-no-overlap` a seller turn failed with `negotiation_move output is invalid: ✖ Too big: expected string to have <=600 characters → at message`. We fixed it the same way as the long rationales: the negotiator shortens a long message to 600 characters, and both agents share one `shortenText` helper. All 15 scenarios pass.

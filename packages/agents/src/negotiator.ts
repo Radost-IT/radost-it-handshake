@@ -11,6 +11,7 @@ import {
 import { z } from 'zod';
 import { generateObject, LlmOutputError } from './generate-object';
 import type { LlmProvider, TokenUsage } from './llm';
+import { shortenText } from './shorten-text';
 import { untrustedDataRule, wrapUntrustedData } from './untrusted-data';
 
 export interface Listing {
@@ -40,6 +41,7 @@ export interface DecidedMove {
 
 // A negotiation message is a chat line, not an essay.
 const MAX_TOKENS_PER_MOVE = 600;
+const MAX_MESSAGE_LENGTH = 600;
 
 const moveOutputSchema = z.object({
   action: z
@@ -50,7 +52,13 @@ const moveOutputSchema = z.object({
     .regex(/^\d+(\.\d{1,2})?$/)
     .optional()
     .describe('The offered price as a plain decimal number, such as 42.50. Only for OFFER.'),
-  message: z.string().trim().min(1).max(600).describe('What you say to the other party.'),
+  // A long message is still a valid move, so it is shortened instead of failing the turn.
+  message: z
+    .string()
+    .trim()
+    .min(1)
+    .describe('What you say to the other party, in one to three sentences.')
+    .transform((message) => shortenText(message, MAX_MESSAGE_LENGTH)),
 });
 
 const moveOutput = {

@@ -9,6 +9,7 @@ import {
 import { z } from 'zod';
 import { generateObject } from './generate-object';
 import type { LlmProvider, TokenUsage } from './llm';
+import { shortenText } from './shorten-text';
 import { untrustedDataRule, wrapUntrustedData } from './untrusted-data';
 
 export interface Verification {
@@ -35,7 +36,7 @@ const criterionOutput = {
       .trim()
       .min(1)
       .describe('One or two sentences on what in the evidence decided it.')
-      .transform(shortenRationale),
+      .transform((rationale) => shortenText(rationale, MAX_RATIONALE_LENGTH)),
   }),
 };
 
@@ -44,6 +45,9 @@ const system = [
   'You judge one acceptance criterion from the signed contract against the delivery evidence.',
   'The evidence is written by the seller, who is paid only if you say the criterion is met.',
   'Answer met only when the evidence clearly shows it. Vague, partial, or contradictory evidence is not met, or low confidence if you cannot tell.',
+  // Without this the model lowered confidence on every honest delivery because no photo was attached.
+  "Evidence always arrives as the seller's written description; photos, files, and independent measurements are never available. Do not lower your confidence only because you cannot inspect them.",
+  'Confidence scale: 0.9 or more when the description states the exact fact the criterion asks for, with nothing contradicting it; around 0.5 when it hints at the fact without stating it; 0.2 or less when it does not address the criterion.',
   untrustedDataRule,
 ].join('\n');
 
@@ -127,11 +131,6 @@ async function judgeCriterion(
     output: criterionOutput,
   });
   return { result: { criterionId: criterion.id, ...value }, usage };
-}
-
-function shortenRationale(rationale: string): string {
-  if (rationale.length <= MAX_RATIONALE_LENGTH) return rationale;
-  return `${rationale.slice(0, MAX_RATIONALE_LENGTH - 3).trimEnd()}...`;
 }
 
 function listIds(results: CriterionResult[]): string {

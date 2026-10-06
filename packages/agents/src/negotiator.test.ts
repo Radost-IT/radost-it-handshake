@@ -88,6 +88,23 @@ describe('decideSellerMove', () => {
     expect(move).toMatchObject({ action: 'OFFER', price: usd('44.00') });
   });
 
+  it('shortens a message longer than asked instead of failing the turn', async () => {
+    const provider = providerAnswering({
+      action: 'OFFER',
+      price: '47',
+      message: 'Let me explain my price. '.repeat(40),
+    });
+
+    const { move } = await decideSellerMove(provider, {
+      seller,
+      listing,
+      negotiation: afterBuyerOffer,
+    });
+
+    expect(move.message).toHaveLength(600);
+    expect(move.message.endsWith('...')).toBe(true);
+  });
+
   it('fails when the model offers without a price', async () => {
     const provider = providerAnswering({ action: 'OFFER', message: 'Make me an offer.' });
 
