@@ -17,6 +17,7 @@ export {
   type ArenaResult,
   type ArenaVerdict,
 } from './arena-results';
+export { UnprocessedWritesError } from './batch-writes';
 export { getArenaStats, type ArenaStats, type CategoryStats } from './arena-stats';
 export { markBountyPaid, releaseBounty, reserveBounty, type BountyReservation } from './bounties';
 export { saveFixedCodeAccount, type FixedCodeAccount } from './fixed-code-accounts';
@@ -44,6 +45,7 @@ export { getCheckout, saveCheckout, type Checkout } from './checkout';
 export { API_KEY_PREFIX, findApiKey, issueApiKey, type ApiKey } from './api-keys';
 export {
   getDealBrief,
+  deleteDeal,
   getDealRecord,
   getEvidence,
   recordPayPalCall,
@@ -58,6 +60,7 @@ export {
   type WebhookEntry,
 } from './deal-records';
 export {
+  dailyDealsSubject,
   isDealOwner,
   listDeveloperDeals,
   MAX_LISTED_DEALS,
@@ -77,7 +80,7 @@ export {
   openLiveConnection,
   type LiveConnection,
 } from './live-connections';
-export { takeRateLimitSlot, type RateLimitWindow } from './rate-limits';
+export { clearRateLimitWindow, takeRateLimitSlot, type RateLimitWindow } from './rate-limits';
 export { listRegressionCases, saveRegressionCase } from './regressions';
 export { closeSession, findSessionAccountId, openSession, type NewSession } from './sessions';
 export {
@@ -90,11 +93,4 @@ export {
 export type { StoreTable } from './table';
 export { addTokensUsed, arenaTokenLimit, getTokensUsed, type TokenPool } from './token-budget';
 export { saveWait, takeWait, type WaitSignal } from './waits';
-export {
-  getSeller,
-  listSellers,
-  saveSellers,
-  sellerSchema,
-  UnprocessedSellersError,
-  type Seller,
-} from './sellers';
+export { getSeller, listSellers, saveSellers, sellerSchema, type Seller } from './sellers';

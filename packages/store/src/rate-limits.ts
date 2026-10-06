@@ -1,5 +1,5 @@
 import { ConditionalCheckFailedException } from '@aws-sdk/client-dynamodb';
-import { UpdateCommand } from '@aws-sdk/lib-dynamodb';
+import { DeleteCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
 import type { StoreTable } from './table';
 
 export interface RateLimitWindow {
@@ -11,6 +11,11 @@ export interface RateLimitWindow {
   /** When DynamoDB may delete the counter, after the window has ended. */
   expiresAt: Date;
 }
+
+const rateLimitKey = (subject: string, window: string) => ({
+  pk: `RATE#${subject}`,
+  sk: `WINDOW#${window}`,
+});
 
 /**
  * Counts one request against the window and returns false once the limit is
@@ -25,7 +30,7 @@ export async function takeRateLimitSlot(
     await table.client.send(
       new UpdateCommand({
         TableName: table.name,
-        Key: { pk: `RATE#${subject}`, sk: `WINDOW#${window}` },
+        Key: rateLimitKey(subject, window),
         UpdateExpression: 'ADD #count :one SET #ttl = if_not_exists(#ttl, :ttl)',
         ConditionExpression: 'attribute_not_exists(#count) OR #count < :limit',
         ExpressionAttributeNames: { '#count': 'count', '#ttl': 'ttl' },
@@ -41,4 +46,14 @@ export async function takeRateLimitSlot(
     if (error instanceof ConditionalCheckFailedException) return false;
     throw error;
   }
+}
+
+/** Deletes the counter, so the subject's window counts from zero again. */
+export async function clearRateLimitWindow(
+  table: StoreTable,
+  { subject, window }: Pick<RateLimitWindow, 'subject' | 'window'>,
+): Promise<void> {
+  await table.client.send(
+    new DeleteCommand({ TableName: table.name, Key: rateLimitKey(subject, window) }),
+  );
 }

@@ -1,10 +1,15 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { DynamoDBDocumentClient, PutCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';
+import {
+  BatchWriteCommand,
+  DynamoDBDocumentClient,
+  PutCommand,
+  QueryCommand,
+} from '@aws-sdk/lib-dynamodb';
 import { createDeal, money } from '@handshake/core';
 import { mandate } from '@handshake/core/testing';
 import { mockClient } from 'aws-sdk-client-mock';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { getDealRecord, recordPayPalCall, saveEvidence } from './deal-records';
+import { deleteDeal, getDealRecord, recordPayPalCall, saveEvidence } from './deal-records';
 
 const dynamodb = mockClient(DynamoDBDocumentClient);
 const table = { client: DynamoDBDocumentClient.from(new DynamoDBClient({})), name: 'T' };
@@ -105,5 +110,28 @@ describe('recordPayPalCall', () => {
     expect(dynamodb.commandCalls(PutCommand)[0]?.args[0].input.Item).toMatchObject({
       sk: `PAYPAL#${at}#get-order`,
     });
+  });
+});
+
+describe('deleteDeal', () => {
+  it('deletes every item in the deal partition across pages and batches', async () => {
+    const pk = 'DEAL#deal-1';
+    const events = Array.from({ length: 30 }, (_, seq) => ({ pk, sk: `EVT#${at}#${String(seq)}` }));
+    dynamodb
+      .on(QueryCommand)
+      .resolvesOnce({ Items: [{ pk, sk: 'META' }, ...events], LastEvaluatedKey: { pk, sk: 'X' } })
+      .resolvesOnce({ Items: [{ pk, sk: 'WAIT#checkout', taskToken: 'token-1' }] });
+    dynamodb.on(BatchWriteCommand).resolves({});
+
+    await deleteDeal(table, 'deal-1');
+
+    const deleted = dynamodb
+      .commandCalls(BatchWriteCommand)
+      .flatMap((call) => call.args[0].input.RequestItems?.T ?? [])
+      .map((request) => String(request.DeleteRequest?.Key?.sk));
+    expect(dynamodb.commandCalls(BatchWriteCommand)).toHaveLength(2);
+    expect(deleted).toHaveLength(32);
+    expect(deleted).toContain('META');
+    expect(deleted).toContain('WAIT#checkout');
   });
 });

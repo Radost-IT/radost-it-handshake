@@ -294,6 +294,8 @@ Judges sign in at `/sign-in` with one of five emails and a fixed six-digit code 
 ## Submission (Nov 9–12)
 
 ### [I-14] Record the demo video
+- [ ] Open **IAM → Policies → HandshakeDeveloper → Edit → JSON** and replace it with the current `infra/iam/developer-policy.json`. It lets `pnpm demo:reset` delete demo deals and stop their workflows.
+- [ ] Create a key for the recording with `pnpm api-keys:create <table> demo` and note the developer ID it prints. Before each take, run `AWS_PROFILE=handshake pnpm demo:reset prod <developer-id>`. It deletes that key's deals that hold no money, clears its daily deal count, and re-seeds the sellers. Deals that hold an authorization are kept and listed; settle them from the deal page first.
 - [ ] Follow `docs/demo-script.md` (under 3 minutes).
 - [ ] Record the real hosted app, not mockups. Hide the browser bookmarks bar and any personal tabs.
 - [ ] Use no copyrighted music. Royalty-free tracks you are licensed to use, or no music, are fine.

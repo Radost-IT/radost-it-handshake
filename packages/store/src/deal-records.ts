@@ -10,6 +10,7 @@ import {
   type DeliveryEvidence,
 } from '@handshake/core';
 import { z } from 'zod';
+import { writeInBatches } from './batch-writes';
 import { checkoutSchema, type Checkout } from './checkout';
 import { dealKey } from './deals';
 import type { StoreTable } from './table';
@@ -180,6 +181,15 @@ export async function getDealRecord(
     paypalCalls: many('PAYPAL#').map((item) => paypalCallSchema.parse(item)),
     webhooks: many('WEBHOOK#').map((item) => webhookSchema.parse(item)),
   };
+}
+
+/** Deletes every item of the deal: the deal, its events, records, access grants and task tokens. */
+export async function deleteDeal(table: StoreTable, dealId: string): Promise<void> {
+  const items = await queryDealPartition(table, dealId);
+  await writeInBatches(
+    table,
+    items.map((item) => ({ DeleteRequest: { Key: { pk: item.pk, sk: item.sk } } })),
+  );
 }
 
 async function queryDealPartition(

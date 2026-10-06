@@ -38,6 +38,7 @@
       "Effect": "Allow",
       "Action": [
         "dynamodb:BatchWriteItem",
+        "dynamodb:DeleteItem",
         "dynamodb:GetItem",
         "dynamodb:PutItem",
         "dynamodb:Query",
@@ -71,7 +72,8 @@
       "Action": [
         "states:ListExecutions",
         "states:DescribeExecution",
-        "states:GetExecutionHistory"
+        "states:GetExecutionHistory",
+        "states:StopExecution"
       ],
       "Resource": [
         "arn:aws:states:eu-west-1:*:stateMachine:Handshake-*",

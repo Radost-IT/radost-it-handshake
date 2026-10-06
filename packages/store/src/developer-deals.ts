@@ -10,6 +10,9 @@ export class UnreadDealsError extends Error {
 // DynamoDB's BatchGetItem reads at most 100 keys.
 export const MAX_LISTED_DEALS = 100;
 
+/** The rate limit subject that counts the deals a developer opens per day. */
+export const dailyDealsSubject = (developerId: string) => `deals:${developerId}`;
+
 const ownerKey = (dealId: string) => ({ pk: dealKey(dealId).pk, sk: 'OWNER' });
 const developerPartition = (developerId: string) => `DEV#${developerId}`;
 

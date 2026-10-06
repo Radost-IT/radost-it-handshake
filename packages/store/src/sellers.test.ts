@@ -3,13 +3,8 @@ import { BatchWriteCommand, DynamoDBDocumentClient, QueryCommand } from '@aws-sd
 import { money } from '@handshake/core';
 import { mockClient } from 'aws-sdk-client-mock';
 import { beforeEach, describe, expect, it } from 'vitest';
-import {
-  listSellers,
-  saveSellers,
-  sellerSchema,
-  UnprocessedSellersError,
-  type Seller,
-} from './sellers';
+import { UnprocessedWritesError } from './batch-writes';
+import { listSellers, saveSellers, sellerSchema, type Seller } from './sellers';
 
 const dynamodb = mockClient(DynamoDBDocumentClient);
 const table = { client: DynamoDBDocumentClient.from(new DynamoDBClient({})), name: 'T' };
@@ -78,7 +73,7 @@ describe('saveSellers', () => {
     const leftOver = [{ PutRequest: { Item: { pk: 'SELLER#seller-0', sk: 'META' } } }];
     dynamodb.on(BatchWriteCommand).resolves({ UnprocessedItems: { T: leftOver } });
 
-    await expect(saveSellers(table, [seller(0)])).rejects.toThrow(UnprocessedSellersError);
+    await expect(saveSellers(table, [seller(0)])).rejects.toThrow(UnprocessedWritesError);
   }, 10_000);
 });
 

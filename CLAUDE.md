@@ -85,7 +85,7 @@ pnpm arena:access <table> [approve|reject <email>]  # list or decide requests to
 pnpm api-keys:create <table> <name>  # issue a sandbox Deal API key; shown once
 pnpm accounts:judges <table> <email-domain>  # create or reset 5 approved judge accounts with fixed sign-in codes; shown once
 pnpm mcp                 # MCP server over stdio for Claude Desktop; needs HANDSHAKE_API_KEY
-pnpm demo:reset
+pnpm demo:reset <stage> <developer-id>  # delete the demo key's deals that hold no money, reset its daily limit, re-seed sellers; reads .env
 pnpm cdk:synth
 pnpm cdk:deploy
 ```

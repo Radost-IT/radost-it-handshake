@@ -401,7 +401,7 @@ Done when a successful attack produces a payout and a regression case, and the p
 - [ ] Dark and light themes; keyboard navigation; color is never the only signal.
 - [ ] Cost guards in place and tested: throttling, reserved concurrency, token budgets, Budgets alarms.
 - [ ] Cost guards never block judges: daily token budget sized for judging traffic, an alarm at 80% of it, and a separate judge allowance unlocked by an access code printed in the README. Per-IP limits must allow several judges behind one IP.
-- [ ] `pnpm demo:reset` restores a known-good demo state.
+- [x] `pnpm demo:reset` restores a known-good demo state.
 - [ ] Human deploys the final build manually and completes **[I-13]**.
 - [ ] **Feature freeze Nov 8.** Only bug fixes after this.
 

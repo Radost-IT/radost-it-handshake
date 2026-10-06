@@ -27,6 +27,7 @@
     "accounts:judges": "tsx scripts/create-judge-accounts.ts",
     "mcp": "tsx --env-file-if-exists=.env packages/mcp/src/main.ts",
     "seed:sellers": "tsx --env-file=.env scripts/seed-sellers.ts",
+    "demo:reset": "tsx --env-file=.env scripts/demo-reset.ts",
     "eval": "tsx --env-file=.env scripts/run-evals.ts"
   },
   "devDependencies": {

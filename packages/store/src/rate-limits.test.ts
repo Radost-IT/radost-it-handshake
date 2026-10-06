@@ -1,8 +1,8 @@
 import { ConditionalCheckFailedException, DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { DynamoDBDocumentClient, UpdateCommand } from '@aws-sdk/lib-dynamodb';
+import { DeleteCommand, DynamoDBDocumentClient, UpdateCommand } from '@aws-sdk/lib-dynamodb';
 import { mockClient } from 'aws-sdk-client-mock';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { takeRateLimitSlot } from './rate-limits';
+import { clearRateLimitWindow, takeRateLimitSlot } from './rate-limits';
 
 const dynamodb = mockClient(DynamoDBDocumentClient);
 const table = { client: DynamoDBDocumentClient.from(new DynamoDBClient({})), name: 'T' };
@@ -34,5 +34,18 @@ describe('takeRateLimitSlot', () => {
       .rejects(new ConditionalCheckFailedException({ message: 'limit', $metadata: {} }));
 
     await expect(takeRateLimitSlot(table, window)).resolves.toBe(false);
+  });
+});
+
+describe('clearRateLimitWindow', () => {
+  it('deletes the counter of that subject and window', async () => {
+    dynamodb.on(DeleteCommand).resolves({});
+
+    await clearRateLimitWindow(table, window);
+
+    expect(dynamodb.commandCalls(DeleteCommand)[0]?.args[0].input.Key).toEqual({
+      pk: 'RATE#ip-hash',
+      sk: 'WINDOW#2026-10-03T12',
+    });
   });
 });

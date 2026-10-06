@@ -2,6 +2,7 @@ import { ConditionalCheckFailedException } from '@aws-sdk/client-dynamodb';
 import { StartExecutionCommand } from '@aws-sdk/client-sfn';
 import { createDeal, deliveryEvidenceSchema, mandateSchema, transitionDeal } from '@handshake/core';
 import {
+  dailyDealsSubject,
   getDeal,
   getDealRecord,
   grantDealAccess,
@@ -56,7 +57,7 @@ export async function openDeal(
   const now = context.now();
   const tomorrow = new Date(Date.parse(now.slice(0, 10)) + 24 * 60 * 60 * 1000);
   const allowed = await takeRateLimitSlot(context.table, {
-    subject: `deals:${developer.developerId}`,
+    subject: dailyDealsSubject(developer.developerId),
     window: now.slice(0, 10),
     limit: DEALS_PER_DEVELOPER_PER_DAY,
     expiresAt: tomorrow,
