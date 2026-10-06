@@ -206,7 +206,7 @@ export function DealView({ dealId }: { dealId: string }) {
         <Panel title={`Negotiation with ${record.negotiation.sellerName}`}>
           <p className="text-sm">
             {record.negotiation.listing.title}, listed at{' '}
-            {formatMoney(record.negotiation.listing.listPrice)}.
+            {formatMoney(record.negotiation.listing.listPrice)}. From the Channel3 product catalog.
           </p>
           <ol className="mt-4 flex flex-col gap-3">
             {record.negotiation.turns.map((turn, index) => (
