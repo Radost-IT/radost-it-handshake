@@ -432,8 +432,10 @@ Use unbranded or generic products in recorded deals, draw the architecture slide
 
 | Time | Content |
 |---|---|
-| 0:00–0:45 | Problem, market size with sources (`docs/market.md`), and who it is for: agent builders, their users, merchants |
-| 0:45–1:45 | Deal mode: live negotiation, contract, PayPal authorization, evidence, capture, console audit log |
-| 1:45–2:10 | Merchants: apply with a PayPal business account, wait for approval, read-only settings with key and seller agents |
-| 2:10–2:35 | Arena: injection attack blocked with the policy reason on screen; evals show breaches as regression tests |
-| 2:35–2:50 | Closing card: agents propose, policy checks, PayPal moves money; fee per settled deal; URL |
+| 0:00–0:40 | Logo, problem, market size with sources (`docs/market.md`), and who it is for: agent builders, shoppers, merchants |
+| 0:40–1:48 | Deal mode: live negotiation, contract, PayPal authorization, evidence, verifier, release and capture, console audit log |
+| 1:48–2:02 | Merchants: apply with a PayPal business account, read-only settings with key and seller agents |
+| 2:02–2:27 | Arena: injection attack blocked with the policy reason on screen; evals show breaches as regression tests |
+| 2:27–2:33 | Closing card: agents propose, policy checks, PayPal moves money; fee per settled deal; URL |
+
+An Amazon Polly voice reads the narration in `docs/demo-script.md` over quiet music.

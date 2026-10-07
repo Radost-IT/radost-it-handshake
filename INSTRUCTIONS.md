@@ -318,10 +318,10 @@ Steps:
 
 ### [I-29] Turn on merchant sign-up
 Merchants can now apply at `/merchants`, and approved accounts see their merchant settings there, read-only. No new `.env` keys are needed.
-- [ ] In the PayPal Developer Dashboard, open **Testing Tools → Sandbox Accounts → Create account**, choose **Business**, country **United States**, and note its email. It is the demo merchant's PayPal business account. It shows on the judges' merchant settings page; captures still go to the app's own business account.
-- [ ] Run `AWS_PROFILE=handshake pnpm cdk:deploy`. It adds `POST /arena/merchant-applications` and `GET /arena/merchant`.
-- [ ] Run `AWS_PROFILE=handshake pnpm merchants:demo Handshake-prod-TableCD117FA1-VQEMHXGQNMYF <business-account-email> radostit.com`. It gives judge-1 to judge-5 the demo merchant "Arena Outfitters (demo)" with the five arena seller agents, and a key each. The keys are shown once; keep them in your password manager.
-- [ ] Open https://handshake.radostit.com/merchants in a private window, sign in as judge-1 and check that the business, payout account, key and five seller agents show, and that nothing can be edited.
+- [x] In the PayPal Developer Dashboard, open **Testing Tools → Sandbox Accounts → Create account**, choose **Business**, country **United States**, and note its email. It is the demo merchant's PayPal business account. It shows on the judges' merchant settings page; captures still go to the app's own business account.
+- [x] Run `AWS_PROFILE=handshake pnpm cdk:deploy`. It adds `POST /arena/merchant-applications` and `GET /arena/merchant`.
+- [x] Run `AWS_PROFILE=handshake pnpm merchants:demo Handshake-prod-TableCD117FA1-VQEMHXGQNMYF <business-account-email> radostit.com`. It gives judge-1 to judge-5 the demo merchant "Arena Outfitters (demo)" with the five arena seller agents, and a key each. The keys are shown once; keep them in your password manager.
+- [x] Open https://handshake.radostit.com/merchants in a private window, sign in as judge-1 and check that the business, payout account, key and five seller agents show, and that nothing can be edited.
 - [ ] In another private window, sign in at `/merchants` with an email that has no account, fill in the application and send it. The page should say "Your request is waiting", and the application email should reach `ARENA_ADMIN_EMAIL`. Reject it with `pnpm arena:access <table> reject <email>` if it was only a test.
 
 ---
@@ -339,7 +339,8 @@ Merchants can now apply at `/merchants`, and approved accounts see their merchan
 ### [I-14] Record the demo video
 - [x] Open **IAM → Policies → HandshakeDeveloper → Edit → JSON** and replace it with the current `infra/iam/developer-policy.json`. It lets `pnpm demo:reset` delete demo deals and stop their workflows.
 - [ ] Create a key for the recording with `pnpm api-keys:create <table> demo` and note the developer ID it prints. Before each take, run `AWS_PROFILE=handshake pnpm demo:reset prod <developer-id>`. It deletes that key's deals that hold no money, clears its daily deal count, and re-seeds the sellers. Deals that hold an authorization are kept and listed; settle them from the deal page first.
-- [ ] Follow `docs/demo-script.md` (under 3 minutes).
+- [ ] Let the `handshake` profile call Amazon Polly for the voice-over: open **IAM → Policies → HandshakeDeveloper → Edit → JSON** and replace it with the current `infra/iam/developer-policy.json`. It adds `polly:SynthesizeSpeech` and `polly:DescribeVoices`. Polly costs a few cents for the whole script.
+- [ ] Follow `docs/demo-script.md`. The rules ask for a video under 3 minutes, and judges need not watch beyond that.
 - [ ] Record the real hosted app, not mockups. Hide the browser bookmarks bar and any personal tabs.
 - [ ] Use no copyrighted music. Royalty-free tracks you are licensed to use, or no music, are fine.
 - [ ] Show no third-party trademarks or copyrighted material: pick unbranded or generic products for the recorded deals, and use no vendor logos (AWS, Anthropic, and others) on the architecture slide. PayPal and Channel3 marks only if [I-2] question 4 says yes.

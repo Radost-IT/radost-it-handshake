@@ -93,8 +93,19 @@
       ],
       "Resource": "*",
       "Condition": {
-        "StringEquals": { "aws:RequestedRegion": "eu-west-1" }
+        "StringEquals": {
+          "aws:RequestedRegion": "eu-west-1"
+        }
       }
+    },
+    {
+      "Sid": "SynthesizePitchVoiceOver",
+      "Effect": "Allow",
+      "Action": [
+        "polly:SynthesizeSpeech",
+        "polly:DescribeVoices"
+      ],
+      "Resource": "*"
     }
   ]
 }

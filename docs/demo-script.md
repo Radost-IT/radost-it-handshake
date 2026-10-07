@@ -1,62 +1,84 @@
 # Pitch video script
 
-Target length: 2:50, under the 3-minute limit. A pitch first, a demo second: the problem, who it is for, how big it is, then the real app. Record against https://handshake.radostit.com with sandbox accounts only, generic products, no vendor logos, and music that is free for commercial use without credit.
+The rules ask for a video under 3 minutes; judges need not watch past that. The cut runs about 2:30. It is a pitch first and a demo second: the problem, how big it is, who it is for, then the real app. Every recording is of https://handshake.radostit.com with sandbox accounts only, generic products and no vendor logos. The music is free for commercial use without credit.
 
-The cut is built by `scripts/handshake-pitch-video.sh` in app-store-promo-maker: title cards for the pitch beats, then sped-up recordings of the hosted app with one caption per beat. Market figures and sources are in `docs/market.md`; every number on screen names its source.
+The cut is built by `scripts/handshake-pitch-video.sh` in app-store-promo-maker: logo and text cards for the pitch, then sped-up recordings of the hosted app with one caption per beat. Amazon Polly (generative engine, voice Matthew) reads the voice-over; the music plays quietly under it. Market figures and their sources are in `docs/market.md`, and every number on screen names its source.
 
-## 1. Problem (0:00 to 0:15)
+Times below are approximate, because each card stays up until its line is read.
 
-Card: "Shopping agents can find and bargain. Nobody lets them pay."
-Second line: "55% of shoppers won't let AI agents buy for them. Riskified, Q1 2026."
+## 1. Intro (0:00)
 
-Voice: "You built a shopping agent. It finds products and bargains well. But your users won't let it pay: one fake listing or one injected message, and their money is gone."
+Card: the Handshake logo, "Escrow for AI shopping agents, on PayPal.", "Agents propose · Policy checks · PayPal moves money".
 
-## 2. Market (0:15 to 0:30)
+Voice: "Handshake. Escrow for AI shopping agents, on PayPal."
 
-Card with three numbers:
-- "Up to $1T of US retail run by AI agents by 2030." McKinsey, 2025.
-- "$190B to $385B of US e-commerce bought by agents." Morgan Stanley, 2025.
-- "$1B to $3.9B a year in escrow fees in the US alone." Our estimate: 0.5% to 1% of that.
+## 2. Problem (0:05)
 
-Voice: "By 2030, agents will run up to a trillion dollars of US retail. Every one of those purchases needs a way to pay that the buyer trusts."
+Card: "Shopping agents can find and bargain. Nobody lets them pay." Then "55% of US and UK shoppers won't let AI agents buy for them, afraid of fake listings and fraud." Source: Riskified, Agentic Commerce Pulse, Q1 2026.
 
-## 3. Solution and users (0:30 to 0:45)
+Voice: "Shopping agents can already find products and bargain. But fifty-five percent of shoppers won't let an AI agent pay for them. One fake listing, and the money is gone."
+
+## 3. Market (0:17)
+
+Card, "The market by 2030":
+- Up to $1T of US retail run with AI agents. McKinsey, Oct 2025.
+- $190B to $385B of US e-commerce bought by agents. Morgan Stanley, Dec 2025.
+- TAM $15B to $50B a year in escrow fees worldwide. Our estimate: 0.5% to 1% of McKinsey's $3T to $5T global.
+- SAM $1B to $3.9B a year in escrow fees in the US. Our estimate: 0.5% to 1% of the US agent spend above.
+
+Voice: "By twenty thirty, up to a trillion dollars of US retail will run through AI agents. At a small escrow fee, that is fifteen to fifty billion dollars a year, worldwide."
+
+## 4. Who uses it (0:29)
 
 Card: "Handshake: escrow for AI shopping agents, on PayPal." Three columns:
-- "Agent builders: one API call or MCP tool."
-- "Their users: approve, pay, money held until delivery."
-- "Merchants: a seller agent, paid on proven delivery."
+- Agent builders: add a checkout to any shopping agent with one API call or an MCP tool.
+- Shoppers: approve the price and pay with PayPal; the money is held until delivery.
+- Merchants: run a seller agent with a floor price; get paid on proven delivery.
 
-Voice: "Handshake is escrow for agents, on PayPal. The agent agrees a deal, PayPal holds the money as an authorization, and code captures it only when delivery matches the signed contract. The model never moves money. It can only propose."
+Voice: "Agent builders add a checkout with one API call, or an MCP tool. Shoppers approve the price and pay with PayPal. Merchants get paid once delivery is proven."
 
-## 4. A real deal (0:45 to 1:45)
+## 5. A real deal (0:40 to 1:48)
 
-Recordings, sped up where the app waits:
-1. Judge signs in; opens a deal for a hiking day pack with seller `arena-backpack`, budget 60.00, ask above 50.00.
+Recordings as judge-1, sped up where the app waits:
+1. Sign in with the fixed code; open a deal for a hiking day pack with seller `arena-backpack`, budget 60.00, ask above 50.00.
+   Voice: "Here is a real deal. A judge asks for a hiking backpack, with a sixty dollar budget."
 2. Buyer and seller agents bargain live on Amazon Bedrock and sign a contract.
-3. 57.00 is above 50.00, so the buyer approves the price, then pays in the PayPal sandbox checkout. The timeline shows "Funds held".
-4. "Report the delivery", "Send the matching item". The verifier checks every condition and the payment is captured, or the buyer releases it if the verifier is unsure.
-5. The console: each PayPal call with its `PayPal-Request-Id` and `debug_id`, and the verified webhooks.
+   Voice: "A buyer agent and a seller agent bargain live on Amazon Bedrock, and agree on fifty-seven dollars."
+3. 57.00 is above 50.00, so the buyer approves the price.
+   Voice: "That's above the limit, so the buyer approves it."
+4. PayPal sandbox checkout; the timeline shows "Funds held".
+   Voice: "PayPal authorizes the payment. The money is held, not captured."
+5. The seller reports the delivery; the verifier checks each condition and hands one it is unsure about to the buyer.
+   Voice: "The seller reports the delivery. A verifier agent checks it against the signed contract. When it's unsure, it hands the decision to the buyer."
+6. The buyer releases the payment and PayPal captures 57.00.
+   Voice: "The buyer releases it, and PayPal captures fifty-seven dollars."
+7. The deal's PayPal calls with their `debug_id`, then the console with each `PayPal-Request-Id` and the verified webhooks.
+   Voice: "Every PayPal call and webhook is on record, with its request ID and debug ID."
 
-## 5. Merchants (1:45 to 2:10)
+## 6. Merchants (1:48 to 2:02)
 
 1. `/merchants` signed out: "Sell to AI shopping agents", apply, get a key, sell.
-2. A new business fills in the application: name, website, PayPal business account, what it sells. The page says "Your request is waiting".
-3. Signed in as a judge: the demo merchant's settings, read-only. Business, PayPal business account, the API key ending, five seller agents with list and floor prices.
+2. Signed in as judge-1: the demo merchant's read-only settings. Business, PayPal business account, the API key ending, five seller agents with list and floor prices.
 
-Voice: "Merchants apply with their PayPal business account. Once approved, their seller agents negotiate within a floor price, and their systems report deliveries with their own key."
+Voice: "Merchants apply with their PayPal business account. Once approved, they get their own API key, and seller agents that never go below a floor price."
 
-## 6. Trust you can check (2:10 to 2:35)
+The application by a new business, ending at "Your request is waiting", is not in the cut yet. It needs an email that is not approved and whose code we can read.
 
-1. Red Team Lab: a platform-impersonation attack. "The agents held", with the policy check that refused it.
-2. `/evals`: every breach becomes a regression scenario; the defense rate per attack type.
+## 7. Trust you can check (2:02 to 2:27)
 
-## 7. Close (2:35 to 2:50)
+1. Red Team Lab: a platform-impersonation attack against live agents.
+   Voice: "In the Red Team Lab, you play the dishonest seller, and attack live agents."
+2. "The agents held", with the policy check that refused the move; then `/evals`, where every breach becomes a regression scenario.
+   Voice: "The agents held. The model can only propose. Policy code decides, and PayPal moves the money. Every breach becomes a regression test."
 
-Card: "Agents propose. Policy checks. PayPal moves money." Below it: "0.5% to 1% per settled deal. Voided deals pay nothing." and handshake.radostit.com.
+## 8. Close (2:27)
 
-## Recording checklist
+Card: the Handshake logo, "Agents propose. Policy checks. PayPal moves money.", "0.5% to 1% per settled deal. Voided deals pay nothing.", and handshake.radostit.com.
 
-- Deploy, then run `pnpm merchants:demo` ([I-29]) so the judge accounts show the demo merchant.
-- Use judge-1 for the deal and merchant settings, and a fresh email you can read for the merchant application.
+Voice: "Handshake. Try it at handshake dot radost I T dot com."
+
+## Rebuilding
+
+- Recordings are Playwright scripts against the hosted app; the merchant scenes need judge-1's code in `JUDGE_CODE`, typed into a field that the recording masks.
+- Run `AWS_PROFILE=handshake bash scripts/handshake-pitch-video.sh` in app-store-promo-maker. The profile needs `polly:SynthesizeSpeech` ([I-14]). Voice lines are cached by text, so only changed lines are synthesized again.
 - Run `pnpm demo:reset` first if the judge's deal list is crowded.
