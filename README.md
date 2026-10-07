@@ -34,6 +34,7 @@ pnpm api-keys:create <table> <name>  # issue a sandbox Deal API key; shown once
 pnpm accounts:judges <table> <email-domain>  # create or reset 5 approved judge accounts with fixed sign-in codes; shown once
 pnpm mcp                 # MCP server over stdio; needs HANDSHAKE_API_KEY
 pnpm seed:sellers <table> [query ...]  # seller agents from Channel3 products
+pnpm seed:template-sellers <table>  # the arena's fixed sellers as seller records; no Channel3 key needed
 pnpm demo:reset <stage> <developer-id>  # delete the demo key's deals that hold no money, reset its daily limit, re-seed sellers
 pnpm eval                # agent evals in evals/scenarios against Bedrock; writes evals/report.json
 ```

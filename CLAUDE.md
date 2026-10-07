@@ -80,6 +80,7 @@ pnpm eval                # agent evals in evals/scenarios against Bedrock; write
 pnpm probe:paypal       # also probe:paypal-limits, probe:paypal-payout, probe:channel3, probe:bedrock; read .env
 pnpm ssm:put <stage>     # copy .env values to SSM; secrets as SecureString
 pnpm seed:sellers <table> [query ...]  # seller agents from Channel3 products; reads .env
+pnpm seed:template-sellers <table>  # the arena's fixed sellers as seller records; no Channel3 key needed
 pnpm regressions:export <table>  # write hall of fame cases to evals/regressions/
 pnpm arena:access <table> [approve|reject <email>]  # list or decide requests to join the arena
 pnpm api-keys:create <table> <name>  # issue a sandbox Deal API key; shown once
