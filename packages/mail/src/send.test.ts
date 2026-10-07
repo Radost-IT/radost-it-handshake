@@ -7,13 +7,14 @@ const message = {
   to: 'ada@example.com',
   subject: 'Hello',
   text: 'Body',
+  html: '<p>Body</p>',
 };
 
 afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-it('posts a plain text email to the ZeptoMail send endpoint', async () => {
+it('posts the text and HTML email to the ZeptoMail send endpoint', async () => {
   const fetch = vi.fn().mockResolvedValue(Response.json({ message: 'OK' }, { status: 201 }));
   vi.stubGlobal('fetch', fetch);
 
@@ -30,6 +31,7 @@ it('posts a plain text email to the ZeptoMail send endpoint', async () => {
     to: [{ email_address: { address: 'ada@example.com' } }],
     subject: 'Hello',
     textbody: 'Body',
+    htmlbody: '<p>Body</p>',
   });
 });
 

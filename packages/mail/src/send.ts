@@ -3,6 +3,7 @@ import { z } from 'zod';
 export interface Email {
   subject: string;
   text: string;
+  html: string;
 }
 
 export interface ZeptoMailAccount {
@@ -41,6 +42,7 @@ export async function sendEmail(
       to: [{ email_address: { address: message.to } }],
       subject: message.subject,
       textbody: message.text,
+      htmlbody: message.html,
     }),
   });
   if (response.ok) return;
