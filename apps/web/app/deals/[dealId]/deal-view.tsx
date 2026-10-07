@@ -11,6 +11,7 @@ import {
   messageOf,
   sendHumanDecision,
   sendPurchaseApproval,
+  submitEvidence,
   type ContractTerms,
   type DealCredential,
   type DealRecord,
@@ -18,6 +19,7 @@ import {
   type HumanDecision,
   type Money,
 } from '../api';
+import { sampleEvidence, type SampleDelivery } from './sample-evidence';
 import { escrowSteps, paypalActivity, type StepStatus } from './timeline';
 
 // Live events refetch at once; polling only covers a dropped WebSocket.
@@ -53,6 +55,17 @@ const stepDotStyles: Record<StepStatus, string> = {
   pending: 'border-line',
   stopped: 'border-refused bg-refused',
 };
+
+const stoppedStates = new Set(['REFUSED', 'CANCELLED', 'ABANDONED']);
+
+/** Why a deal ended without settling, from the event that moved it there. */
+function stopReason(record: DealRecord): string | undefined {
+  if (!stoppedStates.has(record.deal.state)) return undefined;
+  const stop = record.events.findLast(
+    (event) => event.type === 'STATE_CHANGED' && event.to === record.deal.state,
+  );
+  return stop?.type === 'STATE_CHANGED' ? stop.reason : undefined;
+}
 
 const formatMoney = (money: Money) => `${money.value} ${money.currency}`;
 const formatTime = (at: string) => new Date(at).toLocaleString();
@@ -142,6 +155,7 @@ export function DealView({ dealId }: { dealId: string }) {
 
   const { record } = state;
   const { deal } = record;
+  const reason = stopReason(record);
   const refresh = () => {
     setRefreshes((count) => count + 1);
   };
@@ -160,6 +174,7 @@ export function DealView({ dealId }: { dealId: string }) {
           )}
           <span className="text-muted">Budget {formatMoney(deal.mandate.maxPrice)}</span>
         </p>
+        {reason && <p className="text-refused mt-2 text-sm">{reason}.</p>}
       </header>
 
       {credential !== undefined && (
@@ -206,7 +221,10 @@ export function DealView({ dealId }: { dealId: string }) {
         <Panel title={`Negotiation with ${record.negotiation.sellerName}`}>
           <p className="text-sm">
             {record.negotiation.listing.title}, listed at{' '}
-            {formatMoney(record.negotiation.listing.listPrice)}. From the Channel3 product catalog.
+            {formatMoney(record.negotiation.listing.listPrice)}.{' '}
+            {record.brief?.sellerId
+              ? `Listed by seller ${record.brief.sellerId}.`
+              : 'Found in the Channel3 product catalog.'}
           </p>
           <ol className="mt-4 flex flex-col gap-3">
             {record.negotiation.turns.map((turn, index) => (
@@ -355,6 +373,39 @@ function NextAction({ record, credential, onDone }: NextActionProps) {
           >
             Pay with PayPal
           </a>
+        </ActionPanel>
+      );
+    }
+    if (deal.state === 'AWAITING_DELIVERY' && deal.contract) {
+      const { terms } = deal.contract;
+      const report = (delivery: SampleDelivery) => {
+        send(() =>
+          submitEvidence(
+            deal.id,
+            credential,
+            sampleEvidence(terms, delivery, new Date().toISOString()),
+          ),
+        );
+      };
+      return (
+        <ActionPanel
+          title="Report the delivery"
+          text="In a live deal the seller's system sends this. In the sandbox you play the seller. The verifier checks the evidence against the contract before any money moves."
+        >
+          <ActionButton
+            label="Send the matching item"
+            disabled={isSending}
+            onClick={() => {
+              report('matching');
+            }}
+          />
+          <ActionButton
+            label="Send a wrong item"
+            disabled={isSending}
+            onClick={() => {
+              report('wrong-item');
+            }}
+          />
         </ActionPanel>
       );
     }

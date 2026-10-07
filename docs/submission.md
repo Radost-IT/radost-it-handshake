@@ -224,10 +224,10 @@ Draft note: fill in the real values after [I-13].
 
 1. Open https://handshake.radostit.com.
 2. Sign in at https://handshake.radostit.com/sign-in with one of the judge accounts in step 5. Each judge has their own 25 deals and 40 arena attempts a day, so shared limits never lock you out.
-3. Deal mode: in the console, enter a goal such as "a stainless steel water bottle under $40", open the deal, and watch the negotiation. When asked, approve the price. Then log in to the PayPal sandbox checkout with this sandbox personal account:
+3. Deal mode: in the console, enter a goal such as "A day pack for hiking with a rain cover", keep the 60.00 budget, enter the seller ID `arena-backpack`, and open the deal. Follow the buyer link and watch the agents negotiate. When asked, approve the price. Then select "Pay with PayPal" and log in to the PayPal sandbox checkout with this sandbox personal account:
    Email: sb-lt01q53147736@personal.example.com
    Password: D^@dT*0e
-4. Submit the sample delivery evidence and watch the verifier capture the payment. Try the "wrong item" evidence to see the payment voided.
+4. When the deal shows "Report the delivery", play the seller. "Send the matching item" lets the verifier capture the payment. On a second deal, "Send a wrong item" makes it refuse the delivery, and the hold is voided.
 5. Developer console: sign in at https://handshake.radostit.com/sign-in with one of the judge accounts below (from [I-27]). Enter the email, select "Email me a code", and type the fixed code; no email is sent. Then open https://handshake.radostit.com/console. Open a deal and select it to read its PayPal calls and webhooks.
    judge-1@radostit.com, code TBD
    judge-2@radostit.com, code TBD

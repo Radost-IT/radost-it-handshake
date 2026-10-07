@@ -52,7 +52,10 @@ function store(deal: Deal, records: Record<string, Record<string, unknown>> = {}
   });
 }
 
-function context(llm: DealAgentsContext['llm'], catalog = emptyCatalog): DealAgentsContext {
+function context(
+  llm: DealAgentsContext['llm'],
+  catalog: DealAgentsContext['catalog'] = emptyCatalog,
+): DealAgentsContext {
   return { table, llm, catalog, negotiationMaxTurns: 6, now: () => now };
 }
 
@@ -129,6 +132,20 @@ describe('Negotiate', () => {
 
     expect(result).toEqual({ state: 'ABANDONED' });
     expect(savedNegotiations()).toHaveLength(0);
+  });
+
+  it('asks for a seller ID when product search is not set up', async () => {
+    store(negotiatingDeal(), { BRIEF: brief(null) });
+
+    const result = await runDealAgentsTask(context(scriptedModel({}), null), {
+      task: 'Negotiate',
+      dealId: 'deal-1',
+    });
+
+    expect(result).toEqual({ state: 'ABANDONED' });
+    const change =
+      dynamodb.commandCalls(TransactWriteCommand)[0]?.args[0].input.TransactItems?.[1]?.Put?.Item;
+    expect(change?.reason).toContain('with a seller ID');
   });
 
   it('abandons the deal when a party walks away', async () => {

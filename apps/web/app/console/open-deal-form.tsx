@@ -102,6 +102,14 @@ export function OpenDealForm({ credential, onOpened }: OpenDealFormProps) {
           />
         </label>
       </div>
+      <p className="text-muted text-sm">
+        Leave the seller ID empty to let the buyer agent shop the Channel3 catalog, or name a
+        seller. <span className="font-mono">arena-backpack</span> fits a 60.00 budget. The others
+        need more: <span className="font-mono">arena-running-shoes</span> 85.00,{' '}
+        <span className="font-mono">arena-keyboard</span> 100.00,{' '}
+        <span className="font-mono">arena-headphones</span> 110.00 and{' '}
+        <span className="font-mono">arena-coffee-grinder</span> 140.00.
+      </p>
       <button
         type="submit"
         disabled={isSending}

@@ -2,9 +2,9 @@ import { BedrockRuntimeClient } from '@aws-sdk/client-bedrock-runtime';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
 import { Channel3 } from '@channel3/sdk';
-import { createBedrockLlmProvider } from '@handshake/agents';
+import { createBedrockLlmProvider, type ProductCatalog } from '@handshake/agents';
 import { getProduct, searchProducts, type CatalogContext } from '@handshake/channel3';
-import { loadConfig, requireChannel3ApiKey } from '@handshake/config';
+import { loadConfig } from '@handshake/config';
 import { z } from 'zod';
 import {
   dealAgentsTaskSchema,
@@ -25,14 +25,16 @@ const table = {
 const now = () => new Date().toISOString();
 
 // Only deals without a seller shop the catalog, so a missing Channel3 key fails those deals alone.
-let catalog: CatalogContext | undefined;
-function channel3Catalog(): CatalogContext {
-  catalog ??= {
-    products: new Channel3({ apiKey: requireChannel3ApiKey(config) }).products,
+function channel3Catalog(apiKey: string): ProductCatalog {
+  const catalog: CatalogContext = {
+    products: new Channel3({ apiKey }).products,
     table,
     now: () => new Date(),
   };
-  return catalog;
+  return {
+    search: (query) => searchProducts(catalog, query),
+    get: (productId) => getProduct(catalog, productId),
+  };
 }
 
 const bedrock = createBedrockLlmProvider(
@@ -47,10 +49,7 @@ const context: DealAgentsContext = {
     limits: dealTokenLimits(config.limits.dailyTokenBudget),
     now,
   }),
-  catalog: {
-    search: (query) => searchProducts(channel3Catalog(), query),
-    get: (productId) => getProduct(channel3Catalog(), productId),
-  },
+  catalog: config.channel3.apiKey === undefined ? null : channel3Catalog(config.channel3.apiKey),
   negotiationMaxTurns: config.limits.negotiationMaxTurns,
   now,
 };

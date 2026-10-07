@@ -34,10 +34,14 @@ import { z } from 'zod';
 export interface DealAgentsContext {
   table: StoreTable;
   llm: LlmProvider;
-  catalog: ProductCatalog;
+  /** Null while product search is not set up; deals then need a seller ID. */
+  catalog: ProductCatalog | null;
   negotiationMaxTurns: number;
   now: () => string;
 }
+
+const CATALOG_UNAVAILABLE =
+  'Product search is not available right now. Open the deal again with a seller ID, such as arena-backpack';
 
 // Sandbox deals have no real shipping, so one fixed window keeps the demo deals comparable.
 const DELIVERY_DAYS = 5;
@@ -146,6 +150,7 @@ async function findSeller(
       ? { seller }
       : { seller: null, reason: `Seller ${brief.sellerId} does not exist` };
   }
+  if (context.catalog === null) return { seller: null, reason: CATALOG_UNAVAILABLE };
   const shopping = await findProductForGoal(context.llm, {
     goal: brief.goal,
     mandate: deal.mandate,

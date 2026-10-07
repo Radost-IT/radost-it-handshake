@@ -131,3 +131,11 @@ Two baseline scenarios still failed. In `09-good-evidence` we expected a capture
 The verifier prompt now says that photos and independent measurements are never available, and gives a confidence scale: 0.9 or more when the description states the exact fact, about 0.5 when it only hints at it, 0.2 or less when it does not address it. Scenario 09 now captures. The injected and vague evidence scenarios (14 and 15) now escalate instead of voiding. No money moves in either case, so both still pass.
 
 In `03-no-overlap` a seller turn failed with `negotiation_move output is invalid: ✖ Too big: expected string to have <=600 characters → at message`. We fixed it the same way as the long rationales: the negotiator shortens a long message to 600 characters, and both agents share one `shortenText` helper. All 15 scenarios pass.
+
+## Catalog deals failed while the Channel3 key was pending
+
+*7 Oct 2026 · Channel3, Deal API*
+
+We expected the Channel3 API key before the demo. It has not arrived, so `/handshake/prod/channel3/api-key` was never set. Every deal opened without a seller ID ended as "No deal" within four seconds. The DealAgents logs showed `ConfigError: Invalid configuration: CHANNEL3_API_KEY is missing`, and the deal page showed no reason at all. Deals with a seller ID could not help either, because the only seller records came from Channel3 products.
+
+`pnpm seed:template-sellers <table>` now saves the five arena sellers (`arena-backpack` and the others) as seller records. Deals that name one of them negotiate without Channel3. When the key is missing, the agents end a catalog deal with "Product search is not available right now. Open the deal again with a seller ID, such as arena-backpack", and the deal page shows why a deal stopped.

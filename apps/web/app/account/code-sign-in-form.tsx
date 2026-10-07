@@ -100,10 +100,13 @@ function CodeStep({ email, onSignedIn, onChangeEmail }: CodeStepProps) {
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-      <h2 className="text-xl font-semibold">Check your email</h2>
+      <h2 className="text-xl font-semibold">Enter your code</h2>
       <p className="text-muted text-sm">
         We sent a six-digit code to <span className="text-ink">{email}</span>. It works for 10
         minutes.
+      </p>
+      <p className="text-muted text-sm">
+        Judge accounts get no email. Type the fixed code from the testing instructions.
       </p>
       <label className="flex flex-col gap-1 text-sm">
         Code

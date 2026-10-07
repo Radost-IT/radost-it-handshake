@@ -114,7 +114,7 @@ export type Webhook = z.infer<typeof webhookSchema>;
 const dealRecordSchema = z.object({
   deal: dealSchema,
   events: z.array(dealEventSchema),
-  brief: z.object({ goal: z.string() }).nullable(),
+  brief: z.object({ goal: z.string(), sellerId: z.string().nullable() }).nullable(),
   negotiation: negotiationSchema.nullable(),
   checkout: z.object({ orderId: z.string(), approveUrl: z.string() }).nullable(),
   evidence: evidenceSchema.nullable(),
@@ -212,6 +212,20 @@ export async function sendPurchaseApproval(
     credential,
     acceptedSchema,
     { approved },
+  );
+}
+
+/** Reports the delivery as the seller would. The verifier then checks it against the contract. */
+export async function submitEvidence(
+  dealId: string,
+  credential: DealCredential,
+  evidence: Evidence,
+): Promise<void> {
+  await callDealApi(
+    `/deals/${encodeURIComponent(dealId)}/evidence`,
+    credential,
+    acceptedSchema,
+    evidence,
   );
 }
 
