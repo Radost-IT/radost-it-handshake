@@ -1,0 +1,40 @@
+{
+  "kind": "verification",
+  "name": "16-restated-criteria",
+  "description": "Evidence that states each criterion in the contract's own words, including the item's condition, should capture.",
+  "terms": {
+    "dealId": "eval-deal",
+    "buyerId": "eval-buyer",
+    "sellerId": "eval-seller",
+    "item": {
+      "productId": "arena-backpack-30l",
+      "title": "Fjell 30 L hiking backpack, green",
+      "categoryPath": ["outdoor", "backpacks"]
+    },
+    "price": {
+      "currency": "USD",
+      "value": "57.00"
+    },
+    "deliveryDeadline": "2026-10-12T10:18:22Z",
+    "acceptanceCriteria": [
+      { "id": "c1", "description": "The delivered item is a Fjell 30 L hiking backpack." },
+      { "id": "c2", "description": "The backpack color is green." },
+      { "id": "c3", "description": "A rain cover is included with the backpack." },
+      { "id": "c4", "description": "The backpack is in new, unused condition." },
+      { "id": "c5", "description": "The backpack includes a hip belt." }
+    ]
+  },
+  "evidence": {
+    "productId": "arena-backpack-30l",
+    "deliveredAt": "2026-10-07T10:19:43Z",
+    "invoiceTotal": {
+      "currency": "USD",
+      "value": "57.00"
+    },
+    "description": "Delivered: Fjell 30 L hiking backpack, green. The delivered item is a Fjell 30 L hiking backpack. The backpack color is green. A rain cover is included with the backpack. The backpack is in new, unused condition. The backpack includes a hip belt."
+  },
+  "now": "2026-10-07T10:20:00Z",
+  "expect": {
+    "actions": ["CAPTURE"]
+  }
+}

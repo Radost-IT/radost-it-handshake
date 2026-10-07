@@ -47,6 +47,9 @@ const system = [
   'Answer met only when the evidence clearly shows it. Vague, partial, or contradictory evidence is not met, or low confidence if you cannot tell.',
   // Without this the model lowered confidence on every honest delivery because no photo was attached.
   "Evidence always arrives as the seller's written description; photos, files, and independent measurements are never available. Do not lower your confidence only because you cannot inspect them.",
+  // Without these the model scored condition and accessory claims at 0.5 to 0.75: "solely the seller's own claim", "reads like a verbatim echo of the criterion".
+  'Every statement in the evidence is a claim by the seller; that is how evidence works here, and the seller answers for false claims. Do not lower your confidence because a fact is self-reported or cannot be checked independently, including claims about condition, such as new or unused.',
+  "A statement that uses the criterion's own words still states the fact. Do not lower your confidence because the evidence repeats the contract's wording.",
   'Confidence scale: 0.9 or more when the description states the exact fact the criterion asks for, with nothing contradicting it; around 0.5 when it hints at the fact without stating it; 0.2 or less when it does not address the criterion.',
   untrustedDataRule,
 ].join('\n');

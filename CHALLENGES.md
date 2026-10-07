@@ -139,3 +139,11 @@ In `03-no-overlap` a seller turn failed with `negotiation_move output is invalid
 We expected the Channel3 API key before the demo. It has not arrived, so `/handshake/prod/channel3/api-key` was never set. Every deal opened without a seller ID ended as "No deal" within four seconds. The DealAgents logs showed `ConfigError: Invalid configuration: CHANNEL3_API_KEY is missing`, and the deal page showed no reason at all. Deals with a seller ID could not help either, because the only seller records came from Channel3 products.
 
 `pnpm seed:template-sellers <table>` now saves the five arena sellers (`arena-backpack` and the others) as seller records. Deals that name one of them negotiate without Channel3. When the key is missing, the agents end a catalog deal with "Product search is not available right now. Open the deal again with a seller ID, such as arena-backpack", and the deal page shows why a deal stopped.
+
+## The verifier doubted honest claims about condition
+
+*7 Oct 2026 · Bedrock, verifier*
+
+On the live site, a delivery that stated every acceptance criterion in the contract's own words went to the buyer instead of being captured, with `ESCALATE: Not sure whether these are met: c4`. Criterion c4 was "The backpack is in new, unused condition". We expected a capture, because the evidence states the fact exactly. Run eight times, the same contract and evidence captured once. The rationales gave two reasons that do not fit Handshake: "this is solely the seller's own claim with no independent verification" (confidence 0.5), and "the statement reads almost like a verbatim echo of the criterion itself" (0.7 to 0.75, below the 0.8 threshold).
+
+The verifier prompt now says that every statement in the evidence is a seller's claim by design, including condition claims, and that wording copied from the contract still states the fact. New eval scenario `16-restated-criteria` holds that exact case. It captured six runs out of six after the change. The injected, vague and unmet evidence scenarios (13 to 15) still void or escalate, and all 16 scenarios pass.
