@@ -1,17 +1,18 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
-import { issueApiKey } from '@handshake/store';
+import { accountDeveloperId, accountIdForEmail, issueApiKey } from '@handshake/store';
 import { randomUUID } from 'node:crypto';
 
-const usage = 'Usage: pnpm api-keys:create <table-name> <name>';
-const [tableName, name] = process.argv.slice(2);
+const usage = 'Usage: pnpm api-keys:create <table-name> <name> [account-email]';
+const [tableName, name, email] = process.argv.slice(2);
 if (tableName === undefined || name === undefined) {
   console.error(usage);
   process.exit(1);
 }
 
 const table = { client: DynamoDBDocumentClient.from(new DynamoDBClient({})), name: tableName };
-const developerId = randomUUID();
+// A key issued to an account shares its deals and merchant settings; without one it stands alone.
+const developerId = email ? accountDeveloperId(accountIdForEmail(email)) : randomUUID();
 const apiKey = await issueApiKey(table, {
   developerId,
   name,

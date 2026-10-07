@@ -196,6 +196,51 @@ export async function requestAccess(reason: string): Promise<void> {
   await request('/arena/access-requests', z.object({ access: z.literal('pending') }), { reason });
 }
 
+export interface MerchantApplication {
+  businessName: string;
+  website: string;
+  payoutEmail: string;
+  products: string;
+}
+
+export async function applyAsMerchant(application: MerchantApplication): Promise<void> {
+  await request(
+    '/arena/merchant-applications',
+    z.object({ access: z.literal('pending') }),
+    application,
+  );
+}
+
+const merchantSettingsSchema = z.object({
+  merchant: z
+    .object({
+      businessName: z.string(),
+      website: z.string(),
+      payoutEmail: z.string(),
+      products: z.string(),
+      createdAt: z.string(),
+    })
+    .nullable(),
+  apiKeys: z.array(
+    z.object({ name: z.string(), createdAt: z.string(), lastCharacters: z.string() }),
+  ),
+  sellers: z.array(
+    z.object({
+      sellerId: z.string(),
+      name: z.string(),
+      persona: z.string(),
+      floorPrice: moneySchema,
+      listing: z.object({ title: z.string(), listPrice: moneySchema }),
+    }),
+  ),
+});
+
+export type MerchantSettings = z.infer<typeof merchantSettingsSchema>;
+
+export function fetchMerchantSettings(): Promise<MerchantSettings> {
+  return request('/arena/merchant', merchantSettingsSchema);
+}
+
 /** Forgets the tokens in this browser at once, then ends the session on the API. */
 export async function signOut(): Promise<void> {
   const session = readSession();

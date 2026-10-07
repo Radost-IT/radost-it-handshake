@@ -6,6 +6,14 @@ Teams building shopping agents have a trust problem: their users will not let th
 
 Agent builders integrate it through the Deal API or the MCP server. Pricing is a basis-point fee per settled deal; voided deals pay nothing.
 
+## Who uses it
+
+- **Companies building shopping agents**, such as an assistant app with a "buy it for me" feature. Their agent opens a deal with the user's goal and limits (maximum price, the amount above which the user must approve, blocked categories) through `POST /v1/deals` or the MCP server, and shows the user the deal link.
+- **Their users.** They never give an agent their card. They approve the price when it is above their limit, pay with PayPal, and the money stays on hold until delivery is proven. If the verifier is not sure, they decide.
+- **Merchants.** They apply at `/merchants` with their business and their PayPal business account. Once approved, their seller agents negotiate within a floor price, and their systems report deliveries with their own API key. During the sandbox beta, captured payments settle to Handshake's PayPal sandbox account, and merchant settings are read-only.
+
+Market figures and our TAM, SAM and SOM estimate are in `docs/market.md`.
+
 The Red Team Lab at `/arena` is the public security record: invited researchers attack the agents, and every breach pays a sandbox bounty and becomes a regression test.
 
 Built for the PayPal AI Hackathon. See `PROJECT.md` for the plan.
@@ -30,11 +38,12 @@ pnpm probe:paypal-payout # pay a 1.00 USD sandbox bounty to the arena recipient
 pnpm ssm:put prod        # copy .env values to SSM under /handshake/prod
 pnpm regressions:export <table>  # write arena regression cases to evals/regressions/
 pnpm arena:access <table> [approve|reject <email>]  # list or decide requests to join the arena
-pnpm api-keys:create <table> <name>  # issue a sandbox Deal API key; shown once
+pnpm api-keys:create <table> <name> [account-email]  # issue a sandbox Deal API key, optionally to an account; shown once
 pnpm accounts:judges <table> <email-domain>  # create or reset 5 approved judge accounts with fixed sign-in codes; shown once
 pnpm mcp                 # MCP server over stdio; needs HANDSHAKE_API_KEY
 pnpm seed:sellers <table> [query ...]  # seller agents from Channel3 products
 pnpm seed:template-sellers <table>  # the arena's fixed sellers as seller records; no Channel3 key needed
+pnpm merchants:demo <table> <payout-email> <judge-domain>  # give the judge accounts the demo merchant and a key each
 pnpm demo:reset <stage> <developer-id>  # delete the demo key's deals that hold no money, reset its daily limit, re-seed sellers
 pnpm eval                # agent evals in evals/scenarios against Bedrock; writes evals/report.json
 ```
@@ -130,7 +139,8 @@ Invited researchers act as a dishonest seller and try to make the agents release
 The console and the lab are open to approved accounts only, because every deal and attack spends Bedrock tokens. There is no open sign-up:
 
 - A visitor goes to `/request-access`, confirms their email with a one-time code, and says what they want to do. Approve or reject requests with `pnpm arena:access`; the visitor gets an email either way.
-- The operator creates five judge accounts with `pnpm accounts:judges`. They are approved from the start and have a fixed code, so no email is sent to them.
+- A merchant applies at `/merchants` with a business name, website, PayPal business email and what they sell. The application is an access request, so the same `pnpm arena:access` approves it. An approved account sees its merchant settings, API keys and seller agents there, read-only during the beta.
+- The operator creates five judge accounts with `pnpm accounts:judges`. They are approved from the start and have a fixed code, so no email is sent to them. `pnpm merchants:demo` gives them the demo merchant, with the five arena seller agents and a key each.
 
 Everyone signs in at `/sign-in` with an email and a six-digit code; there are no passwords. Emailed codes work once, expire after 10 minutes and lock after five wrong tries. Each email may check 20 codes a day and each network 30 an hour, which keeps guessing a judge's fixed code hopeless. Sign-in emails stop for the day after 300. Signing in returns two tokens, the same way radost-it-forge does it. An access token signs each API call and lasts one hour. A refresh token lasts 30 days and is swapped for a new pair at `POST /arena/session/refresh` whenever the access token runs out. A refresh token that was already swapped ends the whole session, because only a stolen copy would come back. Signing out deletes the session on the API, so neither token works afterwards. The API stores only hashes of the tokens.
 

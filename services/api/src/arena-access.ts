@@ -66,6 +66,6 @@ export async function requestAccessFromSession(
 }
 
 // The admin pastes these commands into a shell, and a valid email may contain a quote.
-function quoteForShell(value: string): string {
+export function quoteForShell(value: string): string {
   return /^[\w@.+-]+$/.test(value) ? value : `'${value.replaceAll("'", `'\\''`)}'`;
 }

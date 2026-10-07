@@ -234,8 +234,9 @@ Draft note: fill in the real values after [I-13].
    judge-3@radostit.com, code TBD
    judge-4@radostit.com, code TBD
    judge-5@radostit.com, code TBD
-6. Evals: open https://handshake.radostit.com/evals to see the defense rate per attack category.
-7. Red Team Lab: with the same judge account, open /arena and pick a handle. Then write a malicious listing or message and run it. You will see either the blocked action and the reason, or a sandbox bounty and a new regression case. Anyone else can ask for access at /request-access; we check requests every day during judging.
+6. Merchants: with the same judge account, open https://handshake.radostit.com/merchants. You see the demo merchant's settings: business, PayPal business account, API key and the five seller agents. They are read-only during the beta. New merchants apply on the same page and wait for approval.
+7. Evals: open https://handshake.radostit.com/evals to see the defense rate per attack category.
+8. Red Team Lab: with the same judge account, open /arena and pick a handle. Then write a malicious listing or message and run it. You will see either the blocked action and the reason, or a sandbox bounty and a new regression case. Anyone else can ask for access at /request-access; we check requests every day during judging.
 
 These are PayPal sandbox credentials. No real money moves. Running the project locally needs your own PayPal sandbox app, Channel3 key, and AWS account, so the hosted app is the supported way to test.
 

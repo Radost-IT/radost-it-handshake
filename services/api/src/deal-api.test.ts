@@ -234,6 +234,39 @@ describe('submitEvidence', () => {
     );
   });
 
+  it('lets the merchant whose seller sold the deal report it, and no other merchant', async () => {
+    const merchantKey = 'hs_sandbox_merchant-key';
+    dealIs(verifyingDeal());
+    dynamodb
+      .on(GetCommand, { Key: { pk: `APIKEY#${hashToken(merchantKey)}`, sk: 'META' } })
+      .resolves({
+        Item: { developerId: 'account:merchant-1', name: 'Fjell', createdAt: developer.createdAt },
+      });
+    dynamodb
+      .on(GetCommand, { Key: { pk: 'DEAL#deal-1', sk: 'BRIEF' } })
+      .resolves({ Item: { goal: 'A backpack', sellerId: 'arena-backpack', buyerId: 'dev-1' } });
+    const asMerchant = { ...request, authorization: `Bearer ${merchantKey}` };
+    const merchantSells = (sellerIds: string[]) =>
+      dynamodb.on(GetCommand, { Key: { pk: 'MERCHANT#merchant-1', sk: 'META' } }).resolves({
+        Item: {
+          accountId: 'merchant-1',
+          businessName: 'Fjell Outdoor',
+          website: 'https://fjell.example',
+          payoutEmail: 'payouts@fjell.example',
+          products: 'Hiking backpacks',
+          sellerIds,
+          createdAt: developer.createdAt,
+        },
+      });
+
+    merchantSells(['arena-keyboard']);
+    expect((await submitEvidence(context, asMerchant)).statusCode).toBe(404);
+
+    merchantSells(['arena-backpack']);
+    // Past the access check, the deal's state decides: this one is not waiting for evidence.
+    expect((await submitEvidence(context, asMerchant)).statusCode).toBe(409);
+  });
+
   it('refuses evidence for a deal that is not waiting for delivery', async () => {
     dealIs(verifyingDeal());
 

@@ -1,8 +1,12 @@
 import {
+  ACCOUNT_DEVELOPER_PREFIX,
+  accountDeveloperId,
   API_KEY_PREFIX,
   findAccessTokenAccountId,
   findApiKey,
   getAccount,
+  getDealBrief,
+  getMerchant,
   hasDealAccess,
   isDealOwner,
   type StoreTable,
@@ -23,9 +27,6 @@ export interface DealCredentials {
 export interface Developer {
   developerId: string;
 }
-
-// Account developers get their own prefix, so they never share deals with an API key.
-const accountDeveloperId = (accountId: string) => `account:${accountId}`;
 
 async function findSessionDeveloper(
   table: StoreTable,
@@ -98,4 +99,36 @@ async function canActOnDeal(
   if (isDealToken) return hasDealAccess(table, dealId, hashToken(token));
   const developer = await findDeveloper(table, credentials, now);
   return developer !== undefined && isDealOwner(table, dealId, developer.developerId);
+}
+
+/**
+ * Like refuseDealAccess, but also lets the merchant whose seller agent sold
+ * the deal report its delivery, with their API key or session.
+ */
+export async function refuseDeliveryReport(
+  table: StoreTable,
+  dealId: string,
+  credentials: DealCredentials,
+  now: Date,
+): Promise<APIGatewayProxyStructuredResultV2 | undefined> {
+  const refusal = await refuseDealAccess(table, dealId, credentials, now);
+  if (refusal?.statusCode !== 404) return refusal;
+  return (await isDealMerchant(table, dealId, credentials, now)) ? undefined : refusal;
+}
+
+async function isDealMerchant(
+  table: StoreTable,
+  dealId: string,
+  credentials: DealCredentials,
+  now: Date,
+): Promise<boolean> {
+  const developer = await findDeveloper(table, credentials, now);
+  if (!developer?.developerId.startsWith(ACCOUNT_DEVELOPER_PREFIX)) return false;
+  const accountId = developer.developerId.slice(ACCOUNT_DEVELOPER_PREFIX.length);
+  const [merchant, brief] = await Promise.all([
+    getMerchant(table, accountId),
+    getDealBrief(table, dealId),
+  ]);
+  const sellerId = brief?.sellerId;
+  return sellerId != null && merchant?.sellerIds.includes(sellerId) === true;
 }

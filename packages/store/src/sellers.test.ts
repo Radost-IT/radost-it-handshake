@@ -1,10 +1,15 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { BatchWriteCommand, DynamoDBDocumentClient, QueryCommand } from '@aws-sdk/lib-dynamodb';
+import {
+  BatchGetCommand,
+  BatchWriteCommand,
+  DynamoDBDocumentClient,
+  QueryCommand,
+} from '@aws-sdk/lib-dynamodb';
 import { money } from '@handshake/core';
 import { mockClient } from 'aws-sdk-client-mock';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { UnprocessedWritesError } from './batch-writes';
-import { listSellers, saveSellers, sellerSchema, type Seller } from './sellers';
+import { getSellers, listSellers, saveSellers, sellerSchema, type Seller } from './sellers';
 
 const dynamodb = mockClient(DynamoDBDocumentClient);
 const table = { client: DynamoDBDocumentClient.from(new DynamoDBClient({})), name: 'T' };
@@ -89,5 +94,20 @@ describe('listSellers', () => {
       ExpressionAttributeValues: { ':pk': 'SELLERS' },
       Limit: 50,
     });
+  });
+});
+
+describe('getSellers', () => {
+  it('returns the sellers in the order asked and skips unknown IDs', async () => {
+    dynamodb.on(BatchGetCommand).resolves({ Responses: { T: [seller(2), seller(1)] } });
+
+    const sellers = await getSellers(table, ['seller-1', 'seller-9', 'seller-2']);
+
+    expect(sellers.map((found) => found.sellerId)).toEqual(['seller-1', 'seller-2']);
+  });
+
+  it('reads nothing for an empty list', async () => {
+    await expect(getSellers(table, [])).resolves.toEqual([]);
+    expect(dynamodb.commandCalls(BatchGetCommand)).toHaveLength(0);
   });
 });

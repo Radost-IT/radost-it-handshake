@@ -2,19 +2,12 @@ import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
 import { accountIdForEmail, hashSignInCode, saveFixedCodeAccount } from '@handshake/store';
 import { randomInt } from 'node:crypto';
-import { z } from 'zod';
+import { judgeEmails } from './judges';
 
-const JUDGE_COUNT = 5;
 const usage = 'Usage: pnpm accounts:judges <table-name> <email-domain>';
 const [tableName, domain] = process.argv.slice(2);
-const emails = z
-  .array(z.email())
-  .safeParse(
-    Array.from({ length: JUDGE_COUNT }, (_, index) =>
-      `judge-${String(index + 1)}@${domain ?? ''}`.toLowerCase(),
-    ),
-  );
-if (tableName === undefined || !emails.success) {
+const emails = judgeEmails(domain);
+if (tableName === undefined || emails === undefined) {
   console.error(usage);
   process.exit(1);
 }
@@ -22,7 +15,7 @@ if (tableName === undefined || !emails.success) {
 const table = { client: DynamoDBDocumentClient.from(new DynamoDBClient({})), name: tableName };
 const createdAt = new Date();
 const judges = await Promise.all(
-  emails.data.map(async (email) => {
+  emails.map(async (email) => {
     const accountId = accountIdForEmail(email);
     const code = randomInt(0, 1_000_000).toString().padStart(6, '0');
     await saveFixedCodeAccount(table, {

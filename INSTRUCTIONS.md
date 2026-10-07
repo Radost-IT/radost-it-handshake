@@ -316,6 +316,14 @@ Steps:
   5. Run `pnpm arena:access <table>` to list it, then `pnpm arena:access <table> approve <email>`.
   6. Reload `/arena`. You can now pick a handle.
 
+### [I-29] Turn on merchant sign-up
+Merchants can now apply at `/merchants`, and approved accounts see their merchant settings there, read-only. No new `.env` keys are needed.
+- [ ] In the PayPal Developer Dashboard, open **Testing Tools → Sandbox Accounts → Create account**, choose **Business**, country **United States**, and note its email. It is the demo merchant's PayPal business account. It shows on the judges' merchant settings page; captures still go to the app's own business account.
+- [ ] Run `AWS_PROFILE=handshake pnpm cdk:deploy`. It adds `POST /arena/merchant-applications` and `GET /arena/merchant`.
+- [ ] Run `AWS_PROFILE=handshake pnpm merchants:demo Handshake-prod-TableCD117FA1-VQEMHXGQNMYF <business-account-email> radostit.com`. It gives judge-1 to judge-5 the demo merchant "Arena Outfitters (demo)" with the five arena seller agents, and a key each. The keys are shown once; keep them in your password manager.
+- [ ] Open https://handshake.radostit.com/merchants in a private window, sign in as judge-1 and check that the business, payout account, key and five seller agents show, and that nothing can be edited.
+- [ ] In another private window, sign in at `/merchants` with an email that has no account, fill in the application and send it. The page should say "Your request is waiting", and the application email should reach `ARENA_ADMIN_EMAIL`. Reject it with `pnpm arena:access <table> reject <email>` if it was only a test.
+
 ---
 
 ## During Phase 5

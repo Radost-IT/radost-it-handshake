@@ -49,7 +49,17 @@ export {
   type NewChallenger,
 } from './challengers';
 export { getCheckout, saveCheckout, type Checkout } from './checkout';
-export { API_KEY_PREFIX, findApiKey, issueApiKey, type ApiKey } from './api-keys';
+export {
+  ACCOUNT_DEVELOPER_PREFIX,
+  accountDeveloperId,
+  API_KEY_PREFIX,
+  findApiKey,
+  issueApiKey,
+  listApiKeys,
+  type ApiKey,
+  type ListedApiKey,
+} from './api-keys';
+export { getMerchant, merchantSchema, saveMerchant, type Merchant } from './merchants';
 export {
   getDealBrief,
   deleteDeal,
@@ -108,4 +118,12 @@ export {
 export type { StoreTable } from './table';
 export { addTokensUsed, arenaTokenLimit, getTokensUsed, type TokenPool } from './token-budget';
 export { saveWait, takeWait, type WaitSignal } from './waits';
-export { getSeller, listSellers, saveSellers, sellerSchema, type Seller } from './sellers';
+export {
+  getSeller,
+  getSellers,
+  listSellers,
+  saveSellers,
+  sellerSchema,
+  UnreadSellersError,
+  type Seller,
+} from './sellers';

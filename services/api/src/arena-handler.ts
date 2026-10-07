@@ -12,6 +12,7 @@ import { getLeaderboardPage, getMyAttempts, getStats } from './arena-reads';
 import type { ArenaApiContext } from './arena-session';
 import { refreshSession, requestSignInCode, signOut, verifySignInCode } from './arena-sign-in';
 import { readBody } from './http';
+import { applyAsMerchant, getMerchantSettings } from './merchants';
 
 const environment = z
   .object({ TABLE_NAME: z.string().min(1), ARENA_RUN_ARN: z.string().min(1) })
@@ -54,6 +55,13 @@ export function handler(event: APIGatewayProxyEventV2): Promise<APIGatewayProxyS
       return signOut(context, readBody(event));
     case 'GET /arena/account':
       return getAccountFromSession(context, event.headers.authorization);
+    case 'GET /arena/merchant':
+      return getMerchantSettings(context, event.headers.authorization);
+    case 'POST /arena/merchant-applications':
+      return applyAsMerchant(context, {
+        body: readBody(event),
+        authorization: event.headers.authorization,
+      });
     case 'POST /arena/access-requests':
       return requestAccessFromSession(context, {
         body: readBody(event),

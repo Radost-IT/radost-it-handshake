@@ -1,4 +1,4 @@
-import { GetCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';
+import { BatchGetCommand, GetCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';
 import { compareMoney, hasSameCurrency, moneySchema } from '@handshake/core';
 import { z } from 'zod';
 import { writeInBatches } from './batch-writes';
@@ -68,4 +68,28 @@ export async function getSeller(table: StoreTable, sellerId: string): Promise<Se
     new GetCommand({ TableName: table.name, Key: sellerKey(sellerId) }),
   );
   return Item ? sellerSchema.parse(Item) : undefined;
+}
+
+export class UnreadSellersError extends Error {
+  override name = 'UnreadSellersError';
+}
+
+/** The sellers with these IDs, in the same order. IDs without a seller are left out. */
+export async function getSellers(table: StoreTable, sellerIds: string[]): Promise<Seller[]> {
+  if (sellerIds.length === 0) return [];
+  const { Responses = {}, UnprocessedKeys = {} } = await table.client.send(
+    new BatchGetCommand({
+      RequestItems: { [table.name]: { Keys: sellerIds.map((sellerId) => sellerKey(sellerId)) } },
+    }),
+  );
+  if (Object.keys(UnprocessedKeys).length > 0) {
+    throw new UnreadSellersError('DynamoDB did not return every seller; try again');
+  }
+  const sellers = new Map(
+    (Responses[table.name] ?? []).map((item) => {
+      const seller = sellerSchema.parse(item);
+      return [seller.sellerId, seller];
+    }),
+  );
+  return sellerIds.flatMap((sellerId) => sellers.get(sellerId) ?? []);
 }

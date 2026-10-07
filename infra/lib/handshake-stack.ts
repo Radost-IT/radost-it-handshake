@@ -409,6 +409,7 @@ export class HandshakeStack extends Stack {
       '/arena/session/refresh',
       '/arena/sign-out',
       '/arena/access-requests',
+      '/arena/merchant-applications',
       '/arena/challengers',
       '/arena/attempts',
     ]) {
@@ -421,6 +422,7 @@ export class HandshakeStack extends Stack {
     });
     for (const path of [
       '/arena/account',
+      '/arena/merchant',
       '/arena/deals',
       '/arena/stats',
       '/arena/leaderboard',

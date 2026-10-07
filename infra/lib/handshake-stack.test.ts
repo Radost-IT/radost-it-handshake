@@ -255,6 +255,8 @@ describe('HandshakeStack', () => {
       'POST /arena/sign-out',
       'GET /arena/account',
       'POST /arena/access-requests',
+      'POST /arena/merchant-applications',
+      'GET /arena/merchant',
       'POST /arena/challengers',
     ]) {
       template.hasResourceProperties('AWS::ApiGatewayV2::Route', { RouteKey: routeKey });

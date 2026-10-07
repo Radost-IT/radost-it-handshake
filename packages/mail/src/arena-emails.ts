@@ -56,6 +56,43 @@ export function accessRequestEmail(request: {
   };
 }
 
+export function merchantApplicationEmail(application: {
+  email: string;
+  businessName: string;
+  website: string;
+  payoutEmail: string;
+  products: string;
+  approveCommand: string;
+  rejectCommand: string;
+}): Email {
+  const summary = `${application.businessName} (${application.email}) asks to sell through Handshake.`;
+  const details = [
+    `Website: ${application.website}`,
+    `PayPal business account: ${application.payoutEmail}`,
+    `Sells: ${application.products}`,
+  ].join('\n');
+  return {
+    subject: `Handshake merchant application from ${application.businessName}`,
+    text: [
+      summary,
+      details,
+      `Approve:\n${application.approveCommand}`,
+      `Turn down:\n${application.rejectCommand}`,
+    ].join('\n\n'),
+    html: renderEmailHtml({
+      preview: summary,
+      heading: 'New merchant application',
+      blocks: [
+        { kind: 'paragraph', text: summary },
+        { kind: 'snippet', label: 'Business', text: details },
+        { kind: 'snippet', label: 'Approve', text: application.approveCommand },
+        { kind: 'snippet', label: 'Turn down', text: application.rejectCommand },
+      ],
+      note: 'You get this email because you are the Handshake admin.',
+    }),
+  };
+}
+
 export function accessApprovedEmail(): Email {
   const body =
     'You can open sandbox deals in the console and attack the agents in the Red Team Lab.';

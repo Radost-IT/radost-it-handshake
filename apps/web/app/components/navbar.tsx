@@ -83,6 +83,9 @@ export function Navbar() {
           <Link href="/evals" className="text-muted hover:text-ink text-sm font-semibold">
             Evals
           </Link>
+          <Link href="/merchants" className="text-muted hover:text-ink text-sm font-semibold">
+            Merchants
+          </Link>
           <SessionLink />
           <ThemeToggle />
         </div>

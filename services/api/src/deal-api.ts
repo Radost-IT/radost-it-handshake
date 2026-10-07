@@ -19,7 +19,12 @@ import type { APIGatewayProxyStructuredResultV2 } from 'aws-lambda';
 import { randomBytes, randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import type { DealRequest } from './deal-approvals';
-import { findDeveloper, refuseDealAccess, type DealCredentials } from './deal-auth';
+import {
+  findDeveloper,
+  refuseDealAccess,
+  refuseDeliveryReport,
+  type DealCredentials,
+} from './deal-auth';
 import { hashToken, json, parseJson } from './http';
 
 export interface DealApiContext extends ResumeContext {
@@ -126,7 +131,7 @@ export async function submitEvidence(
   context: DealApiContext,
   request: DealRequest,
 ): Promise<Response> {
-  const refusal = await refuseDealAccess(
+  const refusal = await refuseDeliveryReport(
     context.table,
     request.dealId,
     request,
