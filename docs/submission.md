@@ -223,17 +223,17 @@ https://handshake.radostit.com
 Draft note: fill in the real values after [I-13].
 
 1. Open https://handshake.radostit.com.
-2. Enter the judge access code TBD on the landing page. It gives you your own usage allowance, so shared limits never lock you out.
-3. Deal mode: enter a goal such as "a stainless steel water bottle under $40", start the deal, and watch the negotiation. When asked, approve the contract. Then log in to the PayPal sandbox checkout with this sandbox personal account:
-   Email: TBD
-   Password: TBD
+2. Sign in at https://handshake.radostit.com/sign-in with one of the judge accounts in step 5. Each judge has their own 25 deals and 40 arena attempts a day, so shared limits never lock you out.
+3. Deal mode: in the console, enter a goal such as "a stainless steel water bottle under $40", open the deal, and watch the negotiation. When asked, approve the price. Then log in to the PayPal sandbox checkout with this sandbox personal account:
+   Email: sb-lt01q53147736@personal.example.com
+   Password: D^@dT*0e
 4. Submit the sample delivery evidence and watch the verifier capture the payment. Try the "wrong item" evidence to see the payment voided.
 5. Developer console: sign in at https://handshake.radostit.com/sign-in with one of the judge accounts below (from [I-27]). Enter the email, select "Email me a code", and type the fixed code; no email is sent. Then open https://handshake.radostit.com/console. Open a deal and select it to read its PayPal calls and webhooks.
-   judge-1: TBD, code TBD
-   judge-2: TBD, code TBD
-   judge-3: TBD, code TBD
-   judge-4: TBD, code TBD
-   judge-5: TBD, code TBD
+   judge-1@radostit.com, code TBD
+   judge-2@radostit.com, code TBD
+   judge-3@radostit.com, code TBD
+   judge-4@radostit.com, code TBD
+   judge-5@radostit.com, code TBD
 6. Evals: open https://handshake.radostit.com/evals to see the defense rate per attack category.
 7. Red Team Lab: with the same judge account, open /arena and pick a handle. Then write a malicious listing or message and run it. You will see either the blocked action and the reason, or a sandbox bounty and a new regression case. Anyone else can ask for access at /request-access; we check requests every day during judging.
 
