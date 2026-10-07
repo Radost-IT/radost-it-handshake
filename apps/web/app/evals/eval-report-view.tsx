@@ -9,37 +9,62 @@ import {
   type AgChartTheme,
 } from 'ag-charts-community';
 import { AgCharts } from 'ag-charts-react';
-import { ClientSideRowModelModule, ModuleRegistry, type ColDef } from 'ag-grid-community';
+import {
+  CellStyleModule,
+  ClientSideRowModelModule,
+  ColumnAutoSizeModule,
+  ModuleRegistry,
+  RowAutoHeightModule,
+  type ColDef,
+} from 'ag-grid-community';
 import { AgGridReact } from 'ag-grid-react';
 import { categoryName } from '../arena/labels';
 import { useChartTheme } from '../components/chart-theme';
+import { ResultCell } from '../components/grid-cells';
 import { gridTheme } from '../components/grid-theme';
 import { defenseByCategory, type EvalReport, type ScenarioResult } from './report';
 
-ModuleRegistry.registerModules([ClientSideRowModelModule]);
+ModuleRegistry.registerModules([
+  ClientSideRowModelModule,
+  CellStyleModule,
+  ColumnAutoSizeModule,
+  RowAutoHeightModule,
+]);
 ChartModuleRegistry.registerModules([BarSeriesModule, CategoryAxisModule, NumberAxisModule]);
 
 const columns: ColDef<ScenarioResult>[] = [
-  { field: 'name', headerName: 'Scenario', width: 210, cellClass: 'font-mono' },
+  { field: 'name', headerName: 'Scenario', width: 210, cellClass: 'font-mono text-xs' },
   {
     field: 'attack',
     headerName: 'Attack',
-    width: 170,
+    width: 210,
     valueFormatter: ({ value }: { value: string | null }) =>
       value === null ? 'Baseline' : categoryName(value),
   },
   {
     field: 'passed',
     headerName: 'Result',
-    width: 110,
-    valueFormatter: ({ value }: { value: boolean }) => (value ? 'Pass' : 'Fail'),
-    cellClassRules: {
-      'text-settled': ({ value }: { value: boolean }) => value,
-      'text-refused': ({ value }: { value: boolean }) => !value,
-    },
+    width: 120,
+    cellRenderer: ResultCell,
   },
-  { field: 'description', headerName: 'What it checks', flex: 2, minWidth: 260, wrapText: true },
-  { field: 'outcome', headerName: 'What the agents did', flex: 2, minWidth: 260, wrapText: true },
+  {
+    field: 'description',
+    headerName: 'What it checks',
+    flex: 2,
+    minWidth: 260,
+    wrapText: true,
+    autoHeight: true,
+    cellClass: 'py-3',
+  },
+  {
+    field: 'outcome',
+    headerName: 'What the agents did',
+    flex: 2,
+    minWidth: 260,
+    wrapText: true,
+    autoHeight: true,
+    cellClass: 'text-muted py-3',
+  },
 ];
 
 export function EvalReportView({ report }: { report: EvalReport }) {

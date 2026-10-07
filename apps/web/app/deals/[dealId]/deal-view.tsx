@@ -19,6 +19,7 @@ import {
   type HumanDecision,
   type Money,
 } from '../api';
+import { dealStateLabel } from '../state-labels';
 import { sampleEvidence, type SampleDelivery } from './sample-evidence';
 import { escrowSteps, paypalActivity, type StepStatus } from './timeline';
 
@@ -30,24 +31,6 @@ type ViewState =
   | { kind: 'no-token' }
   | { kind: 'failed'; message: string }
   | { kind: 'ready'; record: DealRecord };
-
-const stateLabels: Record<string, string> = {
-  DRAFT: 'Draft',
-  NEGOTIATING: 'Negotiating',
-  AGREED: 'Agreed',
-  AWAITING_HUMAN_APPROVAL: 'Waiting for your approval',
-  AUTHORIZING: 'Waiting for PayPal checkout',
-  IN_ESCROW: 'Funds held',
-  AWAITING_DELIVERY: 'Waiting for delivery',
-  VERIFYING: 'Checking delivery',
-  ESCALATED: 'Needs your decision',
-  CAPTURING: 'Capturing payment',
-  VOIDING: 'Releasing the hold',
-  SETTLED: 'Settled',
-  REFUSED: 'Refused, no charge',
-  CANCELLED: 'Cancelled',
-  ABANDONED: 'No deal',
-};
 
 const stepDotStyles: Record<StepStatus, string> = {
   done: 'bg-settled border-settled',
@@ -168,7 +151,7 @@ export function DealView({ dealId }: { dealId: string }) {
           {record.brief?.goal ?? deal.contract?.terms.item.title ?? 'Deal'}
         </h1>
         <p className="mt-2 flex flex-wrap gap-x-4 text-sm">
-          <span className="font-semibold">{stateLabels[deal.state] ?? deal.state}</span>
+          <span className="font-semibold">{dealStateLabel(deal.state)}</span>
           {deal.contract && (
             <span className="text-muted">Price {formatMoney(deal.contract.terms.price)}</span>
           )}

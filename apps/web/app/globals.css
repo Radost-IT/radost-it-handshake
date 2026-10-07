@@ -66,6 +66,16 @@
   color: transparent;
 }
 
+/* Grid headers read as small labels; wrapped cells drop the row-height line height. */
+.ag-header-cell-text {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.ag-cell.ag-cell-wrap-text {
+  line-height: 1.5rem;
+}
+
 @layer base {
   body {
     background-color: var(--canvas);

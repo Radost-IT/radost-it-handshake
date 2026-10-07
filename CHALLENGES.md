@@ -147,3 +147,11 @@ We expected the Channel3 API key before the demo. It has not arrived, so `/hands
 On the live site, a delivery that stated every acceptance criterion in the contract's own words went to the buyer instead of being captured, with `ESCALATE: Not sure whether these are met: c4`. Criterion c4 was "The backpack is in new, unused condition". We expected a capture, because the evidence states the fact exactly. Run eight times, the same contract and evidence captured once. The rationales gave two reasons that do not fit Handshake: "this is solely the seller's own claim with no independent verification" (confidence 0.5), and "the statement reads almost like a verbatim echo of the criterion itself" (0.7 to 0.75, below the 0.8 threshold).
 
 The verifier prompt now says that every statement in the evidence is a seller's claim by design, including condition claims, and that wording copied from the contract still states the fact. New eval scenario `16-restated-criteria` holds that exact case. It captured six runs out of six after the change. The injected, vague and unmet evidence scenarios (13 to 15) still void or escalate, and all 16 scenarios pass.
+
+## AG Grid styles and sizing silently did nothing
+
+*7 Oct 2026 · Web, AG Grid Community*
+
+We expected `cellClass: 'font-mono'` to style the deal and audit grids, and `autoSizeStrategy` to fit the evals grid. Neither did. AG Grid 33 and later split features into modules, and our grids registered only `ClientSideRowModelModule`. The browser console showed `AG Grid: error #200` with `moduleName=ColumnAutoSize`, while missing `CellStyleModule` dropped every `cellClass` without a visible error. A second surprise: a column's own `cellClass` replaces the class that `type: 'rightAligned'` adds, so numbers moved to the left.
+
+Each grid now registers `CellStyleModule`, plus `ColumnAutoSizeModule`, `RowAutoHeightModule` or `PaginationModule` where it uses them. Right-aligned columns that set `cellClass` add `text-right` themselves.

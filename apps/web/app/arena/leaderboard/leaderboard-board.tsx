@@ -1,18 +1,30 @@
 'use client';
 
-import { ClientSideRowModelModule, ModuleRegistry, type ColDef } from 'ag-grid-community';
+import {
+  CellStyleModule,
+  ClientSideRowModelModule,
+  ModuleRegistry,
+  type ColDef,
+} from 'ag-grid-community';
 import { AgGridReact } from 'ag-grid-react';
 import { useEffect, useState } from 'react';
+import { PositionCell } from '../../components/grid-cells';
 import { gridTheme } from '../../components/grid-theme';
 import { fetchLeaderboard, messageOf, type LeaderboardEntry } from '../api';
 
-ModuleRegistry.registerModules([ClientSideRowModelModule]);
+ModuleRegistry.registerModules([ClientSideRowModelModule, CellStyleModule]);
 
 const columns: ColDef<LeaderboardEntry>[] = [
-  { field: 'position', headerName: '#', width: 70 },
-  { field: 'handle', headerName: 'Researcher', flex: 1, minWidth: 140 },
-  { field: 'rank', headerName: 'Rank', flex: 1, minWidth: 130 },
-  { field: 'xp', headerName: 'XP', width: 100, type: 'rightAligned' },
+  { field: 'position', headerName: '#', width: 80, cellRenderer: PositionCell },
+  { field: 'handle', headerName: 'Researcher', flex: 1, minWidth: 140, cellClass: 'font-semibold' },
+  { field: 'rank', headerName: 'Rank', flex: 1, minWidth: 130, cellClass: 'text-muted' },
+  {
+    field: 'xp',
+    headerName: 'XP',
+    width: 120,
+    type: 'rightAligned',
+    cellClass: 'text-accent text-right font-mono font-semibold tabular-nums',
+  },
 ];
 
 type Scope = 'all' | 'daily';
@@ -65,11 +77,12 @@ export function LeaderboardBoard() {
       </div>
       {state.kind === 'failed' && <p className="text-refused text-sm">{state.message}</p>}
       {state.kind !== 'failed' && (
-        <div className="h-[34rem]">
+        <div>
           <AgGridReact<LeaderboardEntry>
             theme={gridTheme}
             rowData={state.kind === 'ready' ? state.entries : null}
             columnDefs={columns}
+            domLayout="autoHeight"
             getRowId={({ data }) => data.challengerId}
             loading={state.kind === 'loading'}
             overlayNoRowsTemplate="No researchers on this board yet."

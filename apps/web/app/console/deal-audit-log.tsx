@@ -1,9 +1,15 @@
 'use client';
 
-import { ClientSideRowModelModule, ModuleRegistry, type ColDef } from 'ag-grid-community';
+import {
+  CellStyleModule,
+  ClientSideRowModelModule,
+  ModuleRegistry,
+  type ColDef,
+} from 'ag-grid-community';
 import { AgGridReact } from 'ag-grid-react';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import { HttpStatusCell } from '../components/grid-cells';
 import { gridTheme } from '../components/grid-theme';
 import {
   fetchDealRecord,
@@ -14,35 +20,54 @@ import {
   type Webhook,
 } from '../deals/api';
 
-ModuleRegistry.registerModules([ClientSideRowModelModule]);
+ModuleRegistry.registerModules([ClientSideRowModelModule, CellStyleModule]);
 
 const timeColumn = {
   field: 'at',
   headerName: 'Time',
   width: 190,
   sort: 'asc',
+  cellClass: 'text-muted tabular-nums',
   valueFormatter: ({ value }: { value: string }) => new Date(value).toLocaleString(),
 } as const;
 
 const callColumns: ColDef<PayPalCall>[] = [
   timeColumn,
-  { field: 'operation', headerName: 'Operation', width: 150 },
-  { field: 'statusCode', headerName: 'HTTP', width: 90 },
-  { field: 'debugId', headerName: 'debug_id', flex: 1, minWidth: 150, cellClass: 'font-mono' },
+  { field: 'operation', headerName: 'Operation', width: 160, cellClass: 'font-medium' },
+  { field: 'statusCode', headerName: 'HTTP', width: 110, cellRenderer: HttpStatusCell },
+  {
+    field: 'debugId',
+    headerName: 'debug_id',
+    flex: 1,
+    minWidth: 150,
+    cellClass: 'text-muted font-mono text-xs',
+  },
   {
     field: 'requestId',
     headerName: 'PayPal-Request-Id',
     flex: 2,
     minWidth: 220,
-    cellClass: 'font-mono',
+    cellClass: 'text-muted font-mono text-xs',
   },
 ];
 
 const webhookColumns: ColDef<Webhook>[] = [
   timeColumn,
-  { field: 'eventType', headerName: 'Event', flex: 1, minWidth: 240 },
-  { field: 'resourceId', headerName: 'Resource', flex: 1, minWidth: 160, cellClass: 'font-mono' },
-  { field: 'eventId', headerName: 'Event ID', flex: 1, minWidth: 160, cellClass: 'font-mono' },
+  { field: 'eventType', headerName: 'Event', flex: 1, minWidth: 240, cellClass: 'font-medium' },
+  {
+    field: 'resourceId',
+    headerName: 'Resource',
+    flex: 1,
+    minWidth: 160,
+    cellClass: 'text-muted font-mono text-xs',
+  },
+  {
+    field: 'eventId',
+    headerName: 'Event ID',
+    flex: 1,
+    minWidth: 160,
+    cellClass: 'text-muted font-mono text-xs',
+  },
 ];
 
 type AuditState =
@@ -87,11 +112,12 @@ export function DealAuditLog({ credential, dealId }: DealAuditLogProps) {
         <h3 className="text-muted mb-2 text-xs font-semibold tracking-widest uppercase">
           API calls
         </h3>
-        <div className="h-[18rem]">
+        <div>
           <AgGridReact<PayPalCall>
             theme={gridTheme}
             rowData={record?.paypalCalls ?? null}
             columnDefs={callColumns}
+            domLayout="autoHeight"
             loading={record === null}
             overlayNoRowsTemplate="No PayPal calls for this deal yet."
           />
@@ -101,11 +127,12 @@ export function DealAuditLog({ credential, dealId }: DealAuditLogProps) {
         <h3 className="text-muted mb-2 text-xs font-semibold tracking-widest uppercase">
           Verified webhooks
         </h3>
-        <div className="h-[14rem]">
+        <div>
           <AgGridReact<Webhook>
             theme={gridTheme}
             rowData={record?.webhooks ?? null}
             columnDefs={webhookColumns}
+            domLayout="autoHeight"
             getRowId={({ data }) => data.eventId}
             loading={record === null}
             overlayNoRowsTemplate="No webhooks for this deal yet."
