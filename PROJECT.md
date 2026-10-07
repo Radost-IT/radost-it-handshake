@@ -432,8 +432,8 @@ Use unbranded or generic products in recorded deals, draw the architecture slide
 
 | Time | Content |
 |---|---|
-| 0:00–0:20 | Problem and audience: "You built a shopping agent. Your users won't let it pay." Show why: one injected listing is enough |
-| 0:20–1:15 | Deal mode: Channel3 search, live negotiation, contract, PayPal authorization, evidence, capture |
-| 1:15–1:45 | Arena: injection attack blocked, with the policy reason on screen |
-| 1:45–2:20 | Arena: an exploit succeeds, the bounty is paid, it becomes a regression test, and the rerun is blocked |
-| 2:20–2:50 | Architecture in one slide; who it is for; closing line |
+| 0:00–0:45 | Problem, market size with sources (`docs/market.md`), and who it is for: agent builders, their users, merchants |
+| 0:45–1:45 | Deal mode: live negotiation, contract, PayPal authorization, evidence, capture, console audit log |
+| 1:45–2:10 | Merchants: apply with a PayPal business account, wait for approval, read-only settings with key and seller agents |
+| 2:10–2:35 | Arena: injection attack blocked with the policy reason on screen; evals show breaches as regression tests |
+| 2:35–2:50 | Closing card: agents propose, policy checks, PayPal moves money; fee per settled deal; URL |
