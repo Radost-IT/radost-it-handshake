@@ -1,5 +1,6 @@
 import { CfnOutput, Duration, PermissionsBoundary, Stack, type StackProps } from 'aws-cdk-lib';
 import {
+  CfnStage,
   CorsHttpMethod,
   DomainName,
   HttpApi,
@@ -66,8 +67,22 @@ const esmBundling = {
     "import { createRequire } from 'node:module'; const require = createRequire(import.meta.url);",
 };
 
-// Caps what public traffic can cost before per-route limits exist.
+// Caps what public traffic can cost. The stage limit is shared by every caller,
+// so the routes anyone can hit get their own smaller limits: a flood of one of
+// them is then refused there and cannot starve the Deal API or PayPal webhooks.
 const apiThrottle = { rateLimit: 25, burstLimit: 50 };
+const publicRouteThrottles: Record<string, { rateLimit: number; burstLimit: number }> = {
+  'GET /health': { rateLimit: 2, burstLimit: 5 },
+  'POST /webhooks/paypal': { rateLimit: 10, burstLimit: 20 },
+  'POST /arena/sign-in': { rateLimit: 5, burstLimit: 10 },
+  'POST /arena/sign-in/verify': { rateLimit: 5, burstLimit: 10 },
+  'POST /arena/session/refresh': { rateLimit: 5, burstLimit: 10 },
+  'POST /arena/sign-out': { rateLimit: 5, burstLimit: 10 },
+  'GET /arena/deals': { rateLimit: 5, burstLimit: 10 },
+  'GET /arena/stats': { rateLimit: 5, burstLimit: 10 },
+  'GET /arena/leaderboard': { rateLimit: 5, burstLimit: 10 },
+  'GET /arena/attempts/{attemptId}': { rateLimit: 5, burstLimit: 10 },
+};
 
 const serviceSource = (service: string, handlerFile: string) =>
   fileURLToPath(new URL(`../../services/${service}/src/${handlerFile}`, import.meta.url));
@@ -339,13 +354,12 @@ export class HandshakeStack extends Stack {
         maxAge: Duration.hours(1),
       },
     });
-    httpApi
-      .addStage('DefaultStage', {
-        autoDeploy: true,
-        domainMapping: { domainName: apiDomain },
-        throttle: apiThrottle,
-      })
-      .node.addDependency(apiDomain);
+    const httpStage = httpApi.addStage('DefaultStage', {
+      autoDeploy: true,
+      domainMapping: { domainName: apiDomain },
+      throttle: apiThrottle,
+    });
+    httpStage.node.addDependency(apiDomain);
     httpApi.addRoutes({
       path: '/health',
       methods: [HttpMethod.GET],
@@ -449,6 +463,19 @@ export class HandshakeStack extends Stack {
       });
     }
 
+    // CloudFormation takes route settings as raw JSON, keyed by route key, and
+    // the stage must be updated after the routes it names exist.
+    const httpStageResource = httpStage.node.defaultChild as CfnStage;
+    httpStageResource.routeSettings = Object.fromEntries(
+      Object.entries(publicRouteThrottles).map(([routeKey, limit]) => [
+        routeKey,
+        { ThrottlingRateLimit: limit.rateLimit, ThrottlingBurstLimit: limit.burstLimit },
+      ]),
+    );
+    for (const child of httpApi.node.children) {
+      if (child.node.id !== 'DefaultStage') httpStage.node.addDependency(child);
+    }
+
     // Building here would run a full Next.js build on every synth and in every
     // test, so the root scripts run `open-next build` first instead.
     // NextjsDomain looks the hosted zone up at synth time, so the domain and
@@ -512,7 +539,7 @@ export class HandshakeStack extends Stack {
     new CfnOutput(this, 'TableName', { value: table.tableName });
     new CfnOutput(this, 'DealLifecycleArn', { value: dealLifecycle.stateMachineArn });
     new CfnOutput(this, 'ArenaRunArn', { value: arenaRun.stateMachineArn });
-    // Registered with PayPal by hand ([I-11]).
+    // Registered with PayPal by hand; see the README, Deploy.
     new CfnOutput(this, 'WebhookUrl', { value: `https://${props.domains.api}/webhooks/paypal` });
   }
 

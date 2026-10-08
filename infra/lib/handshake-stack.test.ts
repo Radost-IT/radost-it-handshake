@@ -339,6 +339,29 @@ describe('HandshakeStack', () => {
     });
   });
 
+  it('gives the routes anyone can call their own smaller limits', () => {
+    template.hasResourceProperties('AWS::ApiGatewayV2::Stage', {
+      StageName: '$default',
+      RouteSettings: Match.objectLike({
+        'GET /health': { ThrottlingRateLimit: 2, ThrottlingBurstLimit: 5 },
+        'POST /arena/sign-in': { ThrottlingRateLimit: 5, ThrottlingBurstLimit: 10 },
+        'POST /webhooks/paypal': { ThrottlingRateLimit: 10, ThrottlingBurstLimit: 20 },
+      }),
+    });
+    const [stage] = Object.values(
+      template.findResources('AWS::ApiGatewayV2::Stage', {
+        Properties: { StageName: '$default' },
+      }),
+    );
+    const routeIds = Object.keys(
+      template.findResources('AWS::ApiGatewayV2::Route', {
+        Properties: { ApiId: { Ref: Match.stringLikeRegexp('^HttpApi') } },
+      }),
+    );
+    expect(routeIds.length).toBeGreaterThan(0);
+    expect(stage?.DependsOn).toEqual(expect.arrayContaining(routeIds));
+  });
+
   it('puts the workload permissions boundary on every role', () => {
     template.allResourcesProperties('AWS::IAM::Role', {
       PermissionsBoundary: {
