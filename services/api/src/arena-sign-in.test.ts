@@ -81,7 +81,9 @@ describe('requestSignInCode', () => {
       ipSubject,
       ipSubject,
     ]);
-    expect(dynamodb.commandCalls(UpdateCommand).map((call) => call.args[0].input.Key?.sk)).toEqual([
+    expect(
+      dynamodb.commandCalls(UpdateCommand).map((call): unknown => call.args[0].input.Key?.sk),
+    ).toEqual([
       'WINDOW#2026-10-03T12',
       'WINDOW#2026-10-03',
       'WINDOW#2026-10-03T12',
