@@ -54,14 +54,14 @@ Base URL: `https://api-handshake.radostit.com/v1`. Send `authorization: Bearer <
 
 | Route | What it does |
 | --- | --- |
-| `POST /deals` | Opens a deal from a goal, a buyer mandate and an optional `sellerId`. Returns the deal, a one-time `accessToken` and a `buyerUrl` where the buyer approves the PayPal checkout. |
+| `POST /deals` | Opens a deal from a goal, a buyer mandate and an optional `sellerId`. Returns the deal and a `buyerUrl` where the buyer approves the PayPal checkout. A signed-in session also gets a one-time `accessToken`, inside the `buyerUrl`, to share the deal with the buyer; an API key never gets one. |
 | `GET /deals` | Lists the deals opened with your key, newest first. |
 | `GET /deals/{dealId}` | The deal with its events, negotiation, evidence, PayPal calls (with `debug_id`) and webhooks. |
 | `POST /deals/{dealId}/evidence` | Delivery evidence. The verifier checks it against the signed contract, then policy decides to capture or void. |
 | `POST /deals/{dealId}/purchase-approval` | `{ "approved": true }` for a price above the mandate's approval threshold. |
 | `POST /deals/{dealId}/human-decision` | A settlement proposal for an escalated deal. Policy still checks it. |
 
-The deal routes also accept the deal's access token, so the buyer can act without your API key. The two approval routes refuse API keys: the agent that holds the key must not approve its own spending, so only the person, with the deal's access token or a signed-in session, decides there. Each key or account opens up to 25 deals a day.
+The deal routes also accept the deal's access token, so the buyer can act without your API key. The two approval routes refuse API keys: the agent that holds the key must not approve its own spending. For a deal opened with an API key, the person signs in to the key's account and decides on the deal page, so issue keys to an account with `pnpm api-keys:create <table> <name> <account-email>` when deals may need approval. Each key or account opens up to 25 deals a day.
 
 The developer console at https://handshake.radostit.com/console does the same from a browser: sign in or paste a key, open a deal, and read each deal's PayPal calls (operation, HTTP status, `debug_id`, `PayPal-Request-Id`) and verified webhooks. The buyer follows a deal at `/deals/<id>`, which shows the escrow timeline and the approval buttons.
 

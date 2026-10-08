@@ -74,19 +74,16 @@ beforeEach(() => {
 describe('openDeal', () => {
   const body = JSON.stringify({ goal: 'A steel water bottle', mandate });
 
-  it('saves a negotiating deal, starts its lifecycle and returns the buyer link', async () => {
+  it('saves a negotiating deal, starts its lifecycle and returns the deal page', async () => {
     const response = await openDeal(context, { authorization: withKey, body });
 
     expect(response.statusCode).toBe(201);
     const opened = JSON.parse(String(response.body)) as {
       deal: { id: string; state: string };
-      accessToken: string;
       buyerUrl: string;
     };
     expect(opened.deal.state).toBe('NEGOTIATING');
-    expect(opened.buyerUrl).toBe(
-      `https://handshake.example/deals/${opened.deal.id}#token=${opened.accessToken}`,
-    );
+    expect(opened.buyerUrl).toBe(`https://handshake.example/deals/${opened.deal.id}`);
     expect(stepFunctions.commandCalls(StartExecutionCommand)[0]?.args[0].input).toEqual({
       stateMachineArn: context.dealLifecycleArn,
       name: opened.deal.id,
@@ -96,8 +93,15 @@ describe('openDeal', () => {
     expect(saved).toContainEqual(
       expect.objectContaining({ sk: 'BRIEF', goal: 'A steel water bottle', buyerId: 'dev-1' }),
     );
-    expect(saved).toContainEqual(
-      expect.objectContaining({ sk: `ACCESS#${hashToken(opened.accessToken)}` }),
+  });
+
+  it('gives an agent with an API key no deal access token', async () => {
+    const response = await openDeal(context, { authorization: withKey, body });
+
+    expect(JSON.parse(String(response.body))).not.toHaveProperty('accessToken');
+    const saved = dynamodb.commandCalls(PutCommand).map((call) => call.args[0].input.Item);
+    expect(saved).not.toContainEqual(
+      expect.objectContaining({ sk: expect.stringMatching(/^ACCESS#/) as unknown }),
     );
   });
 
@@ -118,9 +122,20 @@ describe('openDeal', () => {
     });
 
     expect(response.statusCode).toBe(201);
+    const opened = JSON.parse(String(response.body)) as {
+      deal: { id: string };
+      accessToken: string;
+      buyerUrl: string;
+    };
+    expect(opened.buyerUrl).toBe(
+      `https://handshake.example/deals/${opened.deal.id}#token=${opened.accessToken}`,
+    );
     const saved = dynamodb.commandCalls(PutCommand).map((call) => call.args[0].input.Item);
     expect(saved).toContainEqual(
       expect.objectContaining({ sk: 'OWNER', developerId: 'account:account-1' }),
+    );
+    expect(saved).toContainEqual(
+      expect.objectContaining({ sk: `ACCESS#${hashToken(opened.accessToken)}` }),
     );
   });
 

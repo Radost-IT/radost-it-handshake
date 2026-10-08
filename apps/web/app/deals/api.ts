@@ -178,6 +178,13 @@ const acceptedSchema = z.object({ status: z.literal('accepted') });
 /** The developer console keeps the API key here for the tab; the deal page reads it too. */
 export const API_KEY_STORAGE_KEY = 'handshake-api-key';
 
+export const API_KEY_PREFIX = 'hs_sandbox_';
+
+// The Deal API refuses API keys on decisions, because the agent holds the key.
+// The person decides with their signed-in session instead.
+const decisionCredential = (credential: DealCredential): DealCredential =>
+  credential?.startsWith(API_KEY_PREFIX) ? null : credential;
+
 export async function fetchDeals(apiKey: DealCredential): Promise<Deal[]> {
   const { deals } = await callDealApi('/deals', apiKey, z.object({ deals: z.array(dealSchema) }));
   return deals;
@@ -209,7 +216,7 @@ export async function sendPurchaseApproval(
 ): Promise<void> {
   await callDealApi(
     `/deals/${encodeURIComponent(dealId)}/purchase-approval`,
-    credential,
+    decisionCredential(credential),
     acceptedSchema,
     { approved },
   );
@@ -247,7 +254,7 @@ export async function sendHumanDecision(
 ): Promise<void> {
   await callDealApi(
     `/deals/${encodeURIComponent(dealId)}/human-decision`,
-    credential,
+    decisionCredential(credential),
     acceptedSchema,
     decision,
   );

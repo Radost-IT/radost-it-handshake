@@ -65,8 +65,9 @@ export function createHandshakeMcpServer(client: DealApiClient): McpServer {
       title: 'Open a deal',
       description:
         'Starts a Handshake deal. A buyer agent finds the product and negotiates within the budget. ' +
-        'Give the returned buyerUrl to the person: they approve the PayPal checkout there, and the ' +
-        'money stays authorized, not captured, until delivery is verified.',
+        'Give the returned buyerUrl to the person: they sign in there, approve the PayPal checkout, ' +
+        'and decide any price above their approval threshold. The money stays authorized, not ' +
+        'captured, until delivery is verified.',
       inputSchema: openDealInput,
     },
     ({ goal, maxPrice, humanApprovalThreshold, blockedCategories, sellerId }) =>

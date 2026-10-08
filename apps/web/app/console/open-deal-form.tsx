@@ -124,7 +124,10 @@ export function OpenDealForm({ credential, onOpened }: OpenDealFormProps) {
           <a href={buyerUrl} className="text-accent font-semibold">
             Follow the deal as the buyer
           </a>
-          . This link holds the deal&apos;s access token, so share it only with the buyer.
+          .{' '}
+          {buyerUrl.includes('#token=')
+            ? "This link holds the deal's access token, so share it only with the buyer."
+            : "Decisions on deals opened with an API key are made while signed in to the key's account."}
         </p>
       )}
     </form>

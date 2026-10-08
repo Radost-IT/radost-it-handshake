@@ -6,6 +6,7 @@ import { fetchAccount, signOut, type Account } from '../arena/api';
 import { FORM_INPUT_CLASS, SUBMIT_BUTTON_CLASS } from '../components/form-styles';
 import { Notice } from '../components/notice';
 import {
+  API_KEY_PREFIX,
   API_KEY_STORAGE_KEY,
   fetchDeals,
   messageOf,
@@ -15,8 +16,6 @@ import {
 import { DealAuditLog } from './deal-audit-log';
 import { DealsGrid } from './deals-grid';
 import { OpenDealForm } from './open-deal-form';
-
-const API_KEY_PREFIX = 'hs_sandbox_';
 
 const OUTLINE_BUTTON_CLASS =
   'border-line hover:border-ink rounded-full border px-4 py-1.5 text-sm font-semibold';

@@ -21,6 +21,7 @@ import { z } from 'zod';
 import type { DealRequest } from './deal-approvals';
 import {
   findDeveloper,
+  isSignedWithApiKey,
   refuseDealAccess,
   refuseDeliveryReport,
   type DealCredentials,
@@ -48,7 +49,9 @@ const openDealSchema = z.object({
 /**
  * Opens a deal for the developer's buyer and starts its lifecycle: the agents
  * negotiate, then the buyer approves the PayPal checkout from the deal page.
- * The access token is returned once and lets the buyer act on the deal.
+ * A signed-in person gets an access token, returned once, to share the deal
+ * with the buyer. An agent with an API key gets none, since the token could
+ * approve its own spending; the person signs in on the deal page instead.
  */
 export async function openDeal(
   context: DealApiContext,
@@ -72,7 +75,7 @@ export async function openDeal(
   const created = createDeal(randomUUID(), input.data.mandate, now);
   const opened = transitionDeal(created.deal, { to: 'NEGOTIATING' }, now, 'Opened through the API');
   const deal = opened.deal;
-  const accessToken = randomBytes(32).toString('base64url');
+  const accessToken = isSignedWithApiKey(request) ? null : randomBytes(32).toString('base64url');
   // The deal is saved last of these writes, so the agents never start on a deal without a brief.
   await Promise.all([
     saveDealBrief(context.table, deal.id, {
@@ -81,7 +84,9 @@ export async function openDeal(
       buyerId: developer.developerId,
     }),
     saveDealOwner(context.table, deal.id, { developerId: developer.developerId, createdAt: now }),
-    grantDealAccess(context.table, deal.id, hashToken(accessToken)),
+    ...(accessToken === null
+      ? []
+      : [grantDealAccess(context.table, deal.id, hashToken(accessToken))]),
   ]);
   await saveDeal(context.table, deal, [created.event, opened.event]);
   await context.stepFunctions.send(
@@ -92,11 +97,13 @@ export async function openDeal(
     }),
   );
 
+  const dealUrl = `${context.webUrl}/deals/${deal.id}`;
+  if (accessToken === null) return json(201, { deal, buyerUrl: dealUrl });
   return json(201, {
     deal,
     accessToken,
     // The fragment never reaches a server, so the token stays out of access logs.
-    buyerUrl: `${context.webUrl}/deals/${deal.id}#token=${accessToken}`,
+    buyerUrl: `${dealUrl}#token=${accessToken}`,
   });
 }
 
