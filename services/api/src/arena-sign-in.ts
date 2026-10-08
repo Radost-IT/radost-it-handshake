@@ -32,6 +32,10 @@ const DAY_MS = 24 * HOUR_MS;
 // network from mailing many addresses.
 const CODES_PER_EMAIL_PER_HOUR = 5;
 const CODES_PER_IP_PER_HOUR = 20;
+// Daily limits too, so nobody can mail one stranger all day, and one network
+// cannot spend most of the day's emails by waiting for each new hour.
+const CODES_PER_EMAIL_PER_DAY = 10;
+const CODES_PER_IP_PER_DAY = 40;
 // Emails cost ZeptoMail credits, so one day of sign-in requests from many
 // networks cannot use them up.
 const SIGN_IN_EMAILS_PER_DAY = 300;
@@ -110,15 +114,14 @@ export async function requestSignInCode(
   const accountId = accountIdForEmail(email);
 
   const now = context.now();
+  const ipSubject = hashToken(request.sourceIp);
   const allowed = await takeSlots(context, now, [
     { subject: `signin-email#${accountId}`, limit: CODES_PER_EMAIL_PER_HOUR, period: 'hour' },
-    {
-      subject: `signin-ip#${hashToken(request.sourceIp)}`,
-      limit: CODES_PER_IP_PER_HOUR,
-      period: 'hour',
-    },
+    { subject: `signin-email#${accountId}`, limit: CODES_PER_EMAIL_PER_DAY, period: 'day' },
+    { subject: `signin-ip#${ipSubject}`, limit: CODES_PER_IP_PER_HOUR, period: 'hour' },
+    { subject: `signin-ip#${ipSubject}`, limit: CODES_PER_IP_PER_DAY, period: 'day' },
   ]);
-  if (!allowed) return json(429, { error: 'Too many sign-in codes. Try again next hour' });
+  if (!allowed) return json(429, { error: 'Too many sign-in codes. Try again later' });
 
   const account = await getAccount(context.table, accountId);
   if (account?.fixedSignInCodeHash !== undefined) return json(202, { sent: true });

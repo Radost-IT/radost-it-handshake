@@ -67,16 +67,25 @@ describe('requestSignInCode', () => {
     expect(email?.text).toContain('123456');
   });
 
-  it('limits codes per email and per network', async () => {
+  it('limits codes per email and per network, by the hour and by the day', async () => {
     rejectRateLimits();
 
     const response = await signIn({ email: 'ada@example.com' });
 
     expect(response.statusCode).toBe(429);
     expect(sentEmails()).toHaveLength(0);
+    const ipSubject = `RATE#signin-ip#${hashToken('203.0.113.7')}`;
     expect(rateLimitSubjects()).toEqual([
       `RATE#signin-email#${accountId}`,
-      `RATE#signin-ip#${hashToken('203.0.113.7')}`,
+      `RATE#signin-email#${accountId}`,
+      ipSubject,
+      ipSubject,
+    ]);
+    expect(dynamodb.commandCalls(UpdateCommand).map((call) => call.args[0].input.Key?.sk)).toEqual([
+      'WINDOW#2026-10-03T12',
+      'WINDOW#2026-10-03',
+      'WINDOW#2026-10-03T12',
+      'WINDOW#2026-10-03',
     ]);
   });
 
