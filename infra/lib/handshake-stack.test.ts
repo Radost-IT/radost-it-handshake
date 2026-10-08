@@ -80,11 +80,13 @@ describe('HandshakeStack', () => {
         { AttributeName: 'sk', KeyType: 'RANGE' },
       ],
       BillingMode: 'PAY_PER_REQUEST',
+      WriteOnDemandThroughputSettings: { MaxWriteRequestUnits: 100 },
       TimeToLiveSpecification: { AttributeName: 'ttl', Enabled: true },
       Replicas: [
         Match.objectLike({
           PointInTimeRecoverySpecification: { PointInTimeRecoveryEnabled: true },
           DeletionProtectionEnabled: true,
+          ReadOnDemandThroughputSettings: { MaxReadRequestUnits: 300 },
         }),
       ],
     });

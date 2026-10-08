@@ -100,7 +100,8 @@ export class HandshakeStack extends Stack {
       partitionKey: { name: 'pk', type: AttributeType.STRING },
       sortKey: { name: 'sk', type: AttributeType.STRING },
       timeToLiveAttribute: 'ttl',
-      billing: Billing.onDemand(),
+      // Far above real traffic, so only a flood is throttled, and the bill stays bounded.
+      billing: Billing.onDemand({ maxReadRequestUnits: 300, maxWriteRequestUnits: 100 }),
       pointInTimeRecoverySpecification: { pointInTimeRecoveryEnabled: true },
       // The table holds every deal and its PayPal audit log; a stray delete must fail.
       deletionProtection: true,
