@@ -22,7 +22,7 @@ export interface WebhookRequest {
 }
 
 export interface WebhookDependencies {
-  /** Undefined until the webhook is registered with PayPal ([I-11]). */
+  /** Undefined until the webhook is registered with PayPal. */
   webhookId: string | undefined;
   verifySignature: (
     webhookId: string,

@@ -11,15 +11,23 @@ export interface WebhookTransmission {
   transmissionTime: string;
 }
 
+// Anyone can post to the webhook URL, and each verification costs a PayPal
+// call on the credentials that move money. Headers no sandbox delivery could
+// carry are refused before that call.
+const sandboxCertUrlSchema = z.url({
+  protocol: /^https$/,
+  hostname: /^(?:[a-z0-9-]+\.)*sandbox\.paypal\.com$/,
+});
+
 const transmissionHeadersSchema = z.object({
-  'paypal-auth-algo': z.string().min(1),
-  'paypal-cert-url': z.url(),
+  'paypal-auth-algo': z.literal('SHA256withRSA'),
+  'paypal-cert-url': sandboxCertUrlSchema,
   'paypal-transmission-id': z.string().min(1),
   'paypal-transmission-sig': z.string().min(1),
   'paypal-transmission-time': z.string().min(1),
 });
 
-/** Reads the signature headers, or returns undefined when any is missing. */
+/** Reads the signature headers, or returns undefined when any is missing or malformed. */
 export function readWebhookTransmission(
   headers: Record<string, string | undefined>,
 ): WebhookTransmission | undefined {

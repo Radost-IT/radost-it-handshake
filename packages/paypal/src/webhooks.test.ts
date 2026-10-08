@@ -36,6 +36,20 @@ describe('readWebhookTransmission', () => {
       readWebhookTransmission({ ...headers, 'paypal-transmission-sig': undefined }),
     ).toBeUndefined();
   });
+
+  it('refuses a certificate URL outside the PayPal sandbox', () => {
+    for (const certUrl of [
+      'https://api.paypal.com/v1/notifications/certs/CERT-1',
+      'https://sandbox.paypal.com.attacker.example/certs/CERT-1',
+      'http://api.sandbox.paypal.com/v1/notifications/certs/CERT-1',
+    ]) {
+      expect(readWebhookTransmission({ ...headers, 'paypal-cert-url': certUrl })).toBeUndefined();
+    }
+  });
+
+  it('refuses a signature algorithm PayPal does not use', () => {
+    expect(readWebhookTransmission({ ...headers, 'paypal-auth-algo': 'none' })).toBeUndefined();
+  });
 });
 
 describe('verifyWebhookSignature', () => {
