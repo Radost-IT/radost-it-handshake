@@ -3,4 +3,4 @@ export { ConfigError, PAYPAL_SANDBOX_BASE_URL, requireChannel3ApiKey, type Confi
 export { ssmParametersFromEnv, type SsmParameter } from './ssm-parameters';
 export { loadArenaMailConfig, type ArenaMailConfig } from './arena-mail';
 export { loadDailyTokenBudget } from './daily-token-budget';
-export { loadFormSigningSecret } from './form-signing-secret';
+export { loadFormSigningSecret, loadOriginVerifySecret } from './web-secrets';

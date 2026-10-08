@@ -188,6 +188,7 @@ scripts              probes, seeding, accounts, demo reset
 - PayPal runs in sandbox only. Config validation refuses any other base URL, and the webhook endpoint refuses certificate URLs outside the sandbox before it asks PayPal to verify a signature.
 - Every Bedrock call passes a daily token budget stored in DynamoDB, and only approved accounts and API keys can start one. One developer or challenger may use at most a fifth of the day's tokens, and the arena at most half. Each key or account opens up to 25 deals a day, and each researcher runs up to 40 attacks a day.
 - API Gateway throttles the whole API, and the routes anyone can call (health, sign-in, public arena reads, webhooks) have their own smaller limits.
+- CloudFront adds a secret header to each request it sends the web server. The forms refuse requests without it, so a direct caller of the server's function URL cannot fake its IP address.
 - Third-party text (listings, seller messages, evidence) goes into prompts wrapped and labeled as untrusted data.
 - Every Lambda role carries the permissions boundary in `infra/iam/workload-boundary.json`.
 
@@ -215,7 +216,7 @@ To deploy your own copy:
      --toolkit-stack-name Handshake-CDKToolkit --qualifier handshake \
      --cloudformation-execution-policies arn:aws:iam::$ACCOUNT:policy/HandshakeCdkExecution
    ```
-5. **Configuration.** Copy `.env.example` to `.env` and fill it in: the PayPal app, the bounty recipient email, two issued ACM certificates for the domain (one in us-east-1 for CloudFront, one in eu-west-1 for the APIs), the Route 53 hosted zone ID, a ZeptoMail Send Mail token for a verified sender domain, and `FORM_SIGNING_SECRET` from `openssl rand -hex 32`. Then run `pnpm ssm:put prod`. It prints parameter names, never values.
+5. **Configuration.** Copy `.env.example` to `.env` and fill it in: the PayPal app, the bounty recipient email, two issued ACM certificates for the domain (one in us-east-1 for CloudFront, one in eu-west-1 for the APIs), the Route 53 hosted zone ID, a ZeptoMail Send Mail token for a verified sender domain, and `FORM_SIGNING_SECRET` and `ORIGIN_VERIFY_SECRET`, each from `openssl rand -hex 32`. Then run `pnpm ssm:put prod`. It prints parameter names, never values.
 6. **Deploy** with `pnpm cdk:deploy`.
 7. **Webhook.** In the PayPal app, add a webhook for the `WebhookUrl` output with the `CHECKOUT.ORDER.APPROVED`, `PAYMENT.AUTHORIZATION.*`, `PAYMENT.CAPTURE.*` and `PAYMENT.PAYOUTS*` events. Put its ID in `.env` as `PAYPAL_WEBHOOK_ID`, run `pnpm ssm:put prod` and deploy again.
 8. **Accounts.** Seed the arena sellers with `pnpm seed:template-sellers <table>`, then create accounts with `pnpm accounts:judges`, `pnpm api-keys:create` and `pnpm arena:access`.

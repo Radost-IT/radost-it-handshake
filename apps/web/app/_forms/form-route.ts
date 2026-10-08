@@ -12,7 +12,7 @@ import {
 } from './attempt-limit';
 import { clientIp } from './client-ip';
 import { CHALLENGE_ANSWER_FIELD, CHALLENGE_TOKEN_FIELD, HONEYPOT_FIELD } from './fields';
-import { formSigningSecret } from './form-secret';
+import { formSigningSecret, originVerifySecret } from './form-secret';
 import { isSpamChallengeSolved } from './spam-challenge';
 
 // The shared Radost IT contact Lambda posts every submission to Slack. It
@@ -42,12 +42,20 @@ interface RequestContext {
   limit: AttemptLimit;
 }
 
-async function readRequestContext(req: NextRequest, form: FormName): Promise<RequestContext> {
-  const secret = await formSigningSecret();
-  const ip = clientIp(req.headers);
+async function readRequestContext(
+  req: NextRequest,
+  form: FormName,
+): Promise<RequestContext | null> {
+  const [secret, originSecret] = await Promise.all([formSigningSecret(), originVerifySecret()]);
+  const ip = clientIp(req.headers, originSecret);
+  if (ip === null) return null;
   const now = Date.now();
   const cookie = req.cookies.get(attemptCookieName(form))?.value;
   return { secret, ip, now, limit: checkAttemptLimit({ secret, form, ip, cookie, now }) };
+}
+
+function refuseDirectRequest() {
+  return NextResponse.json({ error: 'Send forms through the website' }, { status: 403 });
 }
 
 function blockedBody(limit: AttemptLimit) {
@@ -56,12 +64,15 @@ function blockedBody(limit: AttemptLimit) {
 
 /** Tells a returning browser it is still locked out, so it shows the lock and not a form that will fail. */
 export async function respondWithAttemptStatus(req: NextRequest, form: FormName) {
-  const { limit } = await readRequestContext(req, form);
+  const context = await readRequestContext(req, form);
+  if (!context) return refuseDirectRequest();
+  const { limit } = context;
   return NextResponse.json(limit.blocked ? blockedBody(limit) : { blocked: false });
 }
 
 export async function handleFormSubmission(req: NextRequest, form: FormDefinition) {
   const context = await readRequestContext(req, form.name);
+  if (!context) return refuseDirectRequest();
   if (context.limit.blocked) {
     const minutes = retryAfterMinutes(context.limit.retryAfterMs);
     return NextResponse.json(

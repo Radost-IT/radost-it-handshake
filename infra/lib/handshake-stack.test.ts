@@ -394,7 +394,24 @@ describe('HandshakeStack', () => {
     template.hasResourceProperties('AWS::Lambda::Url', { AuthType: 'NONE' });
   });
 
-  it('lets the web server read only its form signing secret', () => {
+  it('sends the origin secret header from CloudFront to the web server', () => {
+    template.hasResourceProperties('AWS::CloudFront::Distribution', {
+      DistributionConfig: Match.objectLike({
+        Origins: Match.arrayWith([
+          Match.objectLike({
+            OriginCustomHeaders: [
+              {
+                HeaderName: 'x-origin-verify',
+                HeaderValue: Match.objectLike({ Ref: Match.anyValue() }),
+              },
+            ],
+          }),
+        ]),
+      }),
+    });
+  });
+
+  it('lets the web server read only its form signing and origin secrets', () => {
     template.hasResourceProperties('AWS::Lambda::Function', {
       Environment: { Variables: Match.objectLike({ HANDSHAKE_STAGE: 'test' }) },
       Handler: 'index.handler',
@@ -410,6 +427,15 @@ describe('HandshakeStack', () => {
               'Fn::Join': [
                 '',
                 Match.arrayWith([':parameter/handshake/test/web/form-signing-secret']),
+              ],
+            },
+          }),
+          Match.objectLike({
+            Action: 'ssm:GetParameter',
+            Resource: {
+              'Fn::Join': [
+                '',
+                Match.arrayWith([':parameter/handshake/test/web/origin-verify-secret']),
               ],
             },
           }),

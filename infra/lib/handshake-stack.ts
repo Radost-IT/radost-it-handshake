@@ -486,6 +486,16 @@ export class HandshakeStack extends Stack {
       environment: { HANDSHAKE_STAGE: props.stage },
       overrides: {
         nextjsDistribution: {
+          // The server's function URL is public. This header lets the server
+          // trust the viewer address only on requests that came through CloudFront.
+          serverHttpOriginProps: {
+            customHeaders: {
+              'x-origin-verify': StringParameter.valueForStringParameter(
+                this,
+                `${configPath}/web/origin-verify-secret`,
+              ),
+            },
+          },
           distributionProps: {
             domainNames: [props.domains.web],
             certificate: certificateFromParameter(
@@ -499,6 +509,7 @@ export class HandshakeStack extends Stack {
     // The web server signs its form spam checks and must not see the PayPal or Channel3 keys.
     const webServer = web.serverFunction.lambdaFunction;
     this.grantConfigValueRead(webServer, `${configPath}/web/form-signing-secret`);
+    this.grantConfigValueRead(webServer, `${configPath}/web/origin-verify-secret`);
 
     const zone = HostedZone.fromHostedZoneAttributes(this, 'Zone', {
       zoneName: props.domains.zone,

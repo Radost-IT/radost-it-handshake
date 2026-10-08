@@ -5,7 +5,7 @@ export const PAYPAL_SANDBOX_BASE_URL = 'https://api-m.sandbox.paypal.com';
 
 const nonEmpty = z.string().trim().min(1);
 // 32 bytes as hex, the output of `openssl rand -hex 32`.
-export const formSigningSecretSchema = z.string().regex(/^[0-9a-f]{64}$/);
+export const hexSecretSchema = z.string().regex(/^[0-9a-f]{64}$/);
 export const zeptoMailApiUrlSchema = z.url({ protocol: /^https$/ });
 // ZeptoMail sends the token as the whole Authorization header, prefix included.
 export const zeptoMailTokenSchema = z.string().regex(/^Zoho-enczapikey \S+$/);
@@ -45,7 +45,9 @@ const rawConfigSchema = z.object({
   zeptoMailToken: zeptoMailTokenSchema.optional(),
   // Only the web server reads it, through `loadFormSigningSecret`. It is listed
   // here so `pnpm ssm:put` checks it, and the other services do not need it.
-  formSigningSecret: formSigningSecretSchema.optional(),
+  formSigningSecret: hexSecretSchema.optional(),
+  // Only the web server reads it, through `loadOriginVerifySecret`.
+  originVerifySecret: hexSecretSchema.optional(),
 } satisfies Record<ConfigKeyName, z.ZodType>);
 
 export interface Config {

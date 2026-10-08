@@ -1,6 +1,6 @@
 import { GetParameterCommand, ParameterNotFound, SSMClient } from '@aws-sdk/client-ssm';
 import { describe, expect, it, vi } from 'vitest';
-import { loadFormSigningSecret } from './form-signing-secret';
+import { loadFormSigningSecret, loadOriginVerifySecret } from './web-secrets';
 import { ConfigError } from './parse';
 
 const secret = 'a'.repeat(64);
@@ -58,6 +58,31 @@ describe('loadFormSigningSecret', () => {
 
     await expect(loadFormSigningSecret({ HANDSHAKE_STAGE: 'prod' }, client)).rejects.toThrow(
       ParameterNotFound,
+    );
+  });
+});
+
+describe('loadOriginVerifySecret', () => {
+  it('returns null locally, where no CloudFront sends the header', async () => {
+    await expect(loadOriginVerifySecret({})).resolves.toBeNull();
+  });
+
+  it('reads only its own parameter from SSM on AWS', async () => {
+    const { client, send } = ssmClientReturning(secret);
+
+    await expect(loadOriginVerifySecret({ HANDSHAKE_STAGE: 'prod' }, client)).resolves.toBe(secret);
+
+    expect(send.mock.calls[0]?.[0]?.input).toEqual({
+      Name: '/handshake/prod/web/origin-verify-secret',
+      WithDecryption: true,
+    });
+  });
+
+  it('rejects a value that is not 32 bytes of hex', async () => {
+    const { client } = ssmClientReturning('short');
+
+    await expect(loadOriginVerifySecret({ HANDSHAKE_STAGE: 'prod' }, client)).rejects.toThrow(
+      'SSM parameter /handshake/prod/web/origin-verify-secret must be 64 hex characters',
     );
   });
 });

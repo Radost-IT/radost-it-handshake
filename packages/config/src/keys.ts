@@ -42,6 +42,13 @@ export const configKeys = {
   zeptoMailApiUrl: { env: 'ZEPTOMAIL_API_URL', ssm: 'arena/zeptomail-api-url', secret: false },
   zeptoMailToken: { env: 'ZEPTOMAIL_TOKEN', ssm: 'arena/zeptomail-token', secret: true },
   formSigningSecret: { env: 'FORM_SIGNING_SECRET', ssm: 'web/form-signing-secret', secret: true },
+  // CloudFormation resolves only String parameters into the CloudFront origin
+  // header, so this one cannot be a SecureString.
+  originVerifySecret: {
+    env: 'ORIGIN_VERIFY_SECRET',
+    ssm: 'web/origin-verify-secret',
+    secret: false,
+  },
 } as const satisfies Record<string, ConfigKey>;
 
 export type ConfigKeyName = keyof typeof configKeys;

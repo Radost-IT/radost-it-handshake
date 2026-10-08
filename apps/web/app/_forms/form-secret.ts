@@ -1,13 +1,18 @@
-import { loadFormSigningSecret } from '@handshake/config';
-
-let secret: Promise<string> | undefined;
+import { loadFormSigningSecret, loadOriginVerifySecret } from '@handshake/config';
 
 // Loaded once per Lambda instance. A failed load is not cached, so the next
 // request tries again.
-export function formSigningSecret(): Promise<string> {
-  secret ??= loadFormSigningSecret().catch((error: unknown) => {
-    secret = undefined;
-    throw error;
-  });
-  return secret;
+function loadOnce<T>(load: () => Promise<T>): () => Promise<T> {
+  let value: Promise<T> | undefined;
+  return () => {
+    value ??= load().catch((error: unknown) => {
+      value = undefined;
+      throw error;
+    });
+    return value;
+  };
 }
+
+export const formSigningSecret = loadOnce(() => loadFormSigningSecret());
+
+export const originVerifySecret = loadOnce(() => loadOriginVerifySecret());
