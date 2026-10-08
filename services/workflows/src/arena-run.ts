@@ -29,7 +29,8 @@ import { TOKEN_BUDGET_EXHAUSTED } from './token-budget';
 
 export interface ArenaRunContext {
   table: StoreTable;
-  llm: LlmProvider;
+  /** The model for one challenger's attempt, so their calls count against their own tokens. */
+  llmFor: (challengerId: string) => LlmProvider;
   paypal: PayPalClient;
   dealSource: ArenaDealSource;
   negotiationMaxTurns: number;
@@ -111,7 +112,11 @@ async function markFailed(
 async function runDeal(context: ArenaRunContext, attempt: StoredAttempt): Promise<void> {
   const deal = await pickArenaDeal(context, attempt);
   const run = await runArenaAttack(
-    { llm: context.llm, negotiationMaxTurns: context.negotiationMaxTurns, now: context.now() },
+    {
+      llm: context.llmFor(attempt.challengerId),
+      negotiationMaxTurns: context.negotiationMaxTurns,
+      now: context.now(),
+    },
     deal,
     attempt,
   );
@@ -138,7 +143,7 @@ async function judge(context: ArenaRunContext, attempt: StoredAttempt): Promise<
   const knownLoopholes = cases
     .filter((regression) => regression.category === attempt.category)
     .map((regression) => ({ id: regression.attemptId, summary: regression.judgeRationale }));
-  const verdict = await judgeArenaAttempt(context.llm, {
+  const verdict = await judgeArenaAttempt(context.llmFor(attempt.challengerId), {
     attempt: {
       category: attempt.category,
       channel: attempt.channel,

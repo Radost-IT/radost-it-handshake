@@ -2,7 +2,10 @@ import type { LlmProvider } from '@handshake/agents';
 import {
   addTokensUsed,
   arenaTokenLimit,
+  challengerTokenPool,
+  developerTokenPool,
   getTokensUsed,
+  ownerTokenLimit,
   type StoreTable,
   type TokenPool,
 } from '@handshake/store';
@@ -27,14 +30,18 @@ export interface DailyTokenBudget {
   now: () => string;
 }
 
-export function dealTokenLimits(dailyTokenBudget: number): TokenLimit[] {
-  return [{ pool: 'all', tokens: dailyTokenBudget }];
+export function dealTokenLimits(dailyTokenBudget: number, developerId: string): TokenLimit[] {
+  return [
+    { pool: 'all', tokens: dailyTokenBudget },
+    { pool: developerTokenPool(developerId), tokens: ownerTokenLimit(dailyTokenBudget) },
+  ];
 }
 
-export function arenaTokenLimits(dailyTokenBudget: number): TokenLimit[] {
+export function arenaTokenLimits(dailyTokenBudget: number, challengerId: string): TokenLimit[] {
   return [
     { pool: 'all', tokens: dailyTokenBudget },
     { pool: 'arena', tokens: arenaTokenLimit(dailyTokenBudget) },
+    { pool: challengerTokenPool(challengerId), tokens: ownerTokenLimit(dailyTokenBudget) },
   ];
 }
 

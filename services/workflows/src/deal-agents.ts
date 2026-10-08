@@ -33,7 +33,8 @@ import { z } from 'zod';
 
 export interface DealAgentsContext {
   table: StoreTable;
-  llm: LlmProvider;
+  /** The model for one developer's deal, so their calls count against their own tokens. */
+  llmFor: (developerId: string) => LlmProvider;
   /** Null while product search is not set up; deals then need a seller ID. */
   catalog: ProductCatalog | null;
   negotiationMaxTurns: number;
@@ -85,16 +86,17 @@ export async function runDealAgentsTask(
 async function negotiate(context: DealAgentsContext, deal: Deal): Promise<DealAgentsResult> {
   const brief = await getDealBrief(context.table, deal.id);
   if (!brief) throw new DealRecordMissingError(`Deal ${deal.id} has no brief`);
-  const found = await findSeller(context, deal, brief);
+  const llm = context.llmFor(brief.buyerId);
+  const found = await findSeller(context, llm, deal, brief);
   if (!found.seller) return abandon(context, deal, found.reason);
   const { seller } = found;
 
   const { listing } = seller;
   const buyerBrief = { goal: brief.goal, maxPrice: deal.mandate.maxPrice };
   const buyer: NegotiationAgent = (negotiation) =>
-    decideBuyerMove(context.llm, { buyer: buyerBrief, listing, negotiation });
+    decideBuyerMove(llm, { buyer: buyerBrief, listing, negotiation });
   const sellerAgent: NegotiationAgent = (negotiation) =>
-    decideSellerMove(context.llm, { seller, listing, negotiation });
+    decideSellerMove(llm, { seller, listing, negotiation });
 
   const turns: NegotiationTurn[] = [];
   const record = (outcome: string | null) =>
@@ -122,7 +124,7 @@ async function negotiate(context: DealAgentsContext, deal: Deal): Promise<DealAg
     return abandon(context, deal, status.reason);
   }
 
-  const { terms } = await draftDealTerms(context.llm, {
+  const { terms } = await draftDealTerms(llm, {
     dealId: deal.id,
     buyerId: brief.buyerId,
     sellerId: seller.sellerId,
@@ -141,6 +143,7 @@ async function negotiate(context: DealAgentsContext, deal: Deal): Promise<DealAg
 
 async function findSeller(
   context: DealAgentsContext,
+  llm: LlmProvider,
   deal: Deal,
   brief: DealBrief,
 ): Promise<{ seller: Seller } | { seller: null; reason: string }> {
@@ -151,7 +154,7 @@ async function findSeller(
       : { seller: null, reason: `Seller ${brief.sellerId} does not exist` };
   }
   if (context.catalog === null) return { seller: null, reason: CATALOG_UNAVAILABLE };
-  const shopping = await findProductForGoal(context.llm, {
+  const shopping = await findProductForGoal(llm, {
     goal: brief.goal,
     mandate: deal.mandate,
     catalog: context.catalog,
@@ -177,7 +180,8 @@ async function verify(context: DealAgentsContext, deal: Deal): Promise<DealAgent
   }
   const evidence = await getEvidence(context.table, deal.id);
   if (!evidence) throw new DealRecordMissingError(`Deal ${deal.id} has no delivery evidence`);
-  const { proposal } = await verifyDelivery(context.llm, {
+  const llm = context.llmFor(deal.contract.terms.buyerId);
+  const { proposal } = await verifyDelivery(llm, {
     terms: deal.contract.terms,
     evidence,
     now: context.now(),

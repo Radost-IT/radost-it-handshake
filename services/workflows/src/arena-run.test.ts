@@ -79,7 +79,7 @@ async function runTask(
   const result = await runArenaTask(
     {
       table,
-      llm,
+      llmFor: () => llm,
       paypal: client,
       dealSource: 'templates',
       negotiationMaxTurns: 8,

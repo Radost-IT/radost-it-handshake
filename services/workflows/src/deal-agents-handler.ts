@@ -44,11 +44,12 @@ const bedrock = createBedrockLlmProvider(
 
 const context: DealAgentsContext = {
   table,
-  llm: withDailyTokenBudget(bedrock, {
-    table,
-    limits: dealTokenLimits(config.limits.dailyTokenBudget),
-    now,
-  }),
+  llmFor: (developerId) =>
+    withDailyTokenBudget(bedrock, {
+      table,
+      limits: dealTokenLimits(config.limits.dailyTokenBudget, developerId),
+      now,
+    }),
   catalog: config.channel3.apiKey === undefined ? null : channel3Catalog(config.channel3.apiKey),
   negotiationMaxTurns: config.limits.negotiationMaxTurns,
   now,

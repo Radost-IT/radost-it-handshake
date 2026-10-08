@@ -9,11 +9,13 @@ import {
 } from '@handshake/arena';
 import {
   arenaTokenLimit,
+  challengerTokenPool,
   createArenaAttempt,
   getArenaAttempt,
   getPaidBounty,
   getTokensUsed,
   hasRegressionCase,
+  ownerTokenLimit,
   takeRateLimitSlot,
   type StoredAttempt,
 } from '@handshake/store';
@@ -91,15 +93,19 @@ export async function submitAttempt(
     return json(429, { error: 'You have used your attempts for today. Come back tomorrow' });
   }
 
-  const [usedToday, usedByArena] = await Promise.all([
+  const [usedToday, usedByArena, usedByChallenger] = await Promise.all([
     getTokensUsed(context.table, today, 'all'),
     getTokensUsed(context.table, today, 'arena'),
+    getTokensUsed(context.table, today, challengerTokenPool(session.challenger.id)),
   ]);
   if (
     usedToday >= context.dailyTokenBudget ||
     usedByArena >= arenaTokenLimit(context.dailyTokenBudget)
   ) {
     return json(503, { error: 'The arena has used its AI budget for today. Come back tomorrow' });
+  }
+  if (usedByChallenger >= ownerTokenLimit(context.dailyTokenBudget)) {
+    return json(429, { error: 'You have used your AI budget for today. Come back tomorrow' });
   }
 
   const attemptId = context.newAttemptId();

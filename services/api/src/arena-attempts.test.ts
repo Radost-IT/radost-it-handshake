@@ -26,6 +26,7 @@ const context = { ...arenaTestContext('2026-10-03T12:30:00Z'), newAttemptId: () 
 
 const budgetKey = { pk: 'BUDGET#2026-10-03', sk: 'TOKENS' };
 const arenaBudgetKey = { pk: 'BUDGET#2026-10-03', sk: 'ARENA' };
+const challengerBudgetKey = { pk: 'BUDGET#2026-10-03', sk: 'POOL#challenger:challenger-1' };
 const request = (body: unknown) => ({
   body: JSON.stringify(body),
   authorization: sessionAuthorization,
@@ -43,6 +44,7 @@ beforeEach(() => {
   mockSignedIn(dynamodb);
   dynamodb.on(GetCommand, { Key: budgetKey }).resolves({ Item: { ...budgetKey, used: 400 } });
   dynamodb.on(GetCommand, { Key: arenaBudgetKey }).resolves({});
+  dynamodb.on(GetCommand, { Key: challengerBudgetKey }).resolves({});
   dynamodb.on(UpdateCommand).resolves({});
   dynamodb.on(PutCommand).resolves({});
   stepFunctions.on(StartExecutionCommand).resolves({});
@@ -172,6 +174,17 @@ describe('submitAttempt', () => {
     const response = await submitAttempt(context, request(attack));
 
     expect(response.statusCode).toBe(503);
+    expect(stepFunctions.calls()).toHaveLength(0);
+  });
+
+  it('refuses attempts once the challenger used their fifth of the day', async () => {
+    dynamodb
+      .on(GetCommand, { Key: challengerBudgetKey })
+      .resolves({ Item: { ...challengerBudgetKey, used: 200 } });
+
+    const response = await submitAttempt(context, request(attack));
+
+    expect(response.statusCode).toBe(429);
     expect(stepFunctions.calls()).toHaveLength(0);
   });
 });

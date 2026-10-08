@@ -116,7 +116,15 @@ export {
   type SignInCodeCheck,
 } from './sign-in-codes';
 export type { StoreTable } from './table';
-export { addTokensUsed, arenaTokenLimit, getTokensUsed, type TokenPool } from './token-budget';
+export {
+  addTokensUsed,
+  arenaTokenLimit,
+  challengerTokenPool,
+  developerTokenPool,
+  getTokensUsed,
+  ownerTokenLimit,
+  type TokenPool,
+} from './token-budget';
 export { saveWait, takeWait, type WaitSignal } from './waits';
 export {
   getSeller,

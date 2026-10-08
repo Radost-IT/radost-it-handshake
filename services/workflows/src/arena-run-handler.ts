@@ -41,11 +41,12 @@ const bedrock = createBedrockLlmProvider(
 
 const context: ArenaRunContext = {
   table,
-  llm: withDailyTokenBudget(bedrock, {
-    table,
-    limits: arenaTokenLimits(config.limits.dailyTokenBudget),
-    now,
-  }),
+  llmFor: (challengerId) =>
+    withDailyTokenBudget(bedrock, {
+      table,
+      limits: arenaTokenLimits(config.limits.dailyTokenBudget, challengerId),
+      now,
+    }),
   paypal: createPayPalClient(config.paypal),
   dealSource: config.arena.dealSource,
   negotiationMaxTurns: config.limits.negotiationMaxTurns,

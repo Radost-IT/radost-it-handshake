@@ -5,7 +5,7 @@ import {
   PutCommand,
   TransactWriteCommand,
 } from '@aws-sdk/lib-dynamodb';
-import type { ProductCatalog } from '@handshake/agents';
+import type { LlmProvider, ProductCatalog } from '@handshake/agents';
 import { createDeal, money, transitionDeal, type Deal } from '@handshake/core';
 import { mandate, verifyingDeal } from '@handshake/core/testing';
 import type { DealBrief, Seller } from '@handshake/store';
@@ -53,10 +53,10 @@ function store(deal: Deal, records: Record<string, Record<string, unknown>> = {}
 }
 
 function context(
-  llm: DealAgentsContext['llm'],
+  llm: LlmProvider,
   catalog: DealAgentsContext['catalog'] = emptyCatalog,
 ): DealAgentsContext {
-  return { table, llm, catalog, negotiationMaxTurns: 6, now: () => now };
+  return { table, llmFor: () => llm, catalog, negotiationMaxTurns: 6, now: () => now };
 }
 
 function savedStates(): string[] {
@@ -112,7 +112,7 @@ describe('Negotiate', () => {
   it('abandons the deal when the buyer agent finds nothing in the catalog', async () => {
     store(negotiatingDeal(), { BRIEF: brief(null) });
     // The shopper picks its own tool, so the scripted model, which answers by forced tool name, does not fit.
-    const llm: DealAgentsContext['llm'] = {
+    const llm: LlmProvider = {
       converse: () =>
         Promise.resolve({
           content: [

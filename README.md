@@ -185,7 +185,7 @@ scripts              probes, seeding, accounts, demo reset
 
 - The language model never moves money. Agents return proposals, policy in `packages/core` checks them against the contract and the mandate, and only `packages/settlement` calls PayPal.
 - PayPal runs in sandbox only. Config validation refuses any other base URL, and the webhook endpoint refuses certificate URLs outside the sandbox before it asks PayPal to verify a signature.
-- Every Bedrock call passes a daily token budget stored in DynamoDB, and only approved accounts and API keys can start one. Each key or account opens up to 25 deals a day, and each researcher runs up to 40 attacks a day.
+- Every Bedrock call passes a daily token budget stored in DynamoDB, and only approved accounts and API keys can start one. One developer or challenger may use at most a fifth of the day's tokens, and the arena at most half. Each key or account opens up to 25 deals a day, and each researcher runs up to 40 attacks a day.
 - API Gateway throttles the whole API, and the routes anyone can call (health, sign-in, public arena reads, webhooks) have their own smaller limits.
 - Third-party text (listings, seller messages, evidence) goes into prompts wrapped and labeled as untrusted data.
 - Every Lambda role carries the permissions boundary in `infra/iam/workload-boundary.json`.
