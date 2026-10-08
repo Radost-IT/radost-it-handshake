@@ -1,8 +1,8 @@
 # CLAUDE.md
 
 Instructions for Claude Code working on **Handshake by Radost IT**.
-Product spec and phase plan: `PROJECT.md`. Manual setup done by the human: `INSTRUCTIONS.md`.
-Read all three before the first task of a session.
+Architecture, layout and deploy setup: `README.md`.
+Read both before the first task of a session.
 
 ## The product in one paragraph
 
@@ -99,8 +99,7 @@ If you add or change a command, update this list and the README in the same comm
 1. Restate the task in one or two sentences and list the files you expect to touch.
 2. Make the smallest change that fully solves the task, with tests.
 3. Run `pnpm typecheck && pnpm lint && pnpm test`; run `pnpm eval` when prompts or policy change. Report the results honestly, including failures.
-4. Tick the matching item in `PROJECT.md` when a step is done.
-5. Commit and push each finished task. One task, one commit. The message is short, plain, and human readable: say what changed and why (Conventional Commits format).
-6. If a rule here blocks progress or seems wrong, stop and ask. Do not work around it silently.
-7. When you need the human to do something outside the code (accounts, keys, console clicks), add or update a step in `INSTRUCTIONS.md` and tell them.
-8. When something does not work as documented or expected (a failed deploy, a sandbox quirk, a model or API limit), add an entry to `CHALLENGES.md` in the same commit as the fix. Say what we expected, what happened, and how we solved it, with the exact error message.
+4. Commit and push each finished task. One task, one commit. The message is short, plain, and human readable: say what changed and why (Conventional Commits format).
+5. If a rule here blocks progress or seems wrong, stop and ask. Do not work around it silently.
+6. When you need the human to do something outside the code (accounts, keys, console clicks), tell them, and update the Deploy section of `README.md` if the setup changes.
+7. When something does not work as documented or expected (a failed deploy, a sandbox quirk, a model or API limit), add an entry to `CHALLENGES.md` in the same commit as the fix. Say what we expected, what happened, and how we solved it, with the exact error message.

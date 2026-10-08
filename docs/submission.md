@@ -1,6 +1,6 @@
 # Devpost submission draft: Handshake by Radost IT
 
-Working draft of the Devpost answers. Update it as the build progresses, and paste it into Devpost in step [I-16].
+The Devpost answers. Judge sign-in codes and sandbox passwords live only in Devpost.
 
 Devpost renders Markdown only in "About the project". Every other answer below is plain text, so paste it as it is. Lines starting with "Draft note:" are for us only. Remove them before pasting.
 
@@ -220,20 +220,11 @@ https://handshake.radostit.com
 
 ## Testing instructions for judges
 
-Draft note: fill in the real values after [I-13].
-
 1. Open https://handshake.radostit.com.
 2. Sign in at https://handshake.radostit.com/sign-in with one of the judge accounts in step 5. Each judge has their own 25 deals and 40 arena attempts a day, so shared limits never lock you out.
-3. Deal mode: in the console, enter a goal such as "A day pack for hiking with a rain cover", keep the 60.00 budget, enter the seller ID `arena-backpack`, and open the deal. Follow the buyer link and watch the agents negotiate. When asked, approve the price. Then select "Pay with PayPal" and log in to the PayPal sandbox checkout with this sandbox personal account:
-   Email: sb-lt01q53147736@personal.example.com
-   Password: D^@dT*0e
+3. Deal mode: in the console, enter a goal such as "A day pack for hiking with a rain cover", keep the 60.00 budget, enter the seller ID `arena-backpack`, and open the deal. Follow the buyer link and watch the agents negotiate. When asked, approve the price. Then select "Pay with PayPal" and log in to the PayPal sandbox checkout with the sandbox personal account given in the Devpost testing instructions.
 4. When the deal shows "Report the delivery", play the seller. "Send the matching item" lets the verifier capture the payment. If the verifier is not sure about a condition, the deal shows "Decide this deal" and you choose "Release payment" or "Refund". On a second deal, "Send a wrong item" makes it refuse the delivery, and the hold is voided.
-5. Developer console: sign in at https://handshake.radostit.com/sign-in with one of the judge accounts below (from [I-27]). Enter the email, select "Email me a code", and type the fixed code; no email is sent. Then open https://handshake.radostit.com/console. Open a deal and select it to read its PayPal calls and webhooks.
-   judge-1@radostit.com, code TBD
-   judge-2@radostit.com, code TBD
-   judge-3@radostit.com, code TBD
-   judge-4@radostit.com, code TBD
-   judge-5@radostit.com, code TBD
+5. Developer console: sign in at https://handshake.radostit.com/sign-in with one of the judge accounts. Enter the email, select "Email me a code", and type the fixed code; no email is sent. The emails and codes are in the Devpost testing instructions, not in this repository. Then open https://handshake.radostit.com/console. Open a deal and select it to read its PayPal calls and webhooks.
 6. Merchants: with the same judge account, open https://handshake.radostit.com/merchants. You see the demo merchant's settings: business, PayPal business account, API key and the five seller agents. They are read-only during the beta. New merchants apply on the same page and wait for approval.
 7. Evals: open https://handshake.radostit.com/evals to see the defense rate per attack category.
 8. Red Team Lab: with the same judge account, open /arena and pick a handle. Then write a malicious listing or message and run it. You will see either the blocked action and the reason, or a sandbox bounty and a new regression case. Anyone else can ask for access at /request-access; we check requests every day during judging.

@@ -56,7 +56,7 @@ async function createCardOrder(dealId: string): Promise<{ id?: string; status?: 
       error.body.includes(CARDS_DISABLED)
     ) {
       console.error(
-        `${CARDS_DISABLED}: enable card payments for the sandbox app, see INSTRUCTIONS.md [I-3].`,
+        `${CARDS_DISABLED}: enable Advanced Credit and Debit Card Payments for the sandbox app.`,
       );
       process.exit(1);
     }

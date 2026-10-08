@@ -16,7 +16,7 @@ Market figures and our TAM, SAM and SOM estimate are in `docs/market.md`.
 
 The Red Team Lab at `/arena` is the public security record: invited researchers attack the agents, and every breach pays a sandbox bounty and becomes a regression test.
 
-Built for the PayPal AI Hackathon. See `PROJECT.md` for the plan.
+Built for the PayPal AI Hackathon.
 
 ## Local development
 
@@ -146,26 +146,80 @@ Everyone signs in at `/sign-in` with an email and a six-digit code; there are no
 
 The lab pages call the deployed API at https://api-handshake.radostit.com, which accepts browser calls only from the hosted site. They do not work from `pnpm dev`.
 
+## Architecture
+
+| Concern | Choice |
+| --- | --- |
+| Web app | Next.js App Router and Tailwind, AG Grid Community and AG Charts Community. Built with OpenNext and served from CloudFront, S3 and a server Lambda |
+| HTTP API | API Gateway HTTP API and Lambda (Node.js 22, TypeScript) |
+| Live updates | API Gateway WebSocket API, fed by a DynamoDB stream |
+| Deal lifecycle | Step Functions Standard, with `waitForTaskToken` for human approval and delivery evidence |
+| PayPal events | Signature-verified webhooks published to an EventBridge bus |
+| Data | One DynamoDB table, on demand |
+| Configuration and secrets | SSM Parameter Store, secrets as `SecureString` |
+| Agents | Amazon Bedrock, Converse API with tool use |
+| Email | ZeptoMail, for sign-in codes and access emails |
+| Infrastructure | AWS CDK (TypeScript), one stack |
+
+```text
+apps/web             Next.js app
+services/api         HTTP and WebSocket Lambda handlers
+services/workflows   Step Functions task handlers
+services/webhooks    PayPal webhook ingest
+packages/config      loads and validates config from .env or SSM
+packages/core        deal state machine, policy engine, money (pure, no I/O)
+packages/paypal      PayPal client: orders, authorizations, payouts, webhook verification
+packages/settlement  the only caller of PayPal money endpoints
+packages/agents      buyer, seller, contract, verifier and arena judge agents
+packages/arena       attack catalog, scoring, ranks, badges, regression cases
+packages/channel3    Channel3 client and cache
+packages/store       DynamoDB repositories
+packages/mail        ZeptoMail emails
+packages/mcp         MCP server over the Deal API
+infra                AWS CDK app and IAM policies
+evals                agent eval scenarios and the committed report
+scripts              probes, seeding, accounts, demo reset
+```
+
+## Security
+
+- The language model never moves money. Agents return proposals, policy in `packages/core` checks them against the contract and the mandate, and only `packages/settlement` calls PayPal.
+- PayPal runs in sandbox only. Config validation refuses any other base URL, and the webhook endpoint refuses certificate URLs outside the sandbox before it asks PayPal to verify a signature.
+- Every Bedrock call passes a daily token budget stored in DynamoDB, and only approved accounts and API keys can start one. Each key or account opens up to 25 deals a day, and each researcher runs up to 40 attacks a day.
+- API Gateway throttles the whole API, and the routes anyone can call (health, sign-in, public arena reads, webhooks) have their own smaller limits.
+- Third-party text (listings, seller messages, evidence) goes into prompts wrapped and labeled as untrusted data.
+- Every Lambda role carries the permissions boundary in `infra/iam/workload-boundary.json`.
+
+To report a security problem, use the contact form at https://handshake.radostit.com/contact rather than a public issue.
+
 ## Evals
 
 `pnpm eval` runs every scenario in `evals/scenarios/` against the real agents on Bedrock and writes `evals/report.json`. Scenarios that replay a Red Team Lab attack name its category in an `attack` field; the others are baseline deals that must still close and pay. The `/evals` page is built from the committed report and shows the defense rate per attack category in AG Charts and every scenario in AG Grid. Commit the new report after each run, then redeploy.
 
 ## Deploy
 
-The AWS CDK app in `infra/` deploys one production stack, `Handshake-prod`, to eu-west-1. Bootstrap and SSM setup are described in `INSTRUCTIONS.md` [I-10].
+The AWS CDK app in `infra/` deploys one production stack, `Handshake-prod`, to eu-west-1. The web app runs on https://handshake.radostit.com, the HTTP API on https://api-handshake.radostit.com and the WebSocket API on wss://ws-handshake.radostit.com. `cdk:synth` and `cdk:deploy` build the web app with OpenNext first.
 
-The web app is a Next.js app. `cdk:synth` and `cdk:deploy` build it with OpenNext first, then the `cdk-nextjs-standalone` construct deploys it behind CloudFront.
+Configuration is validated at startup. Locally it comes from `.env`; on AWS it comes from SSM Parameter Store under `/handshake/prod/`. Lambdas get only the parameter path, never secret values.
 
-The web app runs on https://handshake.radostit.com, the HTTP API on https://api-handshake.radostit.com and the WebSocket API on wss://ws-handshake.radostit.com.
+To deploy your own copy:
 
-The stack reads the `*.radostit.com` certificate ARNs and the Route 53 hosted zone ID from SSM and creates the DNS records; see `INSTRUCTIONS.md` [I-10].
+1. **PayPal sandbox.** Create a Merchant app linked to a US sandbox business account. Enable Payouts and Advanced Credit and Debit Card Payments; the probes and integration tests pay with a sandbox test card. Create two sandbox personal accounts: a demo buyer and the arena bounty recipient.
+2. **Bedrock.** In eu-west-1, open the Bedrock playground once as an admin and send a prompt to each model in `.env.example`. The first call subscribes the account in AWS Marketplace.
+3. **IAM.** Create the policies in `infra/iam/` by hand: `HandshakeCdkExecution` from `cdk-execution-policy.json`, `HandshakeDeveloper` from `developer-policy.json` (attach it to the CLI user you deploy with), and `HandshakeWorkloadBoundary` from `workload-boundary.json`. CloudFormation may create only roles that carry the boundary.
+4. **Bootstrap** CDK once as an admin, with its own qualifier so it stays apart from other CDK apps in the account:
+   ```bash
+   ACCOUNT=$(aws sts get-caller-identity --query Account --output text)
+   npx aws-cdk@latest bootstrap aws://$ACCOUNT/eu-west-1 \
+     --toolkit-stack-name Handshake-CDKToolkit --qualifier handshake \
+     --cloudformation-execution-policies arn:aws:iam::$ACCOUNT:policy/HandshakeCdkExecution
+   ```
+5. **Configuration.** Copy `.env.example` to `.env` and fill it in: the PayPal app, the bounty recipient email, two issued ACM certificates for the domain (one in us-east-1 for CloudFront, one in eu-west-1 for the APIs), the Route 53 hosted zone ID, a ZeptoMail Send Mail token for a verified sender domain, and `FORM_SIGNING_SECRET` from `openssl rand -hex 32`. Then run `pnpm ssm:put prod`. It prints parameter names, never values.
+6. **Deploy** with `pnpm cdk:deploy`.
+7. **Webhook.** In the PayPal app, add a webhook for the `WebhookUrl` output with the `CHECKOUT.ORDER.APPROVED`, `PAYMENT.AUTHORIZATION.*`, `PAYMENT.CAPTURE.*` and `PAYMENT.PAYOUTS*` events. Put its ID in `.env` as `PAYPAL_WEBHOOK_ID`, run `pnpm ssm:put prod` and deploy again.
+8. **Accounts.** Seed the arena sellers with `pnpm seed:template-sellers <table>`, then create accounts with `pnpm accounts:judges`, `pnpm api-keys:create` and `pnpm arena:access`.
 
-```bash
-pnpm cdk:synth
-pnpm cdk:deploy
-```
-
-Configuration is validated at startup. Locally it comes from `.env`; on AWS it comes from SSM Parameter Store under `/handshake/prod/`.
+The PayPal dashboard's webhook simulator sends events that PayPal's verification API cannot verify, so the endpoint answers them with 401. Real sandbox events are verified.
 
 ## License
 

@@ -31,9 +31,7 @@ try {
     process.exit(1);
   }
   console.log(`Payout batch ${result.payout.batchId}: ${result.payout.status}`);
-  console.log(
-    'Check the arena recipient sandbox account for 1.00 USD, see INSTRUCTIONS.md [I-12].',
-  );
+  console.log('Check the arena recipient sandbox account for 1.00 USD.');
 } catch (error) {
   if (error instanceof PayPalApiError) {
     console.error(`${error.message}, debug_id ${error.debugId ?? 'none'}`);

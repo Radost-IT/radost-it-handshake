@@ -80,5 +80,5 @@ Voice: "Handshake. Try it at handshake dot radost I T dot com."
 ## Rebuilding
 
 - Recordings are Playwright scripts against the hosted app; the merchant scenes need judge-1's code in `JUDGE_CODE`, typed into a field that the recording masks.
-- Run `AWS_PROFILE=handshake bash scripts/handshake-pitch-video.sh` in app-store-promo-maker. The profile needs `polly:SynthesizeSpeech` ([I-14]). Voice lines are cached by text, so only changed lines are synthesized again.
+- Run `AWS_PROFILE=handshake bash scripts/handshake-pitch-video.sh` in app-store-promo-maker. The profile needs `polly:SynthesizeSpeech`. Voice lines are cached by text, so only changed lines are synthesized again.
 - Run `pnpm demo:reset` first if the judge's deal list is crowded.
