@@ -1,9 +1,13 @@
 import type { Metadata } from 'next';
 import { SignInView } from './sign-in-view';
+import { pageMetadata } from '../site';
 
 export const metadata: Metadata = {
-  title: 'Sign in',
-  description: 'Sign in to the Handshake console and the Red Team Lab.',
+  ...pageMetadata({
+    title: 'Sign in',
+    description: 'Sign in to the Handshake console and the Red Team Lab.',
+    path: '/sign-in',
+  }),
   robots: { index: false, follow: false },
 };
 

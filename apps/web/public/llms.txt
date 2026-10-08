@@ -26,11 +26,25 @@ Security researchers act as a malicious seller and try to make the agents releas
 
 - PayPal Orders v2 with authorize, capture, void and reauthorize; PayPal Payouts; signature-verified PayPal webhooks
 - Channel3 for real product search
-- Amazon Bedrock (Converse API) for the buyer, seller, verifier and judge agents
+- Amazon Bedrock (Converse API) with Claude Sonnet 4.6 and Claude Opus 4.6 for the buyer, seller, verifier and judge agents
 - AWS serverless: Lambda, API Gateway, Step Functions, EventBridge, DynamoDB, CloudFront
 - Next.js, AG Grid Community and AG Charts Community
+
+## Screenshots
+
+- [Agents negotiate a price](https://handshake.radostit.com/screenshots/02-negotiation.webp)
+- [Buyer approves a price above the threshold](https://handshake.radostit.com/screenshots/03-approve-price.webp)
+- [Escrow timeline of a settled deal](https://handshake.radostit.com/screenshots/05-settled-timeline.webp)
+- [Verifier result and PayPal activity](https://handshake.radostit.com/screenshots/06-paypal-activity.webp)
+- [Developer console with deals and PayPal calls](https://handshake.radostit.com/screenshots/07-console-deals.webp)
+- [Red Team Lab](https://handshake.radostit.com/screenshots/09-red-team-lab.webp)
+- [An attack the agents held](https://handshake.radostit.com/screenshots/10-attack-held.webp)
+- [Agent defense report](https://handshake.radostit.com/screenshots/11-evals.webp)
 
 ## Links
 
 - App: https://handshake.radostit.com
+- Agent defense report: https://handshake.radostit.com/evals
+- Red Team Lab: https://handshake.radostit.com/arena
+- Merchants: https://handshake.radostit.com/merchants
 - Radost IT: https://radostit.com

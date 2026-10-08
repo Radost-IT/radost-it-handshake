@@ -1,12 +1,13 @@
 import type { Metadata } from 'next';
 import { ContactForm } from '../components/contact-form';
+import { pageMetadata } from '../site';
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: 'Contact',
   description:
     'Questions about Handshake, partnerships or the Red Team Lab. Write to the Radost IT team.',
-  alternates: { canonical: '/contact' },
-};
+  path: '/contact',
+});
 
 export default function ContactPage() {
   return (

@@ -1,12 +1,14 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { LeaderboardBoard } from './leaderboard-board';
+import { pageMetadata, SHARE_IMAGES } from '../../site';
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: 'Red Team Lab leaderboard',
   description: 'The security researchers who earned the most XP testing the Handshake agents.',
-  alternates: { canonical: '/arena/leaderboard' },
-};
+  path: '/arena/leaderboard',
+  shareImage: SHARE_IMAGES.arena,
+});
 
 export default function LeaderboardPage() {
   return (

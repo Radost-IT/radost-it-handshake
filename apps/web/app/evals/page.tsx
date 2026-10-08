@@ -3,15 +3,17 @@ import path from 'node:path';
 import type { Metadata } from 'next';
 import { evalReportSchema, type EvalReport } from './report';
 import { EvalReportView } from './eval-report-view';
+import { pageMetadata, SHARE_IMAGES } from '../site';
 
 export const dynamic = 'force-static';
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: 'Agent defense report',
   description:
     'How the Handshake buyer and verifier agents handled scripted attacks and honest deals in the latest eval run on Amazon Bedrock.',
-  alternates: { canonical: '/evals' },
-};
+  path: '/evals',
+  shareImage: SHARE_IMAGES.evals,
+});
 
 // The page is built from the report `pnpm eval` writes at the repository root.
 const reportFile = path.join(process.cwd(), '..', '..', 'evals', 'report.json');

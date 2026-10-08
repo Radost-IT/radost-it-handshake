@@ -1,13 +1,15 @@
 import { MIN_ACCESS_REASON_LENGTH } from '@handshake/arena';
 import type { Metadata } from 'next';
 import { MerchantView } from './merchant-view';
+import { pageMetadata, SHARE_IMAGES } from '../site';
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: 'Merchants',
   description:
     'Sell to AI shopping agents. Your seller agent negotiates, PayPal holds the payment, and it is captured once delivery matches the contract.',
-  alternates: { canonical: '/merchants' },
-};
+  path: '/merchants',
+  shareImage: SHARE_IMAGES.merchants,
+});
 
 export default function MerchantsPage() {
   return (

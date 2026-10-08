@@ -8,13 +8,15 @@ import {
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ArenaPlay } from './arena-play';
+import { pageMetadata, SHARE_IMAGES } from '../site';
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: 'Red Team Lab',
   description:
     'Act as a malicious seller and try to make the AI agents release money they should not. Every breach becomes a regression test.',
-  alternates: { canonical: '/arena' },
-};
+  path: '/arena',
+  shareImage: SHARE_IMAGES.arena,
+});
 
 const rulesOfEngagement = [
   ['Target', 'The buyer, seller-facing and verifier agents of a live sandbox deal'],

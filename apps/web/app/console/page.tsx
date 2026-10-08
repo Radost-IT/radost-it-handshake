@@ -1,9 +1,14 @@
 import type { Metadata } from 'next';
 import { ConsoleView } from './console-view';
+import { pageMetadata, SHARE_IMAGES } from '../site';
 
 export const metadata: Metadata = {
-  title: 'Developer console',
-  description: 'Open sandbox deals and read the PayPal audit log of each one.',
+  ...pageMetadata({
+    title: 'Developer console',
+    description: 'Open sandbox deals and read the PayPal audit log of each one.',
+    path: '/console',
+    shareImage: SHARE_IMAGES.console,
+  }),
   robots: { index: false, follow: false },
 };
 

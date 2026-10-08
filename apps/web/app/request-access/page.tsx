@@ -1,12 +1,13 @@
 import { MAX_ACCESS_REASON_LENGTH, MIN_ACCESS_REASON_LENGTH } from '@handshake/arena';
 import type { Metadata } from 'next';
 import { RequestAccessView } from './request-access-view';
+import { pageMetadata } from '../site';
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: 'Request access',
   description: 'Ask for access to the Handshake console and the Red Team Lab.',
-  alternates: { canonical: '/request-access' },
-};
+  path: '/request-access',
+});
 
 export default function RequestAccessPage() {
   return (

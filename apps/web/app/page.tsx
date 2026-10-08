@@ -1,18 +1,64 @@
 import Link from 'next/link';
-import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from './site';
+import {
+  PUBLISHER,
+  SCREENSHOTS,
+  screenshotUrl,
+  SITE_DESCRIPTION,
+  SITE_NAME,
+  SITE_URL,
+} from './site';
 
 const structuredData = {
   '@context': 'https://schema.org',
-  '@type': 'WebApplication',
-  name: SITE_NAME,
-  url: SITE_URL,
-  description: SITE_DESCRIPTION,
-  applicationCategory: 'FinanceApplication',
-  operatingSystem: 'Web',
-  image: `${SITE_URL}/logo.png`,
-  offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
-  creator: { '@type': 'Organization', name: 'Radost IT', url: 'https://radostit.com' },
+  '@graph': [
+    PUBLISHER,
+    {
+      '@type': 'WebSite',
+      '@id': `${SITE_URL}/#website`,
+      name: SITE_NAME,
+      url: SITE_URL,
+      description: SITE_DESCRIPTION,
+      inLanguage: 'en',
+      publisher: { '@id': PUBLISHER['@id'] },
+    },
+    {
+      '@type': 'WebApplication',
+      '@id': `${SITE_URL}/#app`,
+      name: SITE_NAME,
+      url: SITE_URL,
+      description: SITE_DESCRIPTION,
+      applicationCategory: 'FinanceApplication',
+      applicationSubCategory: 'Escrow for AI shopping agents',
+      operatingSystem: 'Web',
+      isAccessibleForFree: true,
+      image: `${SITE_URL}/logo.png`,
+      offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+      featureList: [
+        'Buyer and seller agents negotiate real products',
+        'PayPal Orders with intent AUTHORIZE hold the payment in escrow',
+        'A verifier agent checks delivery evidence against the signed contract',
+        'Deterministic policy code captures or voids the payment',
+        'REST Deal API and MCP server for agent builders',
+        'Red Team Lab where researchers attack the live agents',
+      ],
+      screenshot: SCREENSHOTS.map((shot) => ({
+        '@type': 'ImageObject',
+        contentUrl: `${SITE_URL}${screenshotUrl(shot.file)}`,
+        caption: shot.caption,
+        width: 1500,
+        height: 1000,
+      })),
+      creator: { '@id': PUBLISHER['@id'] },
+      publisher: { '@id': PUBLISHER['@id'] },
+    },
+  ],
 };
+
+const walkthrough = SCREENSHOTS.filter((shot) =>
+  ['02-negotiation', '05-settled-timeline', '06-paypal-activity', '10-attack-held'].includes(
+    shot.file,
+  ),
+);
 
 const entryPoints = [
   {
@@ -102,6 +148,35 @@ export default function HomePage() {
           </li>
         ))}
       </ul>
+      <section aria-labelledby="walkthrough" className="mt-24 w-full">
+        <h2 id="walkthrough" className="text-2xl font-semibold tracking-tight sm:text-3xl">
+          One real sandbox deal
+        </h2>
+        <p className="text-muted mt-2 max-w-2xl">
+          Screenshots from the live app: the agents bargain, PayPal holds the money, and the payment
+          is captured only after the delivery checks out.
+        </p>
+        <ul className="mt-8 grid gap-6 sm:grid-cols-2">
+          {walkthrough.map((shot) => (
+            <li key={shot.file}>
+              <figure className="border-line bg-surface/70 rounded-card overflow-hidden border">
+                <img
+                  src={screenshotUrl(shot.file)}
+                  srcSet={`${screenshotUrl(shot.file, 750)} 750w, ${screenshotUrl(shot.file)} 1500w`}
+                  sizes="(min-width: 640px) 560px, 100vw"
+                  alt={shot.caption}
+                  width={1500}
+                  height={1000}
+                  loading="lazy"
+                  decoding="async"
+                  className="border-line h-auto w-full border-b"
+                />
+                <figcaption className="text-muted p-4 text-sm">{shot.caption}</figcaption>
+              </figure>
+            </li>
+          ))}
+        </ul>
+      </section>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
