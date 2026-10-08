@@ -18,7 +18,8 @@ export interface AttemptLimit extends AttemptWindow {
 export const attemptCookieName = (form: FormName) => `hs_${form}`;
 
 // The cookie survives a new tab or window; the IP counter covers a visitor who
-// clears cookies. It lives per warm Lambda instance, so the cookie is the main limit.
+// clears cookies. Both only tell the browser it is locked out: the IP counter
+// lives per warm Lambda instance, so `takeFormIpSlot` enforces the limit.
 const attemptsByIp = new Map<string, AttemptWindow>();
 
 const isOpen = (window: AttemptWindow, now: number) => now - window.startedAt < FORM_WINDOW_MS;

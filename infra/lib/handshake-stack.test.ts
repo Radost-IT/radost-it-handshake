@@ -394,6 +394,21 @@ describe('HandshakeStack', () => {
     template.hasResourceProperties('AWS::Lambda::Url', { AuthType: 'NONE' });
   });
 
+  it('lets the web server update only the form attempt counters', () => {
+    template.hasResourceProperties('AWS::IAM::Policy', {
+      PolicyDocument: {
+        Statement: Match.arrayWith([
+          Match.objectLike({
+            Action: 'dynamodb:UpdateItem',
+            Condition: {
+              'ForAllValues:StringLike': { 'dynamodb:LeadingKeys': ['RATE#form-*'] },
+            },
+          }),
+        ]),
+      },
+    });
+  });
+
   it('sends the origin secret header from CloudFront to the web server', () => {
     template.hasResourceProperties('AWS::CloudFront::Distribution', {
       DistributionConfig: Match.objectLike({

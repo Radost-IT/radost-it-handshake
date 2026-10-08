@@ -18,7 +18,12 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   // The workspace packages ship TypeScript source, so Next compiles them itself.
-  transpilePackages: ['@handshake/arena', '@handshake/config', '@handshake/core'],
+  transpilePackages: [
+    '@handshake/arena',
+    '@handshake/config',
+    '@handshake/core',
+    '@handshake/store',
+  ],
   headers() {
     return Promise.resolve([{ source: '/:path*', headers: securityHeaders }]);
   },

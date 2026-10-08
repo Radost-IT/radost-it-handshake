@@ -13,6 +13,7 @@ import {
 import { clientIp } from './client-ip';
 import { CHALLENGE_ANSWER_FIELD, CHALLENGE_TOKEN_FIELD, HONEYPOT_FIELD } from './fields';
 import { formSigningSecret, originVerifySecret } from './form-secret';
+import { minutesToNextHour, takeFormIpSlot } from './ip-limit';
 import { isSpamChallengeSolved } from './spam-challenge';
 
 // The shared Radost IT contact Lambda posts every submission to Slack. It
@@ -80,6 +81,14 @@ export async function handleFormSubmission(req: NextRequest, form: FormDefinitio
         error: `Too many attempts. Try again in ${minutes} minutes.`,
         ...blockedBody(context.limit),
       },
+      { status: 429 },
+    );
+  }
+
+  if (!(await takeFormIpSlot(form.name, context.ip, context.now))) {
+    const minutes = minutesToNextHour(context.now);
+    return NextResponse.json(
+      { error: `Too many attempts. Try again in ${minutes} minutes.` },
       { status: 429 },
     );
   }

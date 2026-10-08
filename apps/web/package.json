@@ -9,8 +9,11 @@
     "start": "next start"
   },
   "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.1146.0",
+    "@aws-sdk/lib-dynamodb": "^3.1146.0",
     "@handshake/arena": "workspace:*",
     "@handshake/config": "workspace:*",
+    "@handshake/store": "workspace:*",
     "ag-charts-community": "^14.2.0",
     "ag-charts-react": "^14.2.0",
     "ag-grid-community": "^36.2.0",

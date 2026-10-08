@@ -483,7 +483,7 @@ export class HandshakeStack extends Stack {
     const web = new Nextjs(this, 'Web', {
       nextjsPath: props.webAppPath,
       skipBuild: true,
-      environment: { HANDSHAKE_STAGE: props.stage },
+      environment: { HANDSHAKE_STAGE: props.stage, TABLE_NAME: table.tableName },
       overrides: {
         nextjsDistribution: {
           // The server's function URL is public. This header lets the server
@@ -510,6 +510,14 @@ export class HandshakeStack extends Stack {
     const webServer = web.serverFunction.lambdaFunction;
     this.grantConfigValueRead(webServer, `${configPath}/web/form-signing-secret`);
     this.grantConfigValueRead(webServer, `${configPath}/web/origin-verify-secret`);
+    // The forms count attempts per IP in the table; the server may touch only those counters.
+    webServer.addToRolePolicy(
+      new PolicyStatement({
+        actions: ['dynamodb:UpdateItem'],
+        resources: [table.tableArn],
+        conditions: { 'ForAllValues:StringLike': { 'dynamodb:LeadingKeys': ['RATE#form-*'] } },
+      }),
+    );
 
     const zone = HostedZone.fromHostedZoneAttributes(this, 'Zone', {
       zoneName: props.domains.zone,
