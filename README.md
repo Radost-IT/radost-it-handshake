@@ -189,6 +189,7 @@ scripts              probes, seeding, accounts, demo reset
 - Every Bedrock call passes a daily token budget stored in DynamoDB, and only approved accounts and API keys can start one. One developer or challenger may use at most a fifth of the day's tokens, and the arena at most half. Each key or account opens up to 25 deals a day, and each researcher runs up to 40 attacks a day.
 - API Gateway throttles the whole API, and the routes anyone can call (health, sign-in, public arena reads, webhooks) have their own smaller limits.
 - CloudFront adds a secret header to each request it sends the web server. The forms refuse requests without it, so a direct caller of the server's function URL cannot fake its IP address. Each IP may send each form 5 times an hour, counted in DynamoDB.
+- The web pages' Content Security Policy loads scripts only from the site and its analytics host, and lets pages send data only to the Handshake APIs.
 - Third-party text (listings, seller messages, evidence) goes into prompts wrapped and labeled as untrusted data.
 - Every Lambda role carries the permissions boundary in `infra/iam/workload-boundary.json`.
 
