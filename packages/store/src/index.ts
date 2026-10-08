@@ -56,6 +56,7 @@ export {
   findApiKey,
   issueApiKey,
   listApiKeys,
+  revokeApiKeys,
   type ApiKey,
   type ListedApiKey,
 } from './api-keys';

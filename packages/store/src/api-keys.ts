@@ -1,4 +1,4 @@
-import { GetCommand, PutCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';
+import { DeleteCommand, GetCommand, PutCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';
 import { createHash, randomBytes } from 'node:crypto';
 import { z } from 'zod';
 import type { StoreTable } from './table';
@@ -63,6 +63,39 @@ export async function listApiKeys(table: StoreTable, developerId: string): Promi
       KeyConditionExpression: 'gsi1pk = :pk',
       ExpressionAttributeValues: { ':pk': developerKeysPartition(developerId) },
     }),
+  );
+  return Items.map((item) => listedApiKeySchema.parse(item));
+}
+
+const storedKeyIdSchema = z.object({ pk: z.string(), sk: z.string() });
+
+/**
+ * Deletes the developer's keys that end in `lastCharacters`, so they stop
+ * working at once. Returns the keys it deleted.
+ */
+export async function revokeApiKeys(
+  table: StoreTable,
+  developerId: string,
+  lastCharacters: string,
+): Promise<ListedApiKey[]> {
+  const { Items = [] } = await table.client.send(
+    new QueryCommand({
+      TableName: table.name,
+      IndexName: 'GSI1',
+      KeyConditionExpression: 'gsi1pk = :pk',
+      FilterExpression: 'lastCharacters = :last',
+      ExpressionAttributeValues: {
+        ':pk': developerKeysPartition(developerId),
+        ':last': lastCharacters,
+      },
+    }),
+  );
+  await Promise.all(
+    Items.map((item) =>
+      table.client.send(
+        new DeleteCommand({ TableName: table.name, Key: storedKeyIdSchema.parse(item) }),
+      ),
+    ),
   );
   return Items.map((item) => listedApiKeySchema.parse(item));
 }

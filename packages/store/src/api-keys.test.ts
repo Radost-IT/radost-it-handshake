@@ -1,8 +1,13 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { DynamoDBDocumentClient, PutCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';
+import {
+  DeleteCommand,
+  DynamoDBDocumentClient,
+  PutCommand,
+  QueryCommand,
+} from '@aws-sdk/lib-dynamodb';
 import { mockClient } from 'aws-sdk-client-mock';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { issueApiKey, listApiKeys } from './api-keys';
+import { issueApiKey, listApiKeys, revokeApiKeys } from './api-keys';
 
 const dynamodb = mockClient(DynamoDBDocumentClient);
 const table = { client: DynamoDBDocumentClient.from(new DynamoDBClient({})), name: 'T' };
@@ -40,5 +45,24 @@ describe('listApiKeys', () => {
         ':pk': 'KEYS#account:account-1',
       },
     );
+  });
+});
+
+describe('revokeApiKeys', () => {
+  it("deletes the developer's keys with the given ending", async () => {
+    const stored = { pk: 'APIKEY#hash-1', sk: 'META', ...key, lastCharacters: 'abcd' };
+    dynamodb.on(QueryCommand).resolves({ Items: [stored] });
+    dynamodb.on(DeleteCommand).resolves({});
+
+    await expect(revokeApiKeys(table, 'account:account-1', 'abcd')).resolves.toEqual([
+      { ...key, lastCharacters: 'abcd' },
+    ]);
+    expect(dynamodb.commandCalls(QueryCommand)[0]?.args[0].input.ExpressionAttributeValues).toEqual(
+      { ':pk': 'KEYS#account:account-1', ':last': 'abcd' },
+    );
+    expect(dynamodb.commandCalls(DeleteCommand)[0]?.args[0].input.Key).toEqual({
+      pk: 'APIKEY#hash-1',
+      sk: 'META',
+    });
   });
 });
