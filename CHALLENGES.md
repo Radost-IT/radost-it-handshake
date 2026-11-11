@@ -155,3 +155,11 @@ The verifier prompt now says that every statement in the evidence is a seller's 
 We expected `cellClass: 'font-mono'` to style the deal and audit grids, and `autoSizeStrategy` to fit the evals grid. Neither did. AG Grid 33 and later split features into modules, and our grids registered only `ClientSideRowModelModule`. The browser console showed `AG Grid: error #200` with `moduleName=ColumnAutoSize`, while missing `CellStyleModule` dropped every `cellClass` without a visible error. A second surprise: a column's own `cellClass` replaces the class that `type: 'rightAligned'` adds, so numbers moved to the left.
 
 Each grid now registers `CellStyleModule`, plus `ColumnAutoSizeModule`, `RowAutoHeightModule` or `PaginationModule` where it uses them. Right-aligned columns that set `cellClass` add `text-right` themselves.
+
+## Lambda bundling failed on a fresh clone
+
+*11 Nov 2026 · Infra, AWS CDK*
+
+We expected `pnpm test` and `pnpm cdk:synth` to work right after `pnpm install` on a fresh clone. The stack test failed with `ERR_PNPM_RECURSIVE_EXEC_FIRST_FAIL  Command "esbuild" not found`. `NodejsFunction` runs `pnpm exec esbuild` in the folder that holds the lock file, which is the repository root, but `esbuild` was a dependency of `infra` only. It worked on our machines because an older install had left `esbuild` at the root.
+
+`esbuild` is now a root dev dependency, so the bundler finds it after a clean install.
